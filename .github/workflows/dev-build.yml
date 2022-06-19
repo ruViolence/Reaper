@@ -1,0 +1,39 @@
+name: Dev Build
+
+on:
+  push:
+    branches:
+      - ver/*
+
+jobs:
+  dev-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 8
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "no-reply@github.com"
+          git config --global user.name "Github Actions"
+
+      - name: Patch Reaper
+        run: |
+          git submodule update --init --recursive
+          ./reaper jar
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Reaper-JDK8
+          path: reaper-paperclip.jar

@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 3 Jun 2022 02:58:13 +0500
+Subject: [PATCH] feat: add TileEntityTickEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/block/TileEntityTickEvent.java b/src/main/java/com/github/ruviolence/reaper/event/block/TileEntityTickEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..e4c48dd4fe6822e7db591d45330fe9222f9d96ce
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/block/TileEntityTickEvent.java
+@@ -0,0 +1,40 @@
++package com.github.ruviolence.reaper.event.block;
++
++import org.bukkit.block.Block;
++import org.bukkit.event.Cancellable;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.block.BlockEvent;
++
++public class TileEntityTickEvent extends BlockEvent implements Cancellable {
++    private static final HandlerList handlers = new HandlerList();
++    private boolean cancelled = false;
++
++    public TileEntityTickEvent(Block block) {
++        super(block);
++    }
++
++    public void setData(Block block) {
++        super.block = block;
++
++        this.cancelled = false;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean cancel) {
++        this.cancelled = cancel;
++    }
++}

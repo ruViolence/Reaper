@@ -1,0 +1,182 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 08:49:50 +0500
+Subject: [PATCH] feat: add EntityMoveEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/entity/EntityMoveEvent.java b/src/main/java/com/github/ruviolence/reaper/event/entity/EntityMoveEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3a35ed92754cf0d9439bbb437065dd6ac9e8a606
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/entity/EntityMoveEvent.java
+@@ -0,0 +1,170 @@
++package com.github.ruviolence.reaper.event.entity;
++
++import org.bukkit.Location;
++import org.bukkit.World;
++import org.bukkit.entity.Entity;
++import org.bukkit.event.Cancellable;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.entity.EntityEvent;
++import org.bukkit.util.NumberConversions;
++
++/**
++ * Fired when an entity moves.
++ */
++public class EntityMoveEvent extends EntityEvent implements Cancellable {
++    private static final HandlerList handlers = new HandlerList();
++    private boolean cancelled = false;
++
++    private World world;
++    private MoveType moveType;
++    private int nmsMoveTypeId;
++
++    private double oldX;
++    private double oldY;
++    private double oldZ;
++
++    private double newX;
++    private double newY;
++    private double newZ;
++    private float newYaw;
++    private float newPitch;
++
++    private boolean isPerBlockMoveCalculated;
++    private boolean isPerBlockMove;
++
++    private Location fromLocation;
++    private Location toLocation;
++
++    public EntityMoveEvent(Entity entity) {
++        super(entity);
++    }
++
++    public World getWorld() {
++        return world;
++    }
++
++    public MoveType getMoveType() {
++        if (moveType == null) moveType = MoveType.fromNMS(nmsMoveTypeId);
++        return moveType;
++    }
++
++    public Location getFrom() {
++        if (fromLocation == null) fromLocation = new Location(world, oldX, oldY, oldZ, newYaw, newPitch);
++        return fromLocation;
++    }
++
++    public Location getTo() {
++        if (toLocation == null) toLocation = new Location(world, newX, newY, newZ, newYaw, newPitch);
++        return toLocation;
++    }
++
++    public double getOldX() {
++        return oldX;
++    }
++
++    public double getOldY() {
++        return oldY;
++    }
++
++    public double getOldZ() {
++        return oldZ;
++    }
++
++    public double getNewX() {
++        return newX;
++    }
++
++    public double getNewY() {
++        return newY;
++    }
++
++    public double getNewZ() {
++        return newZ;
++    }
++
++    public float getNewYaw() {
++        return newYaw;
++    }
++
++    public float getNewPitch() {
++        return newPitch;
++    }
++
++    public boolean isPerBlockMove() {
++        if (!isPerBlockMoveCalculated) {
++            int oldX1 = NumberConversions.floor(this.oldX);
++            int oldY1 = NumberConversions.floor(this.oldY);
++            int oldZ1 = NumberConversions.floor(this.oldZ);
++
++            int newX1 = NumberConversions.floor(this.newX);
++            int newY1 = NumberConversions.floor(this.newY);
++            int newZ1 = NumberConversions.floor(this.newZ);
++
++            isPerBlockMove = oldX1 != newX1 || oldY1 != newY1 || oldZ1 != newZ1;
++            isPerBlockMoveCalculated = true;
++        }
++        return isPerBlockMove;
++    }
++
++    public void setData(Entity entity, World world, int nmsMoveTypeId, 
++                        double oldX, double oldY, double oldZ,
++                        double newX, double newY, double newZ, float newYaw, float newPitch) {
++        super.entity = entity;
++        this.world = world;
++        this.moveType = null;
++        this.nmsMoveTypeId = nmsMoveTypeId;
++
++        this.oldX = oldX;
++        this.oldY = oldY;
++        this.oldZ = oldZ;
++
++        this.newX = newX;
++        this.newY = newY;
++        this.newZ = newZ;
++        this.newYaw = newYaw;
++        this.newPitch = newPitch;
++
++        this.fromLocation = null;
++        this.toLocation = null;
++        this.isPerBlockMoveCalculated = false;
++
++        this.cancelled = false;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean cancel) {
++        this.cancelled = cancel;
++    }
++
++    public enum MoveType {
++        SELF,
++        PISTON,
++        SHULKER_BOX,
++        SHULKER,
++        UNKNOWN;
++
++        static MoveType fromNMS(int nmsMoveTypeId) {
++            switch (nmsMoveTypeId) {
++                case 0: return MoveType.SELF;        // EnumMoveType.SELF
++                case 2: return MoveType.PISTON;      // EnumMoveType.PISTON
++                case 3: return MoveType.SHULKER_BOX; // EnumMoveType.SHULKER_BOX
++                case 4: return MoveType.SHULKER;     // EnumMoveType.SHULKER
++                default: return EntityMoveEvent.MoveType.UNKNOWN;
++            }
++        }
++    }
++}

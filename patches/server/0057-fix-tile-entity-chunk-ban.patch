@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 3 Jun 2022 04:14:32 +0500
+Subject: [PATCH] fix: tile entity chunk ban
+
+Completely fixes "Badly compressed packet" kicks.
+
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+index 4808e3af47003bb63cb659a6511daf15a3f74258..6782d7afab4d986a06ab8a2228c4b912748295dd 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutMapChunk.java
+@@ -26,6 +26,7 @@ public class PacketPlayOutMapChunk implements Packet<PacketListenerPlayOut> {
+         return extraPackets;
+     }
+     // Paper end
++    private static final int EXCESSIVE_TILEENTITIES_CAP = Integer.getInteger("Reaper.excessiveTileEntitiesCap", 500); // Reaper
+     public PacketPlayOutMapChunk(Chunk chunk, int i) {
+         this.a = chunk.locX;
+         this.b = chunk.locZ;
+@@ -37,6 +38,7 @@ public class PacketPlayOutMapChunk implements Packet<PacketListenerPlayOut> {
+         this.e = Lists.newArrayList();
+         Iterator iterator = chunk.getTileEntities().entrySet().iterator();
+         int totalSigns = 0; // Paper
++        int totalTileEntities = 0; // Reaper
+ 
+         while (iterator.hasNext()) {
+             Entry entry = (Entry) iterator.next();
+@@ -53,6 +55,18 @@ public class PacketPlayOutMapChunk implements Packet<PacketListenerPlayOut> {
+                     continue;
+                 }
+                 // Paper end
++                // Reaper start
++                if (++totalTileEntities > EXCESSIVE_TILEENTITIES_CAP) {
++                    PacketPlayOutTileEntityData updatePacket = tileentity.getUpdatePacket();
++                    if (updatePacket != null) {
++                        extraPackets.add(updatePacket);
++                    } else {
++                        extraPackets.add(new PacketPlayOutBlockChange(blockposition, Blocks.AIR.getBlockData()));
++                        extraPackets.add(new PacketPlayOutBlockChange(chunk.getWorld(), blockposition));
++                    }
++                    continue;
++                }
++                // Reaper end
+                 NBTTagCompound nbttagcompound = tileentity.d();
+ 
+                 this.e.add(nbttagcompound);

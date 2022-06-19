@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 3 Jun 2022 22:59:06 +0500
+Subject: [PATCH] feat: add more timings
+
+
+diff --git a/src/main/java/co/aikar/timings/WorldTimingsHandler.java b/src/main/java/co/aikar/timings/WorldTimingsHandler.java
+index 4eebd9fae940dd6bc51f8cfd30ab7b5cba5ce201..fc5ce2ff6c86c3021e0f08edf3d9c5ac5aeb082b 100644
+--- a/src/main/java/co/aikar/timings/WorldTimingsHandler.java
++++ b/src/main/java/co/aikar/timings/WorldTimingsHandler.java
+@@ -50,6 +50,14 @@ public class WorldTimingsHandler {
+     public final Timing chunkSaveData;
+ 
+     public final Timing lightingQueueTimer;
++    // Reaper start
++    public final Timing chunkTicksCheckNextLight;
++    public final Timing chunkTicksRecheckGaps;
++    public final Timing chunkTicksTileEntityCreateQueue;
++    public final Timing chunkTicksThunder;
++    public final Timing chunkTicksIceAndSnow;
++    public final Timing updateWeather;
++    // Reaper end
+ 
+     public WorldTimingsHandler(World server) {
+         String name = server.worldData.getName() +" - ";
+@@ -99,5 +107,13 @@ public class WorldTimingsHandler {
+         tickEntities = Timings.ofSafe(name + "tickEntities");
+ 
+         lightingQueueTimer = Timings.ofSafe(name + "Lighting Queue");
++        // Reaper start
++        chunkTicksCheckNextLight = Timings.ofSafe(name + "Chunk Ticks - Check Next Light");
++        chunkTicksRecheckGaps = Timings.ofSafe(name + "Chunk Ticks - recheck Gaps");
++        chunkTicksTileEntityCreateQueue = Timings.ofSafe(name + "Chunk Ticks - Tile Entity Create Queue");
++        chunkTicksThunder = Timings.ofSafe(name + "Chunk Ticks - Thunder");
++        chunkTicksIceAndSnow = Timings.ofSafe(name + "Chunk Ticks - Ice And Snow");
++        updateWeather = Timings.ofSafe(name + "Update Weather");
++        // Reaper end
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 34fd3f3ca024645f2fb8b0fff5895bf08ee4748b..a72f333c9e8c1b6fa31cf7370fd0e572fd28193a 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -1230,7 +1230,9 @@ public class Chunk {
+ 
+     public void b(boolean flag) {
+         if (this.m && this.world.worldProvider.m() && !flag) {
++            world.timings.chunkTicksRecheckGaps.startTiming(); // Reaper
+             this.h(false); // Reaper - Remove isClientSide check
++            world.timings.chunkTicksRecheckGaps.stopTiming(); // Reaper
+         }
+ 
+         this.r = true;
+@@ -1238,6 +1240,7 @@ public class Chunk {
+             this.o();
+         }
+ 
++        world.timings.chunkTicksTileEntityCreateQueue.startTiming(); // Reaper
+         while (!this.y.isEmpty()) {
+             BlockPosition blockposition = (BlockPosition) this.y.poll();
+ 
+@@ -1248,6 +1251,7 @@ public class Chunk {
+                 this.world.b(blockposition, blockposition);
+             }
+         }
++        world.timings.chunkTicksTileEntityCreateQueue.stopTiming(); // Reaper
+ 
+     }
+ 
+@@ -1337,6 +1341,7 @@ public class Chunk {
+ 
+     public void n() {
+         if (this.x < 4096) {
++            world.timings.chunkTicksCheckNextLight.startTiming(); // Reaper
+             BlockPosition blockposition = new BlockPosition(this.locX << 4, 0, this.locZ << 4);
+ 
+             for (int i = 0; i < 8; ++i) {
+@@ -1374,6 +1379,7 @@ public class Chunk {
+                     }
+                 }
+             }
++            world.timings.chunkTicksCheckNextLight.stopTiming(); // Reaper
+ 
+         }
+     }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index c5c1b2444509920b0553202959d1430fd759621e..fd806a37b77c98a6db4f31070ec1d2eee677c18b 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -2355,6 +2355,7 @@ public abstract class World implements IBlockAccess {
+     protected void t() {
+         if (this.worldProvider.m()) {
+             if (true) { // Reaper - Remove isClientSide check
++                timings.updateWeather.startTiming(); // Reaper
+                 boolean flag = this.getGameRules().getBoolean("doWeatherCycle");
+ 
+                 if (flag) {
+@@ -2424,6 +2425,7 @@ public abstract class World implements IBlockAccess {
+                     }
+                 }
+                 // CraftBukkit end
++                timings.updateWeather.stopTiming(); // Reaper
+             }
+         }
+     }
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index b28f37784b31e18984258a265feafa9ba2fa3634..87ab0dd388ba81772b60f2828357f3ddd675117a 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -508,6 +508,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+ 
+                 // Paper - Disable thunder
+                 if (!this.paperConfig.disableThunder && flag && flag1 && this.random.nextInt(100000) == 0) {
++                    timings.chunkTicksThunder.startTiming(); // Reaper
+                     this.l = this.l * 3 + 1013904223;
+                     l = this.l >> 2;
+                     blockposition = this.a(new BlockPosition(j + (l & 15), 0, k + (l >> 8 & 15)));
+@@ -526,10 +527,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                             this.strikeLightning(new EntityLightning(this, (double) blockposition.getX(), (double) blockposition.getY(), (double) blockposition.getZ(), false));
+                         }
+                     }
++                    timings.chunkTicksThunder.stopTiming(); // Reaper
+                 }
+ 
+                 this.methodProfiler.c("iceandsnow");
+                 if (!this.paperConfig.disableIceAndSnow && this.random.nextInt(16) == 0) { // Paper - Disable ice and snow
++                    timings.chunkTicksIceAndSnow.startTiming(); // Reaper
+                     this.l = this.l * 3 + 1013904223;
+                     l = this.l >> 2;
+                     blockposition = this.p(new BlockPosition(j + (l & 15), 0, k + (l >> 8 & 15)));
+@@ -546,6 +549,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                     if (flag && this.getBiome(blockposition1).d()) {
+                         this.getType(blockposition1).getBlock().h(this, blockposition1);
+                     }
++                    timings.chunkTicksIceAndSnow.stopTiming(); // Reaper
+                 }
+ 
+                 timings.chunkTicksBlocks.startTiming(); // Paper

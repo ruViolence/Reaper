@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 00:35:07 +0500
+Subject: [PATCH] feat: depth for the BlockPhysicsEvent
+
+
+diff --git a/src/main/java/org/bukkit/event/block/BlockPhysicsEvent.java b/src/main/java/org/bukkit/event/block/BlockPhysicsEvent.java
+index 57568cd02b55d13572d1bc13dcc3434a74ae2885..c003550c429e2d6b4fc5a23d31dc5ba750b6eb47 100644
+--- a/src/main/java/org/bukkit/event/block/BlockPhysicsEvent.java
++++ b/src/main/java/org/bukkit/event/block/BlockPhysicsEvent.java
+@@ -17,6 +17,7 @@ public class BlockPhysicsEvent extends BlockEvent implements Cancellable {
+     private int sourceY;
+     private int sourceZ;
+     private Block sourceBlock;
++    private int depth; // Reaper - Add depth API
+ 
+     /**
+      *
+@@ -36,6 +37,28 @@ public class BlockPhysicsEvent extends BlockEvent implements Cancellable {
+         this.sourceBlock = null;
+     }
+ 
++    // Reaper start - Add depth API
++    /**
++     *
++     * @deprecated Magic value
++     * @param block the block involved in this event
++     * @param changed the changed block's type id
++     * @param sourceX the x of the source block
++     * @param sourceY the y of the source block
++     * @param sourceZ the z of the source block
++     * @param depth   physics trigger depth
++     */
++    @Deprecated
++    public BlockPhysicsEvent(final Block block, final int changed, final int sourceX, final int sourceY, final int sourceZ, int depth) {
++        this(block, changed);
++        this.sourceX = sourceX;
++        this.sourceY = sourceY;
++        this.sourceZ = sourceZ;
++        this.sourceBlock = null;
++        this.depth = depth;
++    }
++    // Reaper end
++
+     /**
+      * Gets the source block, causing this event
+      *
+@@ -46,6 +69,17 @@ public class BlockPhysicsEvent extends BlockEvent implements Cancellable {
+     }
+     // Paper end
+ 
++    // Reaper start - Add depth API
++    /**
++     * Gets the depth of the block physics trigger
++     *
++     * @return Depth
++     */
++    public int getDepth() {
++        return depth;
++    }
++    // Reaper end
++
+     /**
+      *
+      * @deprecated Magic value

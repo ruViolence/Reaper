@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 13:47:40 +0500
+Subject: [PATCH] perf: revert "Do not let the server load chunks from newer
+ versions"
+
+This reverts commit 7b764831de0fe2e952fd9df6b0c0a3378176a880.
+Why do we need it? It's obvious that it won't work.
+
+diff --git a/src/main/java/net/minecraft/server/ChunkRegionLoader.java b/src/main/java/net/minecraft/server/ChunkRegionLoader.java
+index e6906effb4bb63ec1b856ccb190434e0cb0a7510..bad287fca4dc2cb00150e04980f4e3778d5dc008 100644
+--- a/src/main/java/net/minecraft/server/ChunkRegionLoader.java
++++ b/src/main/java/net/minecraft/server/ChunkRegionLoader.java
+@@ -90,22 +90,8 @@ public class ChunkRegionLoader implements IChunkLoader, IAsyncChunkSaver {
+         return nbttagcompound != null ? true : RegionFileCache.chunkExists(this.d, i, j);
+     }
+ 
+-    // Paper start
+-    private static final int CURRENT_DATA_VERSION = 1343; // Paper
+-    private static final boolean JUST_CORRUPT_IT = Boolean.valueOf("Paper.ignoreWorldDataVersion");
+-    // Paper end
+-
+     @Nullable
+     protected Object[] a(World world, int i, int j, NBTTagCompound nbttagcompound) { // CraftBukkit - return Chunk -> Object[]
+-        // Paper start - Do NOT attempt to load chunks saved with newer versions
+-        if (nbttagcompound.hasKeyOfType("DataVersion", 3)) {
+-            int dataVersion = nbttagcompound.getInt("DataVersion");
+-            if (!JUST_CORRUPT_IT && dataVersion > CURRENT_DATA_VERSION) {
+-                new RuntimeException("Server attempted to load chunk saved with newer version of minecraft! " + dataVersion + " > " + CURRENT_DATA_VERSION).printStackTrace();
+-                System.exit(1);
+-            }
+-        }
+-        // Paper end
+         if (!nbttagcompound.hasKeyOfType("Level", 10)) {
+             ChunkRegionLoader.a.error("Chunk file at {},{} is missing level data, skipping", Integer.valueOf(i), Integer.valueOf(j));
+             return null;

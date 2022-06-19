@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 10:37:34 +0500
+Subject: [PATCH] perf: remove snooper
+
+I don't think Mojang is interested in data about the custom Bukkit server.
+
+diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java b/src/main/java/net/minecraft/server/DedicatedServer.java
+index fb5822f7c2c1d96e2711fb081b632ee5d8eb3985..d743391e7061059c55774937fc6976bbdb54a30f 100644
+--- a/src/main/java/net/minecraft/server/DedicatedServer.java
++++ b/src/main/java/net/minecraft/server/DedicatedServer.java
+@@ -279,7 +279,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
+ 
+                 this.getEnableCommandBlock();
+                 this.q();
+-                this.getSnooperEnabled();
++                // this.getSnooperEnabled(); // Reaper - Remove snooper
+                 this.aG();
+                 this.c(this.propertyManager.getInt("max-build-height", 256));
+                 this.c((this.getMaxBuildHeight() + 8) / 16 * 16);
+@@ -436,13 +436,15 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
+     }
+ 
+     public void a(MojangStatisticsGenerator mojangstatisticsgenerator) {
++        /* // Reaper start - Remove snooper
+         mojangstatisticsgenerator.a("whitelist_enabled", Boolean.valueOf(this.aQ().getHasWhitelist()));
+         mojangstatisticsgenerator.a("whitelist_count", Integer.valueOf(this.aQ().getWhitelisted().length));
+         super.a(mojangstatisticsgenerator);
++        */ // Reaper end
+     }
+ 
+     public boolean getSnooperEnabled() {
+-        return this.propertyManager.getBoolean("snooper-enabled", true);
++        return false; // Reaper - Remove snooper
+     }
+ 
+     public void issueCommand(String s, ICommandListener icommandlistener) {
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index eb01435894143000a26cfee4c9d9287f2fb125ea..1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -56,7 +56,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+     public static final Logger LOGGER = LogManager.getLogger();
+     public static final File a = new File("usercache.json");
+     public Convertable convertable;
+-    private final MojangStatisticsGenerator m = new MojangStatisticsGenerator("server", this, aw());
++    // private final MojangStatisticsGenerator m = new MojangStatisticsGenerator("server", this, aw()); // Reaper - Remove snooper
+     public File universe;
+     private final List<ITickable> o = Lists.newArrayList();
+     public final ICommandHandler b;
+@@ -526,9 +526,11 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+             // CraftBukkit end */
+         }
+ 
++        /* // Reaper start - Remove snooper
+         if (this.m.d()) {
+             this.m.e();
+         }
++        */ // Reaper end
+ 
+         // Spigot start
+         if (org.spigotmc.SpigotConfig.saveUserCacheOnStopOnly) {
+@@ -818,6 +820,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         // Spigot end
+         this.methodProfiler.b();
+         this.methodProfiler.a("snooper");
++        /* // Reaper start - Remove snooper
+         if (getSnooperEnabled() && !this.m.d() && this.ticks > 100) {  // Spigot
+             this.m.a();
+         }
+@@ -825,6 +828,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         if (getSnooperEnabled() && this.ticks % 6000 == 0) { // Spigot
+             this.m.b();
+         }
++        */ // Reaper end
+ 
+         this.methodProfiler.b();
+         this.methodProfiler.b();
+@@ -1350,6 +1354,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+     }
+ 
+     public void a(MojangStatisticsGenerator mojangstatisticsgenerator) {
++        /* // Reaper start - Remove snooper
+         mojangstatisticsgenerator.a("whitelist_enabled", Boolean.valueOf(false));
+         mojangstatisticsgenerator.a("whitelist_count", Integer.valueOf(0));
+         if (this.v != null) {
+@@ -1386,13 +1391,16 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         }
+ 
+         mojangstatisticsgenerator.a("worlds", Integer.valueOf(i));
++        */ // Reaper end
+     }
+ 
+     public void b(MojangStatisticsGenerator mojangstatisticsgenerator) {
++        /* // Reaper start - Remove snooper
+         mojangstatisticsgenerator.b("singleplayer", Boolean.valueOf(this.R()));
+         mojangstatisticsgenerator.b("server_brand", this.getServerModName());
+         mojangstatisticsgenerator.b("gui_supported", GraphicsEnvironment.isHeadless() ? "headless" : "supported");
+         mojangstatisticsgenerator.b("dedicated", Boolean.valueOf(this.aa()));
++        */ // Reaper end
+     }
+ 
+     public boolean getSnooperEnabled() {

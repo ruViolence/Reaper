@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 10 Jun 2022 15:58:26 +0500
+Subject: [PATCH] feat: configurable relative arrow motion
+
+It will help to disable the superbow hack: https://youtu.be/zsJKxT1vOZs?t=165
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index a01f536667e2d5b77cb188bf7551ad884be8bc8f..1e8fa48ebdffc90f9b9142051962cca68e68f503 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -240,4 +240,9 @@ public class ReaperConfig {
+     private static void timeUpdatePeriod() {
+         timeUpdatePeriod = getInt("time-update-period", 20);
+     }
++
++    public static boolean relativeArrowMotion;
++    private static void relativeArrowMotion() {
++        relativeArrowMotion = getBoolean("relative-arrow-motion", true);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityArrow.java b/src/main/java/net/minecraft/server/EntityArrow.java
+index 4cdbcb0993194b327bc7117c05e8da32e55ea893..05d03acbd21cf0a8f3cf3274bc1bf50f156e1777 100644
+--- a/src/main/java/net/minecraft/server/EntityArrow.java
++++ b/src/main/java/net/minecraft/server/EntityArrow.java
+@@ -86,11 +86,13 @@ public abstract class EntityArrow extends Entity implements IProjectile {
+         float f7 = MathHelper.cos(f1 * 0.017453292F) * MathHelper.cos(f * 0.017453292F);
+ 
+         this.shoot((double) f5, (double) f6, (double) f7, f3, f4);
++        if (com.github.ruviolence.reaper.ReaperConfig.relativeArrowMotion) { // Reaper start
+         this.motX += entity.motX;
+         this.motZ += entity.motZ;
+         if (!entity.onGround) {
+             this.motY += entity.motY;
+         }
++        } // Reaper end
+ 
+     }
+ 

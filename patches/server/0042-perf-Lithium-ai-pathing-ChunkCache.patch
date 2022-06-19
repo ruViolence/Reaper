@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 00:38:31 +0500
+Subject: [PATCH] perf: Lithium - ai/pathing/ChunkCache
+
+The hottest part of path-finding is reading blocks out from the world. This patch makes a number of changes to avoid slow paths in the game and to better inline code. In testing, it shows a small improvement in path-finding code.
+
+Credits to Lithium: https://github.com/CaffeineMC/lithium-fabric/blob/546b7e72dd64fbf7dd8cb0676ad711dcffc62d07/src/main/java/me/jellysquid/mods/lithium/mixin/ai/pathing/ChunkCacheMixin.java
+
+diff --git a/src/main/java/net/minecraft/server/ChunkCache.java b/src/main/java/net/minecraft/server/ChunkCache.java
+index 786d1dd2269adbb6041257e0ae926a8fac4d717d..8f8d9cd57ab1c69e22d81525f8530e97e16d3749 100644
+--- a/src/main/java/net/minecraft/server/ChunkCache.java
++++ b/src/main/java/net/minecraft/server/ChunkCache.java
+@@ -3,6 +3,7 @@ package net.minecraft.server;
+ import javax.annotation.Nullable;
+ 
+ public class ChunkCache implements IBlockAccess {
++    private static final IBlockData DEFAULT_BLOCK = Blocks.AIR.getBlockData(); // Reaper - Lithium: ai/pathing/ChunkCache
+ 
+     protected int a;
+     protected int b;
+@@ -10,6 +11,14 @@ public class ChunkCache implements IBlockAccess {
+     protected boolean d;
+     protected World e;
+ 
++    // Reaper start - Lithium: ai/pathing/ChunkCache
++    // A 1D view of the chunks available to this cache
++    private Chunk[] chunksFlat;
++
++    // The x/z length of this cache
++    private int xLen, zLen;
++    // Reaper end
++
+     public ChunkCache(World world, BlockPosition blockposition, BlockPosition blockposition1, int i) {
+         this.e = world;
+         this.a = blockposition.getX() - i >> 4;
+@@ -39,6 +48,17 @@ public class ChunkCache implements IBlockAccess {
+             }
+         }
+ 
++        // Reaper start - Lithium: ai/pathing/ChunkCache
++        this.xLen = 1 + (blockposition1.getX() >> 4) - (blockposition.getX() >> 4);
++        this.zLen = 1 + (blockposition1.getZ() >> 4) - (blockposition.getZ() >> 4);
++
++        this.chunksFlat = new Chunk[this.xLen * this.zLen];
++
++        // Flatten the 2D chunk array into our 1D array
++        for (int x = 0; x < this.xLen; x++) {
++            System.arraycopy(this.c[x], 0, this.chunksFlat, x * this.zLen, this.zLen);
++        }
++        // Reaper end
+     }
+ 
+     @Nullable
+@@ -55,20 +75,32 @@ public class ChunkCache implements IBlockAccess {
+     }
+ 
+     public IBlockData getType(BlockPosition blockposition) {
+-        if (blockposition.getY() >= 0 && blockposition.getY() < 256) {
+-            int i = (blockposition.getX() >> 4) - this.a;
+-            int j = (blockposition.getZ() >> 4) - this.b;
++        // Reaper start - Lithium: ai/pathing/ChunkCache
++        int y = blockposition.getY();
++
++        if (y >= 0 && y < 256) {
++            int x = blockposition.getX();
++            int z = blockposition.getZ();
+ 
+-            if (i >= 0 && i < this.c.length && j >= 0 && j < this.c[i].length) {
+-                Chunk chunk = this.c[i][j];
++            int chunkX = (x >> 4) - this.a;
++            int chunkZ = (z >> 4) - this.b;
+ 
++            if (chunkX >= 0 && chunkX < this.xLen && chunkZ >= 0 && chunkZ < this.zLen) {
++                Chunk chunk = this.chunksFlat[(chunkX * this.zLen) + chunkZ];
++
++                // Avoid going through Chunk#getBlockData
+                 if (chunk != null) {
+-                    return chunk.getBlockData(blockposition);
++                    ChunkSection section = chunk.getSections()[y >> 4];
++
++                    if (section != null) {
++                        return section.getType(x & 15, y & 15, z & 15);
++                    }
+                 }
+             }
+         }
+ 
+-        return Blocks.AIR.getBlockData();
++        return DEFAULT_BLOCK;
++        // Reaper end
+     }
+ 
+     public boolean isEmpty(BlockPosition blockposition) {

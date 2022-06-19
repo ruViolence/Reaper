@@ -1,0 +1,209 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 08:49:50 +0500
+Subject: [PATCH] feat: add EntityMoveEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index fc3920fe0aedbe2a88a5ff3db20ce8555f4026aa..74da653cf7414da2924af7b07dab9af19ddfd278 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -200,6 +200,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+     private boolean isInLava;
+     private int lastLavaCheck = -1;
+     // Reaper end
++    public EnumMoveType moveType; // Reaper - EntityMoveEvent
+ 
+     // Reaper start - Cache current block pos
+     void resetBlockPos() {
+@@ -608,6 +609,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+     }
+ 
+     public void move(EnumMoveType enummovetype, double d0, double d1, double d2) {
++        this.moveType = enummovetype; // Reaper - EntityMoveEvent
+         if (this.noclip) {
+             this.a(this.getBoundingBox().d(d0, d1, d2));
+             this.recalcPosition();
+diff --git a/src/main/java/net/minecraft/server/EntityShulker.java b/src/main/java/net/minecraft/server/EntityShulker.java
+index cb3985d7604417f8ec6f9f6b2a0947cb8a269b97..8a5e909f63c0b0298351070675daa46557c39a6d 100644
+--- a/src/main/java/net/minecraft/server/EntityShulker.java
++++ b/src/main/java/net/minecraft/server/EntityShulker.java
+@@ -298,6 +298,7 @@ public class EntityShulker extends EntityGolem implements IMonster {
+     }
+ 
+     public void move(EnumMoveType enummovetype, double d0, double d1, double d2) {
++        this.moveType = enummovetype; // Reaper - EntityMoveEvent
+         if (enummovetype == EnumMoveType.SHULKER_BOX) {
+             this.p();
+         } else {
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 9e3d3228a02600118a4805feb6530ef9cceff578..66a087ec41a3d0cdfa682dc12b8cdacef181dfad 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -124,6 +124,9 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+     // Spigot start
+     public final SlackActivityAccountant slackActivityAccountant = new SlackActivityAccountant();
+     // Spigot end
++    // Reaper start
++    boolean hasEntityMoveEvent;
++    // Reaper end
+ 
+     public MinecraftServer(OptionSet options, Proxy proxy, DataConverterManager dataconvertermanager, YggdrasilAuthenticationService yggdrasilauthenticationservice, MinecraftSessionService minecraftsessionservice, GameProfileRepository gameprofilerepository, UserCache usercache) {
+         SERVER = this; // Paper - better singleton
+@@ -882,6 +885,10 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         }
+         MinecraftTimings.timeUpdateTimer.stopTiming(); // Spigot
+ 
++        // Reaper start
++        hasEntityMoveEvent = com.github.ruviolence.reaper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length != 0;
++        // Reaper end
++
+         int i;
+ 
+         for (i = 0; i < this.worlds.size(); ++i) { // CraftBukkit
+diff --git a/src/main/java/net/minecraft/server/TileEntityPiston.java b/src/main/java/net/minecraft/server/TileEntityPiston.java
+index 0e9b94a760122c27f8c35e58307e98014fc4e9c7..9a013f723873de8c3d04e90608bef0e617bdc6fd 100644
+--- a/src/main/java/net/minecraft/server/TileEntityPiston.java
++++ b/src/main/java/net/minecraft/server/TileEntityPiston.java
+@@ -125,7 +125,27 @@ public class TileEntityPiston extends TileEntity implements ITickable {
+                         if (d1 > 0.0D) {
+                             d1 = Math.min(d1, d0) + 0.01D;
+                             TileEntityPiston.i.set(enumdirection);
+-                            entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection.getAdjacentX(), d1 * (double) enumdirection.getAdjacentY(), d1 * (double) enumdirection.getAdjacentZ());
++                            // Reaper start - EntityMoveEvent
++                            if (MinecraftServer.getServer().hasEntityMoveEvent && !(entity instanceof EntityPlayer)) {
++                                double oldX = entity.locX;
++                                double oldY = entity.locY;
++                                double oldZ = entity.locZ;
++                                entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection.getAdjacentX(), d1 * (double) enumdirection.getAdjacentY(), d1 * (double) enumdirection.getAdjacentZ());
++                                double newX = entity.locX;
++                                double newY = entity.locY;
++                                double newZ = entity.locZ;
++                                float newYaw = entity.yaw;
++                                float newPitch = entity.pitch;
++                                if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityMoveEvent(entity, EnumMoveType.PISTON, world, 
++                                        oldX, oldY, oldZ,
++                                        newX, newY, newZ, newYaw, newPitch)) {
++                                    entity.setLocation(oldX, oldY, oldZ, newYaw, newPitch);
++                                }
++                                entity.moveType = null;
++                            } else {
++                                entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection.getAdjacentX(), d1 * (double) enumdirection.getAdjacentY(), d1 * (double) enumdirection.getAdjacentZ());
++                            }
++                            // Reaper end
+                             TileEntityPiston.i.set(null);
+                             if (!this.g && this.h) {
+                                 this.a(entity, enumdirection, d0);
+@@ -219,7 +239,27 @@ public class TileEntityPiston extends TileEntity implements ITickable {
+             if (Math.abs(d1 - d2) < 0.01D) {
+                 d1 = Math.min(d1, d0) + 0.01D;
+                 TileEntityPiston.i.set(enumdirection);
+-                entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection1.getAdjacentX(), d1 * (double) enumdirection1.getAdjacentY(), d1 * (double) enumdirection1.getAdjacentZ());
++                // Reaper start - EntityMoveEvent
++                if (MinecraftServer.getServer().hasEntityMoveEvent && !(entity instanceof EntityPlayer)) {
++                    double oldX = entity.locX;
++                    double oldY = entity.locY;
++                    double oldZ = entity.locZ;
++                    entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection1.getAdjacentX(), d1 * (double) enumdirection1.getAdjacentY(), d1 * (double) enumdirection1.getAdjacentZ());
++                    double newX = entity.locX;
++                    double newY = entity.locY;
++                    double newZ = entity.locZ;
++                    float newYaw = entity.yaw;
++                    float newPitch = entity.pitch;
++                    if (!org.bukkit.craftbukkit.event.CraftEventFactory.callEntityMoveEvent(entity, EnumMoveType.PISTON, world, 
++                            oldX, oldY, oldZ,
++                            newX, newY, newZ, newYaw, newPitch)) {
++                        entity.setLocation(oldX, oldY, oldZ, newYaw, newPitch);
++                    }
++                    entity.moveType = null;
++                } else {
++                    entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection1.getAdjacentX(), d1 * (double) enumdirection1.getAdjacentY(), d1 * (double) enumdirection1.getAdjacentZ());
++                }
++                // Reaper end
+                 TileEntityPiston.i.set(null);
+             }
+         }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 5efb719d54f56c088b2dd48f5fda90e2fca4e4e3..bbc1a9ec5055480468caf25f20fc430c2671a023 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1603,6 +1603,9 @@ public abstract class World implements IBlockAccess {
+         int entitiesThisCycle = 0;
+         // Paper start - Disable tick limiters
+         //if (tickPosition < 0) tickPosition = 0;
++        // Reaper start
++        boolean hasEntityMoveEvent = getMinecraftServer().hasEntityMoveEvent;
++        // Reaper end
+         for (tickPosition = 0; tickPosition < entityList.size(); tickPosition++) {
+             // Paper end
+             tickPosition = (/*tickPosition < entityList.size()*/true) ? tickPosition : 0; // Reaper - Optimize
+@@ -1622,7 +1625,27 @@ public abstract class World implements IBlockAccess {
+             if (!entity.dead && !(entity instanceof EntityPlayer)) {
+                 try {
+                     entity.tickTimer.startTiming(); // Paper
+-                    this.h(entity);
++                    // Reaper start - EntityMoveEvent
++                    if (hasEntityMoveEvent) {
++                        double oldX = entity.locX;
++                        double oldY = entity.locY;
++                        double oldZ = entity.locZ;
++                        this.h(entity);
++                        double newX = entity.locX;
++                        double newY = entity.locY;
++                        double newZ = entity.locZ;
++                        float newYaw = entity.yaw;
++                        float newPitch = entity.pitch;
++                        if (!CraftEventFactory.callEntityMoveEvent(entity, entity.moveType, this, 
++                                oldX, oldY, oldZ,
++                                newX, newY, newZ, newYaw, newPitch)) {
++                            entity.setLocation(oldX, oldY, oldZ, newYaw, newPitch);
++                        }
++                        entity.moveType = null;
++                    } else {
++                        this.h(entity);
++                    }
++                    // Reaper end
+                     entity.tickTimer.stopTiming(); // Paper
+                 } catch (Throwable throwable1) {
+                     entity.tickTimer.stopTiming();
+diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+index 41ea8d9f5bb862cb8f6b3a830468277492b8cd7d..9727853a41754a14416611b5184bcd7a3cb02d28 100644
+--- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
++++ b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+@@ -73,6 +73,9 @@ public class CraftEventFactory {
+     public static final DamageSource POISON = CraftDamageSource.copyOf(DamageSource.MAGIC);
+     public static org.bukkit.block.Block blockDamage; // For use in EntityDamageByBlockEvent
+     public static Entity entityDamage; // For use in EntityDamageByEntityEvent
++    // Reaper start
++    private static final com.github.ruviolence.reaper.event.entity.EntityMoveEvent entityMoveEvent = new com.github.ruviolence.reaper.event.entity.EntityMoveEvent(null);
++    // Reaper end
+ 
+     // helper methods
+     private static boolean canBuild(CraftWorld world, Player player, int x, int z) {
+@@ -1168,4 +1171,26 @@ public class CraftEventFactory {
+ 
+         return !event.isCancelled();
+     }
++
++    // Reaper start
++    public static boolean callEntityMoveEvent(Entity entity, EnumMoveType moveType, World world, 
++                                              double oldX, double oldY, double oldZ,
++                                              double newX, double newY, double newZ, float newYaw, float newPitch) {
++        // Ignore the same position
++        if (oldX == newX && oldY == newY && oldZ == newZ) return true;
++
++        com.github.ruviolence.reaper.event.entity.EntityMoveEvent event = CraftEventFactory.entityMoveEvent;
++
++        event.setData(
++                entity.getBukkitEntity(),
++                world.getWorld(),
++                moveType == null ? -1 : moveType.ordinal(),
++                oldX, oldY, oldZ,
++                newX, newY, newZ, newYaw, newPitch);
++
++        Bukkit.getPluginManager().callEvent(event);
++
++        return !event.isCancelled();
++    }
++    // Reaper end
+ }

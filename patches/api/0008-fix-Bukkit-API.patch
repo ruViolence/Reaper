@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 26 May 2022 10:14:45 +0500
+Subject: [PATCH] fix: Bukkit API
+
+
+diff --git a/src/main/java/co/aikar/util/Counter.java b/src/main/java/co/aikar/util/Counter.java
+index 8401d33657f97827c57c29a041eed612bf7f1da8..553a52e5fcc8b8f594f4e79ff9c4625a9542f102 100644
+--- a/src/main/java/co/aikar/util/Counter.java
++++ b/src/main/java/co/aikar/util/Counter.java
+@@ -15,7 +15,7 @@ public class Counter <T> extends ForwardingMap<T, Long> {
+         return increment(key, 1);
+     }
+     public long decrement(T key, long amount) {
+-        return decrement(key, -amount);
++        return increment(key, -amount); // Reaper - Fix Bukkit API
+     }
+     public long increment(T key, long amount) {
+         long count = this.getCount(key);
+diff --git a/src/main/java/org/bukkit/event/player/PlayerVelocityEvent.java b/src/main/java/org/bukkit/event/player/PlayerVelocityEvent.java
+index 69d2fce4a92e9ce6f7b087d58761172bf4ca791c..3028a5e3c57f929bfd19a56bae86581b9dd8c841 100644
+--- a/src/main/java/org/bukkit/event/player/PlayerVelocityEvent.java
++++ b/src/main/java/org/bukkit/event/player/PlayerVelocityEvent.java
+@@ -41,7 +41,14 @@ public class PlayerVelocityEvent extends PlayerEvent implements Cancellable {
+      * @param velocity The velocity vector that will be sent to the player
+      */
+     public void setVelocity(Vector velocity) {
+-        this.velocity = velocity;
++        // Reaper start - Catch bad plugins
++        try {
++            velocity.checkFinite();
++            this.velocity = velocity;
++        } catch (Exception e) {
++            e.printStackTrace();
++        }
++        // Reaper end
+     }
+ 
+     @Override

@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 3 Jun 2022 23:19:06 +0500
+Subject: [PATCH] fix: paper's collision disable for custom scoreboards
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index 82392c3439c1692ec2179c87415204ee02f3dd2a..b989a65e684b2cc456e7c5f5388d40b654eb3ed9 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -1557,6 +1557,19 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+             // throw new IllegalStateException("Cannot set scoreboard for invalid CraftPlayer"); // Spigot - remove this as Mojang's semi asynchronous Netty implementation can lead to races
+         }
+         */ // Reaper end
++        // Reaper start - Fix Paper's collision disable for custom scoreboards
++        if (!com.destroystokyo.paper.PaperConfig.enablePlayerCollisions) {
++            String playerName = getName();
++            // If the player does not have their team
++            if (scoreboard.getEntryTeam(playerName) == null) {
++                org.bukkit.scoreboard.Team collideTeam = scoreboard.getTeam("_c0ll1deRule");
++                // Create new team if does not exists
++                if (collideTeam == null) collideTeam = scoreboard.registerNewTeam("_c0ll1deRule");
++                collideTeam.setCanSeeFriendlyInvisibles(false); // Because we want to mimic them not being on a team at all
++                collideTeam.addEntry(playerName); // Add player to the collide team
++            }
++        }
++        // Reaper end
+ 
+         this.server.getScoreboardManager().setPlayerBoard(this, scoreboard);
+     }

@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 10:47:51 +0500
+Subject: [PATCH] feat: configurable end portal shape check
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 928b8e80983dc2c6debb35b8d91e9c06ebe378b2..45923d60c2609f70ac125938a23868c1837a5a9e 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -159,7 +159,9 @@ public class ReaperConfig {
+     }
+ 
+     public static boolean shapeCheckWither;
++    public static boolean shapeCheckEndPortal;
+     private static void shapeCheck() {
+         shapeCheckWither = getBoolean("shape-check.wither", true);
++        shapeCheckEndPortal = getBoolean("shape-check.end-portal", true);
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/ItemEnderEye.java b/src/main/java/net/minecraft/server/ItemEnderEye.java
+index 34de6c739336f3534c8f8f6a20ff0484c58706b6..a6bbf8ae41282c83e1d45660fdde086450640db1 100644
+--- a/src/main/java/net/minecraft/server/ItemEnderEye.java
++++ b/src/main/java/net/minecraft/server/ItemEnderEye.java
+@@ -32,6 +32,7 @@ public class ItemEnderEye extends Item {
+                 */ // Reaper end
+ 
+                 world.a((EntityHuman) null, blockposition, SoundEffects.bp, SoundCategory.BLOCKS, 1.0F, 1.0F);
++                if (!com.github.ruviolence.reaper.ReaperConfig.shapeCheckEndPortal) return EnumInteractionResult.SUCCESS; // Reaper
+                 ShapeDetector.ShapeDetectorCollection shapedetector_shapedetectorcollection = BlockEnderPortalFrame.e().a(world, blockposition);
+ 
+                 if (shapedetector_shapedetectorcollection != null) {

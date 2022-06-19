@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 08:14:09 +0500
+Subject: [PATCH] feat: add PlayerAnvilDamageEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/inventory/PlayerAnvilDamageEvent.java b/src/main/java/com/github/ruviolence/reaper/event/inventory/PlayerAnvilDamageEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..2c8eb9c1f0e07f61bcc02100e8364a3145c9f12c
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/inventory/PlayerAnvilDamageEvent.java
+@@ -0,0 +1,60 @@
++package com.github.ruviolence.reaper.event.inventory;
++
++import org.bukkit.block.Block;
++import org.bukkit.entity.HumanEntity;
++import org.bukkit.event.Cancellable;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.inventory.InventoryEvent;
++import org.bukkit.inventory.InventoryView;
++
++/**
++ * Fired when a player damages anvil on repair.
++ */
++public class PlayerAnvilDamageEvent extends InventoryEvent implements Cancellable {
++    private static final HandlerList handlers = new HandlerList();
++    private final Block anvil;
++    private final int damage;
++    private boolean cancelled = false;
++
++    public PlayerAnvilDamageEvent(InventoryView inventory, final Block anvil, final int damage) {
++        super(inventory);
++        this.anvil = anvil;
++        this.damage = damage;
++    }
++
++    public Block getAnvil() {
++        return anvil;
++    }
++
++    public int getDamage() {
++        return damage;
++    }
++
++    /**
++     * Returns the player involved in this event
++     *
++     * @return Player who is involved in this event
++     */
++    public final HumanEntity getPlayer() {
++        return transaction.getPlayer();
++    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean cancel) {
++        this.cancelled = cancel;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}

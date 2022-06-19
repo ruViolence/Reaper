@@ -1,0 +1,1374 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 14:37:57 +0500
+Subject: [PATCH] perf: experimental optimizations
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/loottable/CraftLootableInventoryData.java b/src/main/java/com/destroystokyo/paper/loottable/CraftLootableInventoryData.java
+index be4b53b4111259382e425a87719d75adf93f28b5..9d7f06140ff9cf7d09bf4e03acc9acc8ff19f654 100644
+--- a/src/main/java/com/destroystokyo/paper/loottable/CraftLootableInventoryData.java
++++ b/src/main/java/com/destroystokyo/paper/loottable/CraftLootableInventoryData.java
+@@ -133,7 +133,7 @@ public class CraftLootableInventoryData {
+         }
+     }
+     public void saveNbt(NBTTagCompound base) {
+-        NBTTagCompound comp = new NBTTagCompound();
++        NBTTagCompound comp = new NBTTagCompound(4); // Reaper - Use initial capacity
+         if (this.nextRefill != -1) {
+             comp.setLong("nextRefill", this.nextRefill);
+         }
+diff --git a/src/main/java/net/minecraft/server/BlockJukeBox.java b/src/main/java/net/minecraft/server/BlockJukeBox.java
+index d949a9c88bd961e5ae58b9e69b69d9d15945d366..170cfd4f4d0209d8474f4e76f5566a97e84a7908 100644
+--- a/src/main/java/net/minecraft/server/BlockJukeBox.java
++++ b/src/main/java/net/minecraft/server/BlockJukeBox.java
+@@ -130,7 +130,7 @@ public class BlockJukeBox extends BlockTileEntity {
+         public NBTTagCompound save(NBTTagCompound nbttagcompound) {
+             super.save(nbttagcompound);
+             if (!this.getRecord().isEmpty()) {
+-                nbttagcompound.set("RecordItem", this.getRecord().save(new NBTTagCompound()));
++                nbttagcompound.set("RecordItem", this.getRecord().save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+             }
+ 
+             return nbttagcompound;
+diff --git a/src/main/java/net/minecraft/server/BlockShulkerBox.java b/src/main/java/net/minecraft/server/BlockShulkerBox.java
+index 234cbfc88a3eea13833bed5f5d9d7da399153e0c..238e85d8360f9fa2815ac2323691dd58a1966313 100644
+--- a/src/main/java/net/minecraft/server/BlockShulkerBox.java
++++ b/src/main/java/net/minecraft/server/BlockShulkerBox.java
+@@ -101,7 +101,7 @@ public class BlockShulkerBox extends BlockTileEntity {
+ 
+             if (!tileentityshulkerbox.r() && tileentityshulkerbox.F()) {
+                 ItemStack itemstack = new ItemStack(Item.getItemOf(this));
+-                NBTTagCompound nbttagcompound = new NBTTagCompound();
++                NBTTagCompound nbttagcompound = new NBTTagCompound(1); // Reaper - Use initial capacity
+                 NBTTagCompound nbttagcompound1 = new NBTTagCompound();
+ 
+                 nbttagcompound.set("BlockEntityTag", ((TileEntityShulkerBox) tileentity).f(nbttagcompound1));
+diff --git a/src/main/java/net/minecraft/server/BlockSkull.java b/src/main/java/net/minecraft/server/BlockSkull.java
+index 080f4942473b824f3fb7fad50aa2db988a82d818..56c7639889f359281969ffc9e841ce60cc14de26 100644
+--- a/src/main/java/net/minecraft/server/BlockSkull.java
++++ b/src/main/java/net/minecraft/server/BlockSkull.java
+@@ -98,11 +98,14 @@ public class BlockSkull extends BlockTileEntity {
+                 ItemStack itemstack = this.a(world, blockposition, iblockdata);
+ 
+                 if (tileentityskull.getSkullType() == 3 && tileentityskull.getGameProfile() != null) {
+-                    itemstack.setTag(new NBTTagCompound());
+-                    NBTTagCompound nbttagcompound = new NBTTagCompound();
++                    // Reaper start - Optimize
++                    NBTTagCompound itemTag = new NBTTagCompound(1); // Reaper - Use initial capacity
++                    itemstack.setTag(itemTag);
++                    NBTTagCompound nbttagcompound = new NBTTagCompound(3); // Reaper - Use initial capacity
+ 
+                     GameProfileSerializer.serialize(nbttagcompound, tileentityskull.getGameProfile());
+-                    itemstack.getTag().set("SkullOwner", nbttagcompound);
++                    itemTag.set("SkullOwner", nbttagcompound);
++                    // Reaper end
+                 }
+ 
+                 a(world, blockposition, itemstack);
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index f5a44ab46e902bd93aea8070ee7d70f7f9bedbb1..34fd3f3ca024645f2fb8b0fff5895bf08ee4748b 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -872,7 +872,19 @@ public class Chunk {
+ 
+     public void addEntities() {
+         this.j = true;
++        // Reaper start - Optimize
++        if (!this.tileEntities.isEmpty())
+         this.world.b(this.tileEntities.values());
++        checkHasEntities:
++        {
++            for (int i = 0; i < entitySlices.length; i++) {
++                if (!entitySlices[i].isEmpty()) {
++                    break checkHasEntities;
++                }
++            }
++            return;
++        }
++        // Reaper end
+         List[] aentityslice = this.entitySlices; // Spigot
+         int i = aentityslice.length;
+         List<Entity> toAdd = new java.util.ArrayList<>(32); // Paper
+diff --git a/src/main/java/net/minecraft/server/ChunkRegionLoader.java b/src/main/java/net/minecraft/server/ChunkRegionLoader.java
+index b9dc7589a5ddca9f9e80b1632558d8857dc306f3..dee82ad78296644205f41401fd20cf269bf4df9a 100644
+--- a/src/main/java/net/minecraft/server/ChunkRegionLoader.java
++++ b/src/main/java/net/minecraft/server/ChunkRegionLoader.java
+@@ -138,8 +138,8 @@ public class ChunkRegionLoader implements IChunkLoader, IAsyncChunkSaver {
+         world.checkSession();
+ 
+         try {
+-            NBTTagCompound nbttagcompound = new NBTTagCompound();
+-            NBTTagCompound nbttagcompound1 = new NBTTagCompound();
++            NBTTagCompound nbttagcompound = new NBTTagCompound(2); // Reaper - Use initial capacity
++            NBTTagCompound nbttagcompound1 = new NBTTagCompound(12); // Reaper - Use initial capacity
+ 
+             nbttagcompound.set("Level", nbttagcompound1);
+             nbttagcompound.setInt("DataVersion", 1343);
+@@ -296,7 +296,7 @@ public class ChunkRegionLoader implements IChunkLoader, IAsyncChunkSaver {
+         nbttagcompound.setBoolean("LightPopulated", chunk.v());
+         nbttagcompound.setLong("InhabitedTime", chunk.x());
+         ChunkSection[] achunksection = chunk.getSections();
+-        NBTTagList nbttaglist = new NBTTagList();
++        NBTTagList nbttaglist = new NBTTagList(achunksection.length); // Reaper - Use initial capacity
+         boolean flag = worldHasSkyLight; // Spigot
+         ChunkSection[] achunksection1 = achunksection;
+         int i = achunksection.length;
+@@ -307,7 +307,7 @@ public class ChunkRegionLoader implements IChunkLoader, IAsyncChunkSaver {
+             ChunkSection chunksection = achunksection[j]; // Reaper - Inline
+ 
+             if (chunksection != Chunk.a) {
+-                nbttagcompound1 = new NBTTagCompound();
++                nbttagcompound1 = new NBTTagCompound(7); // Reaper - Use initial capacity
+                 nbttagcompound1.setByte("Y", (byte) (chunksection.getYPosition() >> 4 & 255));
+                 byte[] abyte = new byte[4096];
+                 NibbleArray nibblearray = new NibbleArray();
+diff --git a/src/main/java/net/minecraft/server/CommandAbstract.java b/src/main/java/net/minecraft/server/CommandAbstract.java
+index f4e3bafd675a1bae190cda9fe89ab01031cae2f6..39b770ab27c23369385aba281d405ce73587d5a0 100644
+--- a/src/main/java/net/minecraft/server/CommandAbstract.java
++++ b/src/main/java/net/minecraft/server/CommandAbstract.java
+@@ -51,7 +51,7 @@ public abstract class CommandAbstract implements ICommand {
+             ItemStack itemstack = ((EntityHuman) entity).inventory.getItemInHand();
+ 
+             if (!itemstack.isEmpty()) {
+-                nbttagcompound.set("SelectedItem", itemstack.save(new NBTTagCompound()));
++                nbttagcompound.set("SelectedItem", itemstack.save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+             }
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/EnchantmentManager.java b/src/main/java/net/minecraft/server/EnchantmentManager.java
+index c74d00b14b2362c82da3a3def9204dac75afbacf..9d3f2c6c2e8e29d290b5594948e87359c92dc8fe 100644
+--- a/src/main/java/net/minecraft/server/EnchantmentManager.java
++++ b/src/main/java/net/minecraft/server/EnchantmentManager.java
+@@ -62,7 +62,7 @@ public class EnchantmentManager {
+ 
+             if (enchantment != null) {
+                 int i = ((Integer) entry.getValue()).intValue();
+-                NBTTagCompound nbttagcompound = new NBTTagCompound();
++                NBTTagCompound nbttagcompound = new NBTTagCompound(2); // Reaper - Use initial capacity
+ 
+                 nbttagcompound.setShort("id", (short) Enchantment.getId(enchantment));
+                 nbttagcompound.setShort("lvl", (short) i);
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 8f860f77aebb16ec914ca61ce5c82abcabbbf077..979dc9cc9833fb015bf5be634c8a036c53a54bfe 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -2742,17 +2742,20 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+                 e = axisalignedbb.e,
+                 f = axisalignedbb.f;
+         double len = axisalignedbb.d - axisalignedbb.a;
+-        if (len < 0) d = a;
+-        if (len > 64) d = a + 64.0;
++        // Reaper start - Optimize
++        boolean broken = false;
++        if (len < 0) { d = a; broken = true; }
++        if (len > 64) { d = a + 64.0; broken = true; }
+ 
+         len = axisalignedbb.e - axisalignedbb.b;
+-        if (len < 0) e = b;
+-        if (len > 64) e = b + 64.0;
++        if (len < 0) { e = b; broken = true; }
++        if (len > 64) { e = b + 64.0; broken = true; }
+ 
+         len = axisalignedbb.f - axisalignedbb.c;
+-        if (len < 0) f = c;
+-        if (len > 64) f = c + 64.0;
+-        this.boundingBox = new AxisAlignedBB(a, b, c, d, e, f);
++        if (len < 0) { f = c; broken = true; }
++        if (len > 64) { f = c + 64.0; broken = true; }
++        this.boundingBox = broken ? new AxisAlignedBB(a, b, c, d, e, f) : axisalignedbb;
++        // Reaper end
+         // CraftBukkit end
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/EntityAreaEffectCloud.java b/src/main/java/net/minecraft/server/EntityAreaEffectCloud.java
+index 8b4260acfd1443f690e5d61f2870ca6444adc40c..e95da9f281d5dfeddb433bdf14fe4002b30998d2 100644
+--- a/src/main/java/net/minecraft/server/EntityAreaEffectCloud.java
++++ b/src/main/java/net/minecraft/server/EntityAreaEffectCloud.java
+@@ -462,7 +462,7 @@ public class EntityAreaEffectCloud extends Entity {
+             while (iterator.hasNext()) {
+                 MobEffect mobeffect = (MobEffect) iterator.next();
+ 
+-                nbttaglist.add(mobeffect.a(new NBTTagCompound()));
++                nbttaglist.add(mobeffect.a(new NBTTagCompound(5))); // Reaper - Use initial capacity
+             }
+ 
+             nbttagcompound.set("Effects", nbttaglist);
+diff --git a/src/main/java/net/minecraft/server/EntityArmorStand.java b/src/main/java/net/minecraft/server/EntityArmorStand.java
+index 5533d8fb77aef22c5b898a9aca92b4bfa97a7df0..ad9e6f19954805cc8462ec62ad54b6b9f83ec726 100644
+--- a/src/main/java/net/minecraft/server/EntityArmorStand.java
++++ b/src/main/java/net/minecraft/server/EntityArmorStand.java
+@@ -182,7 +182,7 @@ public class EntityArmorStand extends EntityLiving {
+         for (Iterator iterator = this.bz.iterator(); iterator.hasNext(); nbttaglist.add(nbttagcompound1)) {
+             ItemStack itemstack = (ItemStack) iterator.next();
+ 
+-            nbttagcompound1 = new NBTTagCompound();
++            nbttagcompound1 = new NBTTagCompound(4); // Reaper - Use initial capacity
+             if (!itemstack.isEmpty()) {
+                 itemstack.save(nbttagcompound1);
+             }
+@@ -196,7 +196,7 @@ public class EntityArmorStand extends EntityLiving {
+         for (Iterator iterator1 = this.by.iterator(); iterator1.hasNext(); nbttaglist1.add(nbttagcompound2)) {
+             ItemStack itemstack1 = (ItemStack) iterator1.next();
+ 
+-            nbttagcompound2 = new NBTTagCompound();
++            nbttagcompound2 = new NBTTagCompound(4); // Reaper - Use initial capacity
+             if (!itemstack1.isEmpty()) {
+                 itemstack1.save(nbttagcompound2);
+             }
+diff --git a/src/main/java/net/minecraft/server/EntityFireworks.java b/src/main/java/net/minecraft/server/EntityFireworks.java
+index cd11eadaa4a3fb4d56b9094979d51097087d61a6..93e64c0a1ad65fee45c2ac942c8cd9d61f93777b 100644
+--- a/src/main/java/net/minecraft/server/EntityFireworks.java
++++ b/src/main/java/net/minecraft/server/EntityFireworks.java
+@@ -204,7 +204,7 @@ public class EntityFireworks extends Entity {
+         ItemStack itemstack = (ItemStack) this.datawatcher.get(EntityFireworks.FIREWORK_ITEM);
+ 
+         if (!itemstack.isEmpty()) {
+-            nbttagcompound.set("FireworksItem", itemstack.save(new NBTTagCompound()));
++            nbttagcompound.set("FireworksItem", itemstack.save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         }
+         // Paper start
+         if (spawningEntity != null) {
+diff --git a/src/main/java/net/minecraft/server/EntityHorse.java b/src/main/java/net/minecraft/server/EntityHorse.java
+index cbc092a91a9f4cd20729c669fa65783e29d27ef0..03bb8cd396e683b5e5b4a9beae352095c55f16fe 100644
+--- a/src/main/java/net/minecraft/server/EntityHorse.java
++++ b/src/main/java/net/minecraft/server/EntityHorse.java
+@@ -36,7 +36,7 @@ public class EntityHorse extends EntityHorseAbstract {
+         super.b(nbttagcompound);
+         nbttagcompound.setInt("Variant", this.getVariant());
+         if (!this.inventoryChest.getItem(1).isEmpty()) {
+-            nbttagcompound.set("ArmorItem", this.inventoryChest.getItem(1).save(new NBTTagCompound()));
++            nbttagcompound.set("ArmorItem", this.inventoryChest.getItem(1).save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityHorseAbstract.java b/src/main/java/net/minecraft/server/EntityHorseAbstract.java
+index 796e71a306c98272b526a3c981f55e67b736dd12..d3e25e43063d34bbba7cafa79abb88348af0f707 100644
+--- a/src/main/java/net/minecraft/server/EntityHorseAbstract.java
++++ b/src/main/java/net/minecraft/server/EntityHorseAbstract.java
+@@ -729,7 +729,7 @@ public abstract class EntityHorseAbstract extends EntityAnimal implements IInven
+         nbttagcompound.setInt("Bukkit.MaxDomestication", this.maxDomestication); // CraftBukkit
+ 
+         if (!this.inventoryChest.getItem(0).isEmpty()) {
+-            nbttagcompound.set("SaddleItem", this.inventoryChest.getItem(0).save(new NBTTagCompound()));
++            nbttagcompound.set("SaddleItem", this.inventoryChest.getItem(0).save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityHorseChestedAbstract.java b/src/main/java/net/minecraft/server/EntityHorseChestedAbstract.java
+index 9a46680932ed05826d5f16bee51c32315fbdd913..9e1ea5ff044e6e888aa74b9a1f86ce9961ef65a4 100644
+--- a/src/main/java/net/minecraft/server/EntityHorseChestedAbstract.java
++++ b/src/main/java/net/minecraft/server/EntityHorseChestedAbstract.java
+@@ -73,7 +73,7 @@ public abstract class EntityHorseChestedAbstract extends EntityHorseAbstract {
+                 ItemStack itemstack = this.inventoryChest.getItem(i);
+ 
+                 if (!itemstack.isEmpty()) {
+-                    NBTTagCompound nbttagcompound1 = new NBTTagCompound();
++                    NBTTagCompound nbttagcompound1 = new NBTTagCompound(5); // Reaper - Use initial capacity
+ 
+                     nbttagcompound1.setByte("Slot", (byte) i);
+                     itemstack.save(nbttagcompound1);
+diff --git a/src/main/java/net/minecraft/server/EntityInsentient.java b/src/main/java/net/minecraft/server/EntityInsentient.java
+index d2bbcbee581a717152ef119d7fc2f117414fe85d..117dbf29ec1f7dfcd74126b2566dc7b992e248ff 100644
+--- a/src/main/java/net/minecraft/server/EntityInsentient.java
++++ b/src/main/java/net/minecraft/server/EntityInsentient.java
+@@ -309,7 +309,7 @@ public abstract class EntityInsentient extends EntityLiving {
+         for (Iterator iterator = this.by.iterator(); iterator.hasNext(); nbttaglist.add(nbttagcompound1)) {
+             ItemStack itemstack = (ItemStack) iterator.next();
+ 
+-            nbttagcompound1 = new NBTTagCompound();
++            nbttagcompound1 = new NBTTagCompound(4); // Reaper - Use initial capacity
+             if (!itemstack.isEmpty()) {
+                 itemstack.save(nbttagcompound1);
+             }
+@@ -323,7 +323,7 @@ public abstract class EntityInsentient extends EntityLiving {
+         for (Iterator iterator1 = this.bx.iterator(); iterator1.hasNext(); nbttaglist1.add(nbttagcompound2)) {
+             ItemStack itemstack1 = (ItemStack) iterator1.next();
+ 
+-            nbttagcompound2 = new NBTTagCompound();
++            nbttagcompound2 = new NBTTagCompound(4); // Reaper - Use initial capacity
+             if (!itemstack1.isEmpty()) {
+                 itemstack1.save(nbttagcompound2);
+             }
+@@ -357,7 +357,7 @@ public abstract class EntityInsentient extends EntityLiving {
+         nbttagcompound.set("HandDropChances", nbttaglist3);
+         nbttagcompound.setBoolean("Leashed", this.bE);
+         if (this.leashHolder != null) {
+-            nbttagcompound2 = new NBTTagCompound();
++            nbttagcompound2 = new NBTTagCompound(5); // Reaper - Use initial capacity
+             if (this.leashHolder instanceof EntityLiving) {
+                 UUID uuid = this.leashHolder.getUniqueID();
+ 
+diff --git a/src/main/java/net/minecraft/server/EntityItem.java b/src/main/java/net/minecraft/server/EntityItem.java
+index 6dbb8152acad8060315ebc22d212649f152cd869..ee571529d5ac0359d7740ab04f3f44b1ecffd5b7 100644
+--- a/src/main/java/net/minecraft/server/EntityItem.java
++++ b/src/main/java/net/minecraft/server/EntityItem.java
+@@ -198,6 +198,7 @@ public class EntityItem extends Entity implements HopperPusher {
+     }
+ 
+     private boolean a(EntityItem entityitem) {
++        /* // Reaper start - Rework to optimize
+         if (entityitem == this) {
+             return false;
+         } else if (entityitem.isAlive() && this.isAlive()) {
+@@ -240,6 +241,44 @@ public class EntityItem extends Entity implements HopperPusher {
+         } else {
+             return false;
+         }
++        */
++        if (entityitem == this) return false;
++        if (!entityitem.isAlive() || !this.isAlive()) return false;
++        if (this.pickupDelay == 32767 || entityitem.pickupDelay == 32767) return false;
++        if (this.age == -32768 || entityitem.age == -32768) return false;
++
++        ItemStack otherItemStack = entityitem.getItemStack();
++        Item otherItem = otherItemStack.getItem();
++        if (otherItem == null) return false;
++        ItemStack thisItemStack = this.getItemStack();
++
++        if (otherItem != thisItemStack.getItem()) return false;
++        if (otherItem.k() && otherItemStack.getData() != thisItemStack.getData()) return false;
++        if (otherItemStack.getCount() + thisItemStack.getCount() > otherItemStack.getMaxStackSize()) return false;
++        if (thisItemStack.hasTag() != otherItemStack.hasTag()) return false;
++        if (thisItemStack.hasTag() && !thisItemStack.getTag().equals(otherItemStack.getTag())) return false;
++
++        EntityItem thisEntityItem = this;
++
++        // Flip items
++        if (otherItemStack.getCount() < thisItemStack.getCount()) {
++            thisEntityItem = entityitem;
++            entityitem = this;
++
++            thisItemStack = thisEntityItem.getItemStack();
++            otherItemStack = entityitem.getItemStack();
++        }
++
++        // Spigot start
++        if (org.bukkit.craftbukkit.event.CraftEventFactory.callItemMergeEvent(entityitem, thisEntityItem).isCancelled()) return false; // CraftBukkit
++        thisItemStack.add(otherItemStack.getCount());
++        thisEntityItem.pickupDelay = Math.max(entityitem.pickupDelay, thisEntityItem.pickupDelay);
++        thisEntityItem.age = Math.min(entityitem.age, thisEntityItem.age);
++        thisEntityItem.setItemStack(thisItemStack);
++        entityitem.die();
++        // Spigot end
++        return true;
++        // Reaper end
+     }
+ 
+     public void j() {
+@@ -302,7 +341,7 @@ public class EntityItem extends Entity implements HopperPusher {
+         }
+ 
+         if (!this.getItemStack().isEmpty()) {
+-            nbttagcompound.set("Item", this.getItemStack().save(new NBTTagCompound()));
++            nbttagcompound.set("Item", this.getItemStack().save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityItemFrame.java b/src/main/java/net/minecraft/server/EntityItemFrame.java
+index d075706a3d7db9b05d3515a60e31fec8d7688af1..189d8b400485c6d12fbc171a37f2566c681b6658 100644
+--- a/src/main/java/net/minecraft/server/EntityItemFrame.java
++++ b/src/main/java/net/minecraft/server/EntityItemFrame.java
+@@ -170,7 +170,7 @@ public class EntityItemFrame extends EntityHanging {
+ 
+     public void b(NBTTagCompound nbttagcompound) {
+         if (!this.getItem().isEmpty()) {
+-            nbttagcompound.set("Item", this.getItem().save(new NBTTagCompound()));
++            nbttagcompound.set("Item", this.getItem().save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+             nbttagcompound.setByte("ItemRotation", (byte) this.getRotation());
+             nbttagcompound.setFloat("ItemDropChance", this.e);
+         }
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 858d0cf1715e6db84ac96c76c97b59bd82ed9341..190787bff1de7967b7b0d9d48b39fea67589dd81 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -488,7 +488,7 @@ public abstract class EntityLiving extends Entity {
+             while (iterator.hasNext()) {
+                 MobEffect mobeffect = (MobEffect) iterator.next();
+ 
+-                nbttaglist.add(mobeffect.a(new NBTTagCompound()));
++                nbttaglist.add(mobeffect.a(new NBTTagCompound(5))); // Reaper - Use initial capacity
+             }
+ 
+             nbttagcompound.set("ActiveEffects", nbttaglist);
+diff --git a/src/main/java/net/minecraft/server/EntityLlama.java b/src/main/java/net/minecraft/server/EntityLlama.java
+index d2a72f28e3b22cd6af63005f6f85e9c927c7b59f..3df146f3b2d6d27663747251e4507f6fa5676910 100644
+--- a/src/main/java/net/minecraft/server/EntityLlama.java
++++ b/src/main/java/net/minecraft/server/EntityLlama.java
+@@ -39,7 +39,7 @@ public class EntityLlama extends EntityHorseChestedAbstract implements IRangedEn
+         nbttagcompound.setInt("Variant", this.getVariant());
+         nbttagcompound.setInt("Strength", this.getStrength());
+         if (!this.inventoryChest.getItem(1).isEmpty()) {
+-            nbttagcompound.set("DecorItem", this.inventoryChest.getItem(1).save(new NBTTagCompound()));
++            nbttagcompound.set("DecorItem", this.inventoryChest.getItem(1).save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 67ff382f2a6fedbba37097ee331994c8669c82a0..47dfef574cc151183e6852aa1dfc1d44d682c277 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -190,7 +190,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         nbttagcompound.setInt("playerGameType", this.playerInteractManager.getGameMode().getId());
+         nbttagcompound.setBoolean("seenCredits", this.cq);
+         if (this.cv != null) {
+-            NBTTagCompound nbttagcompound1 = new NBTTagCompound();
++            NBTTagCompound nbttagcompound1 = new NBTTagCompound(3); // Reaper - Use initial capacity
+ 
+             nbttagcompound1.setDouble("x", this.cv.x);
+             nbttagcompound1.setDouble("y", this.cv.y);
+@@ -202,7 +202,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         Entity entity1 = this.bJ();
+ 
+         if (entity1 != null && entity != this && entity.b(EntityPlayer.class).size() == 1) {
+-            NBTTagCompound nbttagcompound2 = new NBTTagCompound();
++            NBTTagCompound nbttagcompound2 = new NBTTagCompound(3); // Reaper - Use initial capacity
+             NBTTagCompound nbttagcompound3 = new NBTTagCompound();
+ 
+             entity.d(nbttagcompound3);
+diff --git a/src/main/java/net/minecraft/server/EntityPotion.java b/src/main/java/net/minecraft/server/EntityPotion.java
+index 13d17fc716517c2bb82ef82ba06244a10d47e814..a0869d47f62555a6c348ab2e6a44d96d1f80b71a 100644
+--- a/src/main/java/net/minecraft/server/EntityPotion.java
++++ b/src/main/java/net/minecraft/server/EntityPotion.java
+@@ -262,7 +262,7 @@ public class EntityPotion extends EntityProjectile {
+         ItemStack itemstack = this.getItem();
+ 
+         if (!itemstack.isEmpty()) {
+-            nbttagcompound.set("Potion", itemstack.save(new NBTTagCompound()));
++            nbttagcompound.set("Potion", itemstack.save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityTippedArrow.java b/src/main/java/net/minecraft/server/EntityTippedArrow.java
+index 35c811c76db94e3c6b88c54529b9c855919cf2d8..c371da2108342979723e5bfd5adb5a7b21fac056 100644
+--- a/src/main/java/net/minecraft/server/EntityTippedArrow.java
++++ b/src/main/java/net/minecraft/server/EntityTippedArrow.java
+@@ -166,7 +166,7 @@ public class EntityTippedArrow extends EntityArrow {
+             while (iterator.hasNext()) {
+                 MobEffect mobeffect = (MobEffect) iterator.next();
+ 
+-                nbttaglist.add(mobeffect.a(new NBTTagCompound()));
++                nbttaglist.add(mobeffect.a(new NBTTagCompound(5))); // Reaper - Use initial capacity
+             }
+ 
+             nbttagcompound.set("CustomPotionEffects", nbttaglist);
+diff --git a/src/main/java/net/minecraft/server/EntityVillager.java b/src/main/java/net/minecraft/server/EntityVillager.java
+index a4b9a60eb0a594bcbf263f2229b7747ee17b7648..9781b129ff692e47b2b16331eb5fc3aca8a2660c 100644
+--- a/src/main/java/net/minecraft/server/EntityVillager.java
++++ b/src/main/java/net/minecraft/server/EntityVillager.java
+@@ -247,7 +247,7 @@ public class EntityVillager extends EntityAgeable implements NPC, IMerchant {
+             ItemStack itemstack = this.inventory.getItem(i);
+ 
+             if (!itemstack.isEmpty()) {
+-                nbttaglist.add(itemstack.save(new NBTTagCompound()));
++                nbttaglist.add(itemstack.save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+             }
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/GenericAttributes.java b/src/main/java/net/minecraft/server/GenericAttributes.java
+index 21865021b428ebc4a21416a364e1519bd9e97858..9218eafdbe3e6398962ab8a358623a2673ec4c15 100644
+--- a/src/main/java/net/minecraft/server/GenericAttributes.java
++++ b/src/main/java/net/minecraft/server/GenericAttributes.java
+@@ -24,8 +24,11 @@ public class GenericAttributes {
+     // Spigot end
+ 
+     public static NBTTagList a(AttributeMapBase attributemapbase) {
+-        NBTTagList nbttaglist = new NBTTagList();
+-        Iterator iterator = attributemapbase.a().iterator();
++        // Reaper start - Use initial capacity
++        Collection<AttributeInstance> values = attributemapbase.a();
++        NBTTagList nbttaglist = new NBTTagList(values.size());
++        Iterator iterator = values.iterator();
++        // Reaper end
+ 
+         while (iterator.hasNext()) {
+             AttributeInstance attributeinstance = (AttributeInstance) iterator.next();
+@@ -37,7 +40,7 @@ public class GenericAttributes {
+     }
+ 
+     private static NBTTagCompound a(AttributeInstance attributeinstance) {
+-        NBTTagCompound nbttagcompound = new NBTTagCompound();
++        NBTTagCompound nbttagcompound = new NBTTagCompound(3); // Reaper - Use initial capacity
+         IAttribute iattribute = attributeinstance.getAttribute();
+ 
+         nbttagcompound.setString("Name", iattribute.getName());
+@@ -45,7 +48,7 @@ public class GenericAttributes {
+         Collection collection = attributeinstance.c();
+ 
+         if (collection != null && !collection.isEmpty()) {
+-            NBTTagList nbttaglist = new NBTTagList();
++            NBTTagList nbttaglist = new NBTTagList(collection.size()); // Reaper - Use initial capacity
+             Iterator iterator = collection.iterator();
+ 
+             while (iterator.hasNext()) {
+@@ -63,7 +66,7 @@ public class GenericAttributes {
+     }
+ 
+     public static NBTTagCompound a(AttributeModifier attributemodifier) {
+-        NBTTagCompound nbttagcompound = new NBTTagCompound();
++        NBTTagCompound nbttagcompound = new NBTTagCompound(5); // Reaper - Use initial capacity
+ 
+         nbttagcompound.setString("Name", attributemodifier.b());
+         nbttagcompound.setDouble("Amount", attributemodifier.d());
+diff --git a/src/main/java/net/minecraft/server/InventoryEnderChest.java b/src/main/java/net/minecraft/server/InventoryEnderChest.java
+index 37b494b7806be07a5eaea1b2886da67e78838f4c..f4a7525416ddb6ce0b904e847c4e22ef0f47ea71 100644
+--- a/src/main/java/net/minecraft/server/InventoryEnderChest.java
++++ b/src/main/java/net/minecraft/server/InventoryEnderChest.java
+@@ -54,7 +54,7 @@ public class InventoryEnderChest extends InventorySubcontainer {
+             ItemStack itemstack = this.getItem(i);
+ 
+             if (!itemstack.isEmpty()) {
+-                NBTTagCompound nbttagcompound = new NBTTagCompound();
++                NBTTagCompound nbttagcompound = new NBTTagCompound(5); // Reaper - Use initial capacity
+ 
+                 nbttagcompound.setByte("Slot", (byte) i);
+                 itemstack.save(nbttagcompound);
+diff --git a/src/main/java/net/minecraft/server/ItemSkull.java b/src/main/java/net/minecraft/server/ItemSkull.java
+index beeaec95eca074c80881e46894ff14f071b20641..1420cc794744fcac6dddd1c29ca616b7c138effc 100644
+--- a/src/main/java/net/minecraft/server/ItemSkull.java
++++ b/src/main/java/net/minecraft/server/ItemSkull.java
+@@ -140,7 +140,7 @@ public class ItemSkull extends Item {
+ 
+                 @Override
+                 public boolean apply(GameProfile gameprofile) {
+-                    nbttagcompound.set("SkullOwner", GameProfileSerializer.serialize(new NBTTagCompound(), gameprofile));
++                    nbttagcompound.set("SkullOwner", GameProfileSerializer.serialize(new NBTTagCompound(3), gameprofile)); // Reaper - Use initial capacity
+                     return false;
+                 }
+             }, false);
+diff --git a/src/main/java/net/minecraft/server/ItemStack.java b/src/main/java/net/minecraft/server/ItemStack.java
+index 34529e40b622e15870f6cf474b31b2368a674879..012c9dd54db32b573109f5567851cd96b91699a0 100644
+--- a/src/main/java/net/minecraft/server/ItemStack.java
++++ b/src/main/java/net/minecraft/server/ItemStack.java
+@@ -106,7 +106,7 @@ public final class ItemStack {
+                 return;
+             }
+ 
+-            NBTTagCompound savedStack = new NBTTagCompound();
++            NBTTagCompound savedStack = new NBTTagCompound(4); // Reaper - Use initial capacity
+             this.save(savedStack);
+             MinecraftServer.getServer().dataConverterManager.a(DataConverterTypes.ITEM_INSTANCE, savedStack); // PAIL: convert
+             this.load(savedStack);
+@@ -120,16 +120,22 @@ public final class ItemStack {
+ 
+     // CraftBukkit - break into own method
+     public void load(NBTTagCompound nbttagcompound) {
+-        this.item = nbttagcompound.hasKeyOfType("id", 8) ? Item.b(nbttagcompound.getString("id")) : Item.getItemOf(Blocks.AIR); // Paper - fix NumberFormatException caused by attempting to read an EMPTY ItemStack
++        // Reaper start - Optimize
++        String id = nbttagcompound.getStringNullable("id");
++        this.item = id != null ? Item.b(id) : Item.getItemOf(Blocks.AIR); // Paper - fix NumberFormatException caused by attempting to read an EMPTY ItemStack
++        // Reaper end
+         this.count = nbttagcompound.getByte("Count");
+         // CraftBukkit start - Route through setData for filtering
+         // this.damage = Math.max(0, nbttagcompound.getShort("Damage"));
+         this.setData(nbttagcompound.getShort("Damage"));
+         // CraftBukkit end
+ 
+-        if (nbttagcompound.hasKeyOfType("tag", 10)) {
++        // Reaper start - Optimize
++        NBTTagCompound tag = nbttagcompound.getCompoundNullable("tag");
++        if (tag != null) {
+             // CraftBukkit start - make defensive copy as this data may be coming from the save thread
+-            this.tag = (NBTTagCompound) nbttagcompound.getCompound("tag").clone();
++            this.tag = (NBTTagCompound) tag.clone();
++            // Reaper end
+             processEnchantOrder(this.tag); // Paper
+             if (this.item != null) {
+                 this.item.a(this.tag);
+@@ -645,12 +651,18 @@ public final class ItemStack {
+         NBTTagCompound nbttagcompound = this.d("display");
+ 
+         if (nbttagcompound != null) {
+-            if (nbttagcompound.hasKeyOfType("Name", 8)) {
+-                return nbttagcompound.getString("Name");
++            // Reaper start - Optimize
++            String name = nbttagcompound.getStringNullable("Name");
++            if (name != null) {
++                return name;
++                // Reaper end
+             }
+ 
+-            if (nbttagcompound.hasKeyOfType("LocName", 8)) {
+-                return LocaleI18n.get(nbttagcompound.getString("LocName"));
++            // Reaper start - Optimize
++            String locName = nbttagcompound.getStringNullable("LocName");
++            if (locName != null) {
++                return LocaleI18n.get(locName);
++                // Reaper end
+             }
+         }
+ 
+@@ -822,7 +834,7 @@ public final class ItemStack {
+         IChatBaseComponent ichatbasecomponent = (new ChatComponentText("[")).addSibling(chatcomponenttext).a("]");
+ 
+         if (!this.g) {
+-            NBTTagCompound nbttagcompound = this.save(new NBTTagCompound());
++            NBTTagCompound nbttagcompound = this.save(new NBTTagCompound(4)); // Reaper - Use initial capacity
+ 
+             ichatbasecomponent.getChatModifier().setChatHoverable(new ChatHoverable(ChatHoverable.EnumHoverAction.SHOW_ITEM, new ChatComponentText(nbttagcompound.toString())));
+             ichatbasecomponent.getChatModifier().setColor(this.v().e);
+diff --git a/src/main/java/net/minecraft/server/MerchantRecipe.java b/src/main/java/net/minecraft/server/MerchantRecipe.java
+index 96f3e16d7a0d89a7009754b2ab7a735c059eb6e9..7b8f72aedae14474218bf40cd6412655f65396d8 100644
+--- a/src/main/java/net/minecraft/server/MerchantRecipe.java
++++ b/src/main/java/net/minecraft/server/MerchantRecipe.java
+@@ -124,12 +124,12 @@ public class MerchantRecipe {
+     }
+ 
+     public NBTTagCompound k() {
+-        NBTTagCompound nbttagcompound = new NBTTagCompound();
++        NBTTagCompound nbttagcompound = new NBTTagCompound(6); // Reaper - Use initial capacity
+ 
+-        nbttagcompound.set("buy", this.buyingItem1.save(new NBTTagCompound()));
+-        nbttagcompound.set("sell", this.sellingItem.save(new NBTTagCompound()));
++        nbttagcompound.set("buy", this.buyingItem1.save(new NBTTagCompound(4))); // Reaper - Use initial capacity
++        nbttagcompound.set("sell", this.sellingItem.save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         if (!this.buyingItem2.isEmpty()) {
+-            nbttagcompound.set("buyB", this.buyingItem2.save(new NBTTagCompound()));
++            nbttagcompound.set("buyB", this.buyingItem2.save(new NBTTagCompound(4))); // Reaper - Use initial capacity
+         }
+ 
+         nbttagcompound.setInt("uses", this.uses);
+diff --git a/src/main/java/net/minecraft/server/NBTBase.java b/src/main/java/net/minecraft/server/NBTBase.java
+index 9a45ef2b92bb25616c0045e703f7e4fed26bf431..19d7cee6f0582a30968d8b30067abec6f389905c 100644
+--- a/src/main/java/net/minecraft/server/NBTBase.java
++++ b/src/main/java/net/minecraft/server/NBTBase.java
+@@ -7,6 +7,10 @@ import java.io.IOException;
+ public abstract class NBTBase {
+ 
+     public static final String[] a = new String[] { "END", "BYTE", "SHORT", "INT", "LONG", "FLOAT", "DOUBLE", "BYTE[]", "STRING", "LIST", "COMPOUND", "INT[]", "LONG[]"};
++    // Reaper start - Use constants
++    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
++    public static final int[] EMPTY_INT_ARRAY = new int[0];
++    // Reaper end
+ 
+     abstract void write(DataOutput dataoutput) throws IOException;
+ 
+diff --git a/src/main/java/net/minecraft/server/NBTTagCompound.java b/src/main/java/net/minecraft/server/NBTTagCompound.java
+index 82c2537b30ad2f17bdcb1828561ecea09fde445f..44854e9a67536fce441ad0639f9c77ffc4bf95c1 100644
+--- a/src/main/java/net/minecraft/server/NBTTagCompound.java
++++ b/src/main/java/net/minecraft/server/NBTTagCompound.java
+@@ -22,18 +22,18 @@ public class NBTTagCompound extends NBTBase {
+ 
+     private static final Logger b = LogManager.getLogger();
+     private static final Pattern c = Pattern.compile("[A-Za-z0-9._+-]+");
+-    public final Map<String, NBTBase> map = Maps.newHashMap(); // Paper
++    public final Map<String, NBTBase> map; // Paper // Reaper
+ 
+-    public NBTTagCompound() {}
++    // Reaper start
++    public NBTTagCompound() { map = new java.util.HashMap<>(); }
++    public NBTTagCompound(int initialCapacity) { map = new it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap<>(initialCapacity); }
++    // Reaper end
+ 
+     void write(DataOutput dataoutput) throws IOException {
+-        Iterator iterator = this.map.keySet().iterator();
+-
+-        while (iterator.hasNext()) {
+-            String s = (String) iterator.next();
+-            NBTBase nbtbase = (NBTBase) this.map.get(s);
+-
+-            a(s, nbtbase, dataoutput);
++        // Reaper start - Optimize
++        for (Map.Entry<String, NBTBase> entry : this.map.entrySet()) {
++            a(entry.getKey(), entry.getValue(), dataoutput);
++            // Reaper end
+         }
+ 
+         dataoutput.writeByte(0);
+@@ -148,6 +148,12 @@ public class NBTTagCompound extends NBTBase {
+         return this.map.containsKey(s);
+     }
+ 
++    // Reaper start
++    public static boolean isKeyOfType(byte type, int needed) {
++        return type == needed ? true : (needed != 99 ? false : type == 1 || type == 2 || type == 3 || type == 4 || type == 5 || type == 6);
++    }
++    // Reaper end
++
+     public boolean hasKeyOfType(String s, int i) {
+         byte b0 = this.d(s);
+ 
+@@ -156,8 +162,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public byte getByte(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 99)) {
+-                return ((NBTNumber) this.map.get(s)).g();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && isKeyOfType(nbt.getTypeId(), 99)) {
++                return ((NBTNumber) nbt).g();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             ;
+@@ -168,8 +177,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public short getShort(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 99)) {
+-                return ((NBTNumber) this.map.get(s)).f();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && isKeyOfType(nbt.getTypeId(), 99)) {
++                return ((NBTNumber) nbt).f();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             ;
+@@ -180,8 +192,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public int getInt(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 99)) {
+-                return ((NBTNumber) this.map.get(s)).e();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && isKeyOfType(nbt.getTypeId(), 99)) {
++                return ((NBTNumber) nbt).e();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             ;
+@@ -192,8 +207,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public long getLong(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 99)) {
+-                return ((NBTNumber) this.map.get(s)).d();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && isKeyOfType(nbt.getTypeId(), 99)) {
++                return ((NBTNumber) nbt).d();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             ;
+@@ -204,8 +222,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public float getFloat(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 99)) {
+-                return ((NBTNumber) this.map.get(s)).i();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && isKeyOfType(nbt.getTypeId(), 99)) {
++                return ((NBTNumber) nbt).i();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             ;
+@@ -216,8 +237,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public double getDouble(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 99)) {
+-                return ((NBTNumber) this.map.get(s)).asDouble();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && isKeyOfType(nbt.getTypeId(), 99)) {
++                return ((NBTNumber) nbt).asDouble();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             ;
+@@ -228,8 +252,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public String getString(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 8)) {
+-                return ((NBTBase) this.map.get(s)).c_();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 8) {
++                return ((NBTBase) nbt).c_();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             ;
+@@ -238,34 +265,72 @@ public class NBTTagCompound extends NBTBase {
+         return "";
+     }
+ 
++    // Reaper start
++    public String getStringNullable(String s) {
++        try {
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 8) {
++                return ((NBTBase) nbt).c_();
++            }
++        } catch (ClassCastException classcastexception) {
++        }
++
++        return null;
++    }
++    // Reaper end
++
+     public byte[] getByteArray(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 7)) {
+-                return ((NBTTagByteArray) this.map.get(s)).c();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 7) {
++                return ((NBTTagByteArray) nbt).c();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             throw new ReportedException(this.a(s, 7, classcastexception));
+         }
+ 
+-        return new byte[0];
++        return NBTBase.EMPTY_BYTE_ARRAY; // Reaper - Use constants
+     }
+ 
++    // Reaper start
++    public byte[] getByteArrayNullable(String s) {
++        try {
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 7) {
++                return ((NBTTagByteArray) nbt).c();
++            }
++        } catch (ClassCastException classcastexception) {
++            throw new ReportedException(this.a(s, 7, classcastexception));
++        }
++
++        return null;
++    }
++    // Reaper end
++
+     public int[] getIntArray(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 11)) {
+-                return ((NBTTagIntArray) this.map.get(s)).d();
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 11) {
++                return ((NBTTagIntArray) nbt).d();
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             throw new ReportedException(this.a(s, 11, classcastexception));
+         }
+ 
+-        return new int[0];
++        return NBTBase.EMPTY_INT_ARRAY; // Reaper - Use constants
+     }
+ 
+     public NBTTagCompound getCompound(String s) {
+         try {
+-            if (this.hasKeyOfType(s, 10)) {
+-                return (NBTTagCompound) this.map.get(s);
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 10) {
++                return (NBTTagCompound) nbt;
++                // Reaper end
+             }
+         } catch (ClassCastException classcastexception) {
+             throw new ReportedException(this.a(s, 10, classcastexception));
+@@ -274,13 +339,31 @@ public class NBTTagCompound extends NBTBase {
+         return new NBTTagCompound();
+     }
+ 
++    // Reaper start
++    public NBTTagCompound getCompoundNullable(String s) {
++        try {
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 10) {
++                return (NBTTagCompound) nbt;
++            }
++        } catch (ClassCastException classcastexception) {
++            throw new ReportedException(this.a(s, 10, classcastexception));
++        }
++
++        return null;
++    }
++    // Reaper end
++
+     public NBTTagList getList(String s, int i) {
+         try {
+-            if (this.d(s) == 9) {
+-                NBTTagList nbttaglist = (NBTTagList) this.map.get(s);
++            // Reaper start - Optimize
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 9) {
++                NBTTagList nbttaglist = (NBTTagList) nbt;
++                // Reaper end
+ 
+                 if (!nbttaglist.isEmpty() && nbttaglist.g() != i) {
+-                    return new NBTTagList();
++                    return new NBTTagList(0); // Reaper - Optimize
+                 }
+ 
+                 return nbttaglist;
+@@ -289,9 +372,30 @@ public class NBTTagCompound extends NBTBase {
+             throw new ReportedException(this.a(s, 9, classcastexception));
+         }
+ 
+-        return new NBTTagList();
++        return new NBTTagList(0); // Reaper - Optimize
+     }
+ 
++    // Reaper start
++    public NBTTagList getListNullable(String s, int i) {
++        try {
++            NBTBase nbt = this.map.get(s);
++            if (nbt != null && nbt.getTypeId() == 9) {
++                NBTTagList nbttaglist = (NBTTagList) nbt;
++
++                if (!nbttaglist.isEmpty() && nbttaglist.g() != i) {
++                    return null;
++                }
++
++                return nbttaglist;
++            }
++        } catch (ClassCastException classcastexception) {
++            throw new ReportedException(this.a(s, 9, classcastexception));
++        }
++
++        return null;
++    }
++    // Reaper end
++
+     public boolean getBoolean(String s) {
+         return this.getByte(s) != 0;
+     }
+@@ -302,6 +406,7 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public String toString() {
+         StringBuilder stringbuilder = new StringBuilder("{");
++        /* // Reaper start - Optimize
+         Object object = this.map.keySet();
+ 
+         if (NBTTagCompound.b.isDebugEnabled()) {
+@@ -312,12 +417,14 @@ public class NBTTagCompound extends NBTBase {
+         }
+ 
+         String s;
++        */
+ 
+-        for (Iterator iterator = ((Collection) object).iterator(); iterator.hasNext(); stringbuilder.append(s(s)).append(':').append(this.map.get(s))) {
+-            s = (String) iterator.next();
++        for (Map.Entry<String, NBTBase> entry : this.map.entrySet()) {
+             if (stringbuilder.length() != 1) {
+                 stringbuilder.append(',');
+             }
++            stringbuilder.append(s(entry.getKey())).append(':').append(entry.getValue());
++            // Reaper end
+         }
+ 
+         return stringbuilder.append('}').toString();
+@@ -355,12 +462,11 @@ public class NBTTagCompound extends NBTBase {
+ 
+     public NBTTagCompound g() {
+         NBTTagCompound nbttagcompound = new NBTTagCompound();
+-        Iterator iterator = this.map.keySet().iterator();
++        // Reaper start - Optimize
+ 
+-        while (iterator.hasNext()) {
+-            String s = (String) iterator.next();
+-
+-            nbttagcompound.set(s, ((NBTBase) this.map.get(s)).clone());
++        for (Map.Entry<String, NBTBase> entry : this.map.entrySet()) {
++            nbttagcompound.set(entry.getKey(), entry.getValue().clone());
++            // Reaper end
+         }
+ 
+         return nbttagcompound;
+@@ -407,11 +513,11 @@ public class NBTTagCompound extends NBTBase {
+     }
+ 
+     public void a(NBTTagCompound nbttagcompound) {
+-        Iterator iterator = nbttagcompound.map.keySet().iterator();
+-
+-        while (iterator.hasNext()) {
+-            String s = (String) iterator.next();
+-            NBTBase nbtbase = (NBTBase) nbttagcompound.map.get(s);
++        // Reaper start - Optimize
++        for (Map.Entry<String, NBTBase> entry : nbttagcompound.map.entrySet()) {
++            String s = entry.getKey();
++            NBTBase nbtbase = entry.getValue();
++            // Reaper end
+ 
+             if (nbtbase.getTypeId() == 10) {
+                 if (this.hasKeyOfType(s, 10)) {
+diff --git a/src/main/java/net/minecraft/server/NBTTagList.java b/src/main/java/net/minecraft/server/NBTTagList.java
+index 9833f80b170af390530f4d4c7aca535f28295c64..7a94a22b87db376a30157ab3bd13bd138d1146e2 100644
+--- a/src/main/java/net/minecraft/server/NBTTagList.java
++++ b/src/main/java/net/minecraft/server/NBTTagList.java
+@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
+ public class NBTTagList extends NBTBase {
+ 
+     private static final Logger b = LogManager.getLogger();
+-    public List<NBTBase> list = Lists.newArrayList(); // Paper
++    public List<NBTBase> list; // Paper // Reaper
+     // Paper start
+     public void sort(java.util.Comparator<? extends NBTBase> comparator) {
+         //noinspection unchecked
+@@ -22,7 +22,10 @@ public class NBTTagList extends NBTBase {
+     // Paper end
+     private byte type = 0;
+ 
+-    public NBTTagList() {}
++    // Reaper start
++    public NBTTagList() { list = new java.util.ArrayList<>(); }
++    public NBTTagList(int initialCapacity) { list = new java.util.ArrayList<>(initialCapacity); }
++    // Reaper end
+ 
+     void write(DataOutput dataoutput) throws IOException {
+         if (this.list.isEmpty()) {
+@@ -132,7 +135,7 @@ public class NBTTagList extends NBTBase {
+             }
+         }
+ 
+-        return new NBTTagCompound();
++        return new NBTTagCompound(0); // Reaper - Optimize
+     }
+ 
+     public int c(int i) {
+@@ -156,7 +159,7 @@ public class NBTTagList extends NBTBase {
+             }
+         }
+ 
+-        return new int[0];
++        return NBTBase.EMPTY_INT_ARRAY; // Reaper - Use constants
+     }
+ 
+     public final double getDoubleAt(int i) { return this.f(i); } // Paper - OBFHELPER
+diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+index 38b8d88875cb77030f4088bdbd30ca1bab93f989..f6b15a4d78e8b7ae7213b2a2bbbf6dc6e74b1086 100644
+--- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
++++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+@@ -293,11 +293,13 @@ public class PlayerInteractManager {
+ 
+             // Tell client the block is gone immediately then process events
+             // Don't tell the client if its a creative sword break because its not broken!
++            /* // Reaper start - Optimize
+             if (world.getTileEntity(blockposition) == null && !isSwordNoBreak) {
+                 PacketPlayOutBlockChange packet = new PacketPlayOutBlockChange(this.world, blockposition);
+                 packet.block = Blocks.AIR.getBlockData();
+                 ((EntityPlayer) this.player).playerConnection.sendPacket(packet);
+             }
++            */ // Reaper end
+ 
+             event = new BlockBreakEvent(block, this.player.getBukkitEntity());
+ 
+diff --git a/src/main/java/net/minecraft/server/PlayerInventory.java b/src/main/java/net/minecraft/server/PlayerInventory.java
+index 9cb13774783704251e82d05b6d921cc1a967b0e4..56f8eab6f6e3b8e9eff4cc1e4f72819594298507 100644
+--- a/src/main/java/net/minecraft/server/PlayerInventory.java
++++ b/src/main/java/net/minecraft/server/PlayerInventory.java
+@@ -473,7 +473,7 @@ public class PlayerInventory implements IInventory {
+ 
+         for (i = 0; i < this.items.size(); ++i) {
+             if (!((ItemStack) this.items.get(i)).isEmpty()) {
+-                nbttagcompound = new NBTTagCompound();
++                nbttagcompound = new NBTTagCompound(5); // Reaper - Use initial capacity
+                 nbttagcompound.setByte("Slot", (byte) i);
+                 ((ItemStack) this.items.get(i)).save(nbttagcompound);
+                 nbttaglist.add(nbttagcompound);
+@@ -482,7 +482,7 @@ public class PlayerInventory implements IInventory {
+ 
+         for (i = 0; i < this.armor.size(); ++i) {
+             if (!((ItemStack) this.armor.get(i)).isEmpty()) {
+-                nbttagcompound = new NBTTagCompound();
++                nbttagcompound = new NBTTagCompound(5); // Reaper - Use initial capacity
+                 nbttagcompound.setByte("Slot", (byte) (i + 100));
+                 ((ItemStack) this.armor.get(i)).save(nbttagcompound);
+                 nbttaglist.add(nbttagcompound);
+@@ -491,7 +491,7 @@ public class PlayerInventory implements IInventory {
+ 
+         for (i = 0; i < this.extraSlots.size(); ++i) {
+             if (!((ItemStack) this.extraSlots.get(i)).isEmpty()) {
+-                nbttagcompound = new NBTTagCompound();
++                nbttagcompound = new NBTTagCompound(5); // Reaper - Use initial capacity
+                 nbttagcompound.setByte("Slot", (byte) (i + 150));
+                 ((ItemStack) this.extraSlots.get(i)).save(nbttagcompound);
+                 nbttaglist.add(nbttagcompound);
+diff --git a/src/main/java/net/minecraft/server/TileEntity.java b/src/main/java/net/minecraft/server/TileEntity.java
+index 54bfbfc6bcdf033853becd8c363f79d0a50c9040..d63c279b0967e3af0573d208bf26b79253b1ddb5 100644
+--- a/src/main/java/net/minecraft/server/TileEntity.java
++++ b/src/main/java/net/minecraft/server/TileEntity.java
+@@ -169,7 +169,7 @@ public abstract class TileEntity implements KeyedObject {
+     }
+ 
+     public NBTTagCompound d() {
+-        return this.c(new NBTTagCompound());
++        return this.c(new NBTTagCompound(4)); // Reaper - Use initial capacity
+     }
+ 
+     public boolean y() {
+diff --git a/src/main/java/net/minecraft/server/TileEntityBanner.java b/src/main/java/net/minecraft/server/TileEntityBanner.java
+index f16706961fa9be92897fceac6261cd4286228dd1..e460748f2f50aec1ad11e86f334535e76069ef76 100644
+--- a/src/main/java/net/minecraft/server/TileEntityBanner.java
++++ b/src/main/java/net/minecraft/server/TileEntityBanner.java
+@@ -89,7 +89,7 @@ public class TileEntityBanner extends TileEntity implements INamableTileEntity {
+     }
+ 
+     public NBTTagCompound d() {
+-        return this.save(new NBTTagCompound());
++        return this.save(new NBTTagCompound(7)); // Reaper - Use initial capacity
+     }
+ 
+     public static int b(ItemStack itemstack) {
+diff --git a/src/main/java/net/minecraft/server/TileEntityBeacon.java b/src/main/java/net/minecraft/server/TileEntityBeacon.java
+index b29fe2891968617cb58b00f6c2ebd7ee147c96a5..4e83fa719000a3150a7a1fc608797cdcf9aeb963 100644
+--- a/src/main/java/net/minecraft/server/TileEntityBeacon.java
++++ b/src/main/java/net/minecraft/server/TileEntityBeacon.java
+@@ -26,6 +26,7 @@ import com.destroystokyo.paper.event.block.BeaconEffectEvent;
+ 
+ public class TileEntityBeacon extends TileEntityContainer implements ITickable, IWorldInventory {
+ 
++    private static final int[] EMPTY_SLOTS = new int[0]; // Reaper - Use constant
+     public static final MobEffectList[][] a = new MobEffectList[][] { { MobEffects.FASTER_MOVEMENT, MobEffects.FASTER_DIG}, { MobEffects.RESISTANCE, MobEffects.JUMP}, { MobEffects.INCREASE_DAMAGE}, { MobEffects.REGENERATION}};
+     private static final Set<MobEffectList> f = Sets.newHashSet();
+     // private final List<TileEntityBeacon.BeaconColorTracker> g = Collections.emptyList(); // Reaper - Optimize unused
+@@ -284,7 +285,7 @@ public class TileEntityBeacon extends TileEntityContainer implements ITickable,
+     }
+ 
+     public NBTTagCompound d() {
+-        return this.save(new NBTTagCompound());
++        return this.save(new NBTTagCompound(8)); // Reaper - Use initial capacity
+     }
+ 
+     @Nullable
+@@ -442,7 +443,7 @@ public class TileEntityBeacon extends TileEntityContainer implements ITickable,
+     }
+ 
+     public int[] getSlotsForFace(EnumDirection enumdirection) {
+-        return new int[0];
++        return EMPTY_SLOTS; // Reaper - Use constant
+     }
+ 
+     public boolean canPlaceItemThroughFace(int i, ItemStack itemstack, EnumDirection enumdirection) {
+diff --git a/src/main/java/net/minecraft/server/TileEntityPiston.java b/src/main/java/net/minecraft/server/TileEntityPiston.java
+index bda60e4d4ecdf99b8db20232bed619859db702b6..0e9b94a760122c27f8c35e58307e98014fc4e9c7 100644
+--- a/src/main/java/net/minecraft/server/TileEntityPiston.java
++++ b/src/main/java/net/minecraft/server/TileEntityPiston.java
+@@ -38,7 +38,7 @@ public class TileEntityPiston extends TileEntity implements ITickable {
+     }
+ 
+     public NBTTagCompound d() {
+-        return this.save(new NBTTagCompound());
++        return this.save(new NBTTagCompound(10)); // Reaper - Use initial capacity
+     }
+ 
+     public int v() {
+diff --git a/src/main/java/net/minecraft/server/TileEntitySign.java b/src/main/java/net/minecraft/server/TileEntitySign.java
+index a26d00127c6f0c2f66aa270bedec7663aa0ea2d2..3177ed30ded2b0cff28750cd93ffaa1f9dff889c 100644
+--- a/src/main/java/net/minecraft/server/TileEntitySign.java
++++ b/src/main/java/net/minecraft/server/TileEntitySign.java
+@@ -108,7 +108,7 @@ public class TileEntitySign extends TileEntity {
+     }
+ 
+     public NBTTagCompound d() {
+-        return this.save(new NBTTagCompound());
++        return this.save(new NBTTagCompound(10)); // Reaper - Use initial capacity
+     }
+ 
+     public boolean isFilteredNBT() {
+diff --git a/src/main/java/net/minecraft/server/TileEntitySkull.java b/src/main/java/net/minecraft/server/TileEntitySkull.java
+index c63481f41063ed15c7c1ef4752ded53a8f1bd202..611287806ed200195fe9c61fec2dfeb806b4683a 100644
+--- a/src/main/java/net/minecraft/server/TileEntitySkull.java
++++ b/src/main/java/net/minecraft/server/TileEntitySkull.java
+@@ -103,7 +103,7 @@ public class TileEntitySkull extends TileEntity /*implements ITickable*/ { // Pa
+         nbttagcompound.setByte("SkullType", (byte) (this.a & 255));
+         nbttagcompound.setByte("Rot", (byte) (this.rotation & 255));
+         if (this.g != null) {
+-            NBTTagCompound nbttagcompound1 = new NBTTagCompound();
++            NBTTagCompound nbttagcompound1 = new NBTTagCompound(3); // Reaper - Use initial capacity
+ 
+             GameProfileSerializer.serialize(nbttagcompound1, this.g);
+             nbttagcompound.set("Owner", nbttagcompound1);
+@@ -156,7 +156,7 @@ public class TileEntitySkull extends TileEntity /*implements ITickable*/ { // Pa
+     }
+ 
+     public NBTTagCompound d() {
+-        return this.save(new NBTTagCompound());
++        return this.save(new NBTTagCompound(7)); // Reaper - Use initial capacity
+     }
+ 
+     public void setSkullType(int i) {
+diff --git a/src/main/java/net/minecraft/server/WorldData.java b/src/main/java/net/minecraft/server/WorldData.java
+index 7f0baf17a2ca17e8907eebac06e62f2d9bec445d..f0731fdd548a43059672f08435fd33e4ff1ed8d4 100644
+--- a/src/main/java/net/minecraft/server/WorldData.java
++++ b/src/main/java/net/minecraft/server/WorldData.java
+@@ -311,7 +311,7 @@ public class WorldData {
+     }
+ 
+     private void a(NBTTagCompound nbttagcompound, NBTTagCompound nbttagcompound1) {
+-        NBTTagCompound nbttagcompound2 = new NBTTagCompound();
++        NBTTagCompound nbttagcompound2 = new NBTTagCompound(3); // Reaper - Use initial capacity
+ 
+         nbttagcompound2.setString("Name", "1.12.2");
+         nbttagcompound2.setInt("Id", 1343);
+@@ -356,7 +356,7 @@ public class WorldData {
+ 
+         nbttagcompound.setBoolean("DifficultyLocked", this.D);
+         nbttagcompound.set("GameRules", this.O.a());
+-        NBTTagCompound nbttagcompound3 = new NBTTagCompound();
++        NBTTagCompound nbttagcompound3 = new NBTTagCompound(this.N.size()); // Reaper - Use initial capacity
+         Iterator iterator = this.N.entrySet().iterator();
+ 
+         while (iterator.hasNext()) {
+diff --git a/src/main/java/net/minecraft/server/WorldGenMonument.java b/src/main/java/net/minecraft/server/WorldGenMonument.java
+index c74ac77d5e7a40acdbc4b95971f9f579581b212b..e42bd181e27e7912b7eaf7bda7052e072708f4c0 100644
+--- a/src/main/java/net/minecraft/server/WorldGenMonument.java
++++ b/src/main/java/net/minecraft/server/WorldGenMonument.java
+@@ -153,7 +153,7 @@ public class WorldGenMonument extends StructureGenerator {
+ 
+             while (iterator.hasNext()) {
+                 ChunkCoordIntPair chunkcoordintpair = (ChunkCoordIntPair) iterator.next();
+-                NBTTagCompound nbttagcompound1 = new NBTTagCompound();
++                NBTTagCompound nbttagcompound1 = new NBTTagCompound(2); // Reaper - Use initial capacity
+ 
+                 nbttagcompound1.setInt("X", chunkcoordintpair.x);
+                 nbttagcompound1.setInt("Z", chunkcoordintpair.z);
+diff --git a/src/main/java/net/minecraft/server/WorldMap.java b/src/main/java/net/minecraft/server/WorldMap.java
+index f573756e670fb73d12615c8a0f0eebebace3152e..df317009b47918f764cde3fb9ec44e8d2788c482 100644
+--- a/src/main/java/net/minecraft/server/WorldMap.java
++++ b/src/main/java/net/minecraft/server/WorldMap.java
+@@ -212,7 +212,7 @@ public class WorldMap extends PersistentBase {
+             itemstack.a("Decorations", (NBTBase) nbttaglist);
+         }
+ 
+-        NBTTagCompound nbttagcompound = new NBTTagCompound();
++        NBTTagCompound nbttagcompound = new NBTTagCompound(5); // Reaper - Use initial capacity
+ 
+         nbttagcompound.setByte("type", mapicon_type.a());
+         nbttagcompound.setString("id", s);
+diff --git a/src/main/java/net/minecraft/server/WorldNBTStorage.java b/src/main/java/net/minecraft/server/WorldNBTStorage.java
+index 4bb6f600dc665d8f99e50e4ff118085906480fd1..691d511bf7ed8f9787146bd0d7c078f2a56d256f 100644
+--- a/src/main/java/net/minecraft/server/WorldNBTStorage.java
++++ b/src/main/java/net/minecraft/server/WorldNBTStorage.java
+@@ -108,7 +108,7 @@ public class WorldNBTStorage implements IDataManager, IPlayerFileData {
+ 
+     public void saveWorldData(WorldData worlddata, @Nullable NBTTagCompound nbttagcompound) {
+         NBTTagCompound nbttagcompound1 = worlddata.a(nbttagcompound);
+-        NBTTagCompound nbttagcompound2 = new NBTTagCompound();
++        NBTTagCompound nbttagcompound2 = new NBTTagCompound(1); // Reaper - Use initial capacity
+ 
+         nbttagcompound2.set("Data", nbttagcompound1);
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftParticle.java b/src/main/java/org/bukkit/craftbukkit/CraftParticle.java
+index 4128e8384dc6ed17cea5d61d3181686f70ffb55c..9d5ac0e189e2a526ee63be60325f98a7babbe223 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftParticle.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftParticle.java
+@@ -10,6 +10,12 @@ import org.bukkit.material.MaterialData;
+ 
+ public class CraftParticle {
+ 
++    // Reaper start - Use constants
++    private static final int[] VOID = new int[0];
++    private static final int[] NULL_ITEMSTACK = new int[]{0, 0};
++    private static final int[] NULL_MATERIAL_DATA = new int[]{0};
++    // Reaper end
++
+     public static EnumParticle toNMS(Particle bukkit) {
+         return EnumParticle.valueOf(bukkit.name());
+     }
+@@ -20,18 +26,18 @@ public class CraftParticle {
+ 
+     public static int[] toData(Particle particle, Object obj) {
+         if (particle.getDataType().equals(Void.class)) {
+-            return new int[0];
++            return VOID; // Reaper - Use constant
+         }
+         if (particle.getDataType().equals(ItemStack.class)) {
+             if (obj == null) {
+-                return new int[]{0, 0};
++                return NULL_ITEMSTACK; // Reaper - Use constant
+             }
+             ItemStack itemStack = (ItemStack) obj;
+             return new int[]{itemStack.getType().getId(), itemStack.getDurability()};
+         }
+         if (particle.getDataType().equals(MaterialData.class)) {
+             if (obj == null) {
+-                return new int[]{0};
++                return NULL_MATERIAL_DATA; // Reaper - Use constant
+             }
+             MaterialData data = (MaterialData) obj;
+             return new int[]{data.getItemTypeId() + ((int)(data.getData()) << 12)};
+diff --git a/src/main/java/org/bukkit/craftbukkit/block/CraftBanner.java b/src/main/java/org/bukkit/craftbukkit/block/CraftBanner.java
+index e2c9a9b77ec7342d467e825a11b4a0688b844eb8..f4cce7d70b00b2d13a3b27db0f7badf52a4c9b9e 100644
+--- a/src/main/java/org/bukkit/craftbukkit/block/CraftBanner.java
++++ b/src/main/java/org/bukkit/craftbukkit/block/CraftBanner.java
+@@ -95,7 +95,7 @@ public class CraftBanner extends CraftBlockEntityState<TileEntityBanner> impleme
+         NBTTagList newPatterns = new NBTTagList();
+ 
+         for (Pattern p : patterns) {
+-            NBTTagCompound compound = new NBTTagCompound();
++            NBTTagCompound compound = new NBTTagCompound(2); // Reaper - Use initial capacity
+             compound.setInt("Color", p.getColor().getDyeData());
+             compound.setString("Pattern", p.getPattern().getIdentifier());
+             newPatterns.add(compound);
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index cbd550ba069639319e4ad6f7b39c2972172f06ea..b0934ae20b8a05b96048cfd25b4fcadf2c47d4b4 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -1289,11 +1289,15 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+     }
+ 
+     public void setExtraData(NBTTagCompound nbttagcompound) {
+-        if (!nbttagcompound.hasKey("bukkit")) {
+-            nbttagcompound.set("bukkit", new NBTTagCompound());
++        // Reaper start - Optimize
++        NBTTagCompound data = nbttagcompound.getCompoundNullable("bukkit");
++        if (data == null) {
++            data = new NBTTagCompound(8); // Reaper - Use initial capacity
++            nbttagcompound.set("bukkit", data);
+         }
+ 
+-        NBTTagCompound data = nbttagcompound.getCompound("bukkit");
++        // NBTTagCompound data = nbttagcompound.getCompound("bukkit");
++        // Reaper end
+         EntityPlayer handle = getHandle();
+         data.setInt("newExp", handle.newExp);
+         data.setInt("newTotalExp", handle.newTotalExp);
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBanner.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBanner.java
+index 7b3567894468d7c38c364c6f2be7d8d7c78e860a..ba6a40df6f2db2f1fc8970cb7eadc30400695f56 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBanner.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaBanner.java
+@@ -90,7 +90,7 @@ public class CraftMetaBanner extends CraftMetaItem implements BannerMeta {
+         NBTTagList newPatterns = new NBTTagList();
+ 
+         for (Pattern p : patterns) {
+-            NBTTagCompound compound = new NBTTagCompound();
++            NBTTagCompound compound = new NBTTagCompound(2); // Reaper - Use initial capacity
+             compound.setInt(COLOR.NBT, p.getColor().getDyeData());
+             compound.setString(PATTERN.NBT, p.getPattern().getIdentifier());
+             newPatterns.add(compound);
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
+index f16a5d1f807c068e72d0dd0976d0dbbe423d31d1..50858abf13c1a53a4c45deb7ee28ffc76371e44d 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaItem.java
+@@ -268,8 +268,11 @@ class CraftMetaItem implements ItemMeta, Repairable {
+     }
+ 
+     CraftMetaItem(NBTTagCompound tag) {
+-        if (tag.hasKey(DISPLAY.NBT)) {
+-            NBTTagCompound display = tag.getCompound(DISPLAY.NBT);
++        // Reaper start - Optimize
++        NBTTagCompound display = tag.getCompoundNullable(DISPLAY.NBT);
++        if (display != null) {
++            // NBTTagCompound display = tag.getCompound(DISPLAY.NBT);
++            // Reaper end
+ 
+             if (display.hasKey(NAME.NBT)) {
+                 displayName = limit( display.getString(NAME.NBT), 1024 ); // Spigot
+@@ -477,11 +480,14 @@ class CraftMetaItem implements ItemMeta, Repairable {
+     }
+ 
+     static EnchantmentMap buildEnchantments(NBTTagCompound tag, ItemMetaKey key) { // Paper
+-        if (!tag.hasKey(key.NBT)) {
++        // Reaper start - Optimize
++        NBTTagList ench = tag.getListNullable(key.NBT, CraftMagicNumbers.NBT.TAG_COMPOUND);
++        if (ench == null) {
+             return null;
+         }
+ 
+-        NBTTagList ench = tag.getList(key.NBT, CraftMagicNumbers.NBT.TAG_COMPOUND);
++        // NBTTagList ench = tag.getList(key.NBT, CraftMagicNumbers.NBT.TAG_COMPOUND);
++        // Reaper end
+         EnchantmentMap enchantments = new EnchantmentMap(); // Paper
+ 
+         for (int i = 0; i < ench.size(); i++) {

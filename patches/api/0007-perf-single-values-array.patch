@@ -1,0 +1,210 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 26 May 2022 11:00:58 +0500
+Subject: [PATCH] perf: single values array
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java b/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java
+index a8d272389a47adcd2c9cce9a61d8ec7d78f4ba2c..22e4fb7f7f26eed702033d95c4fd2ec517819c01 100644
+--- a/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java
++++ b/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java
+@@ -86,6 +86,7 @@ public class PlayerArmorChangeEvent extends PlayerEvent {
+ 
+         private final Set<Material> mutableTypes = EnumSet.noneOf(Material.class);
+         private Set<Material> immutableTypes;
++        public static final PlayerArmorChangeEvent.SlotType[] VALUES = values(); // Reaper - Single values array
+ 
+         SlotType(Material... types) {
+             this.mutableTypes.addAll(Arrays.asList(types));
+@@ -114,7 +115,7 @@ public class PlayerArmorChangeEvent extends PlayerEvent {
+          */
+         @Nullable
+         public static SlotType getByMaterial(Material material) {
+-            for (SlotType slotType : values()) {
++            for (SlotType slotType : VALUES) {
+                 if (slotType.getTypes().contains(material)) {
+                     return slotType;
+                 }
+diff --git a/src/main/java/org/bukkit/attribute/AttributeModifier.java b/src/main/java/org/bukkit/attribute/AttributeModifier.java
+index 3c0c4bc5c80b90d3a6f4b025df1477e40785142e..e077857c8f978babcdbdc3e7e47b63cfc19e693f 100644
+--- a/src/main/java/org/bukkit/attribute/AttributeModifier.java
++++ b/src/main/java/org/bukkit/attribute/AttributeModifier.java
+@@ -79,7 +79,7 @@ public class AttributeModifier implements ConfigurationSerializable {
+     }
+ 
+     public static AttributeModifier deserialize(Map<String, Object> args) {
+-        return new AttributeModifier(UUID.fromString((String) args.get("uuid")), (String) args.get("name"), NumberConversions.toDouble(args.get("amount")), Operation.values()[NumberConversions.toInt(args.get("operation"))]);
++        return new AttributeModifier(UUID.fromString((String) args.get("uuid")), (String) args.get("name"), NumberConversions.toDouble(args.get("amount")), Operation.VALUES[NumberConversions.toInt(args.get("operation"))]);
+     }
+ 
+     /**
+@@ -99,5 +99,7 @@ public class AttributeModifier implements ConfigurationSerializable {
+          * Multiply amount by this value, after adding 1 to it.
+          */
+         MULTIPLY_SCALAR_1;
++
++        public static final AttributeModifier.Operation[] VALUES = values(); // Reaper - Single values array
+     }
+ }
+diff --git a/src/main/java/org/bukkit/block/BlockFace.java b/src/main/java/org/bukkit/block/BlockFace.java
+index 58fb195d0148b46d39808d2cde5d9aeb4a74bbd7..e2d114d3324ca8297d33cadb662c2df4d1b3d9dd 100644
+--- a/src/main/java/org/bukkit/block/BlockFace.java
++++ b/src/main/java/org/bukkit/block/BlockFace.java
+@@ -27,6 +27,7 @@ public enum BlockFace {
+     private final int modX;
+     private final int modY;
+     private final int modZ;
++    public static final BlockFace[] VALUES = values(); // Reaper - Single values array
+ 
+     private BlockFace(final int modX, final int modY, final int modZ) {
+         this.modX = modX;
+diff --git a/src/main/java/org/bukkit/entity/Arrow.java b/src/main/java/org/bukkit/entity/Arrow.java
+index 34dde443b0945e5a835a978dcfe6bf3d9abcd845..46bd563e43bdd042364a6b7d13611de916c09b81 100644
+--- a/src/main/java/org/bukkit/entity/Arrow.java
++++ b/src/main/java/org/bukkit/entity/Arrow.java
+@@ -87,7 +87,9 @@ public interface Arrow extends Projectile {
+         /**
+          * The arrow can only be picked up by players in creative mode.
+          */
+-        CREATIVE_ONLY
++        CREATIVE_ONLY;
++
++        public static final Arrow.PickupStatus[] VALUES = values(); // Reaper - Single values array
+     }
+ 
+     // Spigot start
+diff --git a/src/main/java/org/bukkit/entity/EnderDragon.java b/src/main/java/org/bukkit/entity/EnderDragon.java
+index 4ea0e44e78f7221b3ee89f64ab2b525c79cb7816..dc89b4236c42646a97e5441392aa9c75868500c7 100644
+--- a/src/main/java/org/bukkit/entity/EnderDragon.java
++++ b/src/main/java/org/bukkit/entity/EnderDragon.java
+@@ -59,7 +59,9 @@ public interface EnderDragon extends ComplexLivingEntity {
+         /**
+          * The dragon will hover at its current location, not performing any actions.
+          */
+-        HOVER
++        HOVER;
++
++        public static final EnderDragon.Phase[] VALUES = values(); // Reaper - Single values array
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/entity/Evoker.java b/src/main/java/org/bukkit/entity/Evoker.java
+index 7fd32bf44849854ea82306c4f0f13fce203cdb64..54104cae071ff0acba5f625a3d0af5cc88bcc827 100644
+--- a/src/main/java/org/bukkit/entity/Evoker.java
++++ b/src/main/java/org/bukkit/entity/Evoker.java
+@@ -38,6 +38,8 @@ public interface Evoker extends Spellcaster {
+          * The spell that makes the target blind.
+          */
+         BLINDNESS;
++
++        public static final Evoker.Spell[] VALUES = values(); // Reaper - Single values array
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/entity/Horse.java b/src/main/java/org/bukkit/entity/Horse.java
+index 8660070bbd513637a0e8f809898a053594d877eb..0417e95168a983e53199a50af8590b708f617644 100644
+--- a/src/main/java/org/bukkit/entity/Horse.java
++++ b/src/main/java/org/bukkit/entity/Horse.java
+@@ -72,6 +72,8 @@ public interface Horse extends AbstractHorse {
+          */
+         DARK_BROWN,
+         ;
++
++        public static final Horse.Color[] VALUES = values(); // Reaper - Single values array
+     }
+ 
+     /**
+@@ -99,6 +101,8 @@ public interface Horse extends AbstractHorse {
+          */
+         BLACK_DOTS,
+         ;
++
++        public static final Horse.Style[] VALUES = values(); // Reaper - Single values array
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/entity/Llama.java b/src/main/java/org/bukkit/entity/Llama.java
+index 92c30ed5a0f8d45958a3b353d9fc5ab77d51a454..e1aab14eb77e36b43a4c4fa10bad90e9d8eb8eac 100644
+--- a/src/main/java/org/bukkit/entity/Llama.java
++++ b/src/main/java/org/bukkit/entity/Llama.java
+@@ -29,6 +29,8 @@ public interface Llama extends ChestedHorse, RangedEntity { // Paper
+          * A gray llama.
+          */
+         GRAY;
++
++        public static final Llama.Color[] VALUES = values(); // Reaper - Single values array
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/entity/Parrot.java b/src/main/java/org/bukkit/entity/Parrot.java
+index ccd3d1ff6278b3be92b1dce3a6b2dbbd48ec3d41..c5defef32a0ca4391b0592ebf010d38de68cffce 100644
+--- a/src/main/java/org/bukkit/entity/Parrot.java
++++ b/src/main/java/org/bukkit/entity/Parrot.java
+@@ -43,5 +43,7 @@ public interface Parrot extends Animals, Tameable, Sittable {
+          * Gray colored parrot.
+          */
+         GRAY;
++
++        public static final Parrot.Variant[] VALUES = values(); // Reaper - Single values array
+     }
+ }
+diff --git a/src/main/java/org/bukkit/entity/Villager.java b/src/main/java/org/bukkit/entity/Villager.java
+index 7628b84cb6f9af2c898285d3c75e5492e318806c..95b3b130c2b6d0124571dd08b0948b0e99b88e84 100644
+--- a/src/main/java/org/bukkit/entity/Villager.java
++++ b/src/main/java/org/bukkit/entity/Villager.java
+@@ -125,6 +125,7 @@ public interface Villager extends Ageable, NPC, InventoryHolder, Merchant {
+         @Deprecated
+         HUSK(true);
+         private final boolean zombie;
++        public static final Villager.Profession[] VALUES = values(); // Reaper - Single values array
+ 
+         private Profession(boolean zombie) {
+             this.zombie = zombie;
+diff --git a/src/main/java/org/bukkit/event/player/PlayerResourcePackStatusEvent.java b/src/main/java/org/bukkit/event/player/PlayerResourcePackStatusEvent.java
+index 4c838519164b690f323c6ee1d4bd39ba2c637205..2a6b9deddc55b5736c06a3861b8c6b0100ebc6b8 100644
+--- a/src/main/java/org/bukkit/event/player/PlayerResourcePackStatusEvent.java
++++ b/src/main/java/org/bukkit/event/player/PlayerResourcePackStatusEvent.java
+@@ -72,5 +72,7 @@ public class PlayerResourcePackStatusEvent extends PlayerEvent {
+          * The client accepted the pack and is beginning a download of it.
+          */
+         ACCEPTED;
++
++        public static final PlayerResourcePackStatusEvent.Status[] VALUES = values(); // Reaper - Single values array
+     }
+ }
+diff --git a/src/main/java/org/bukkit/inventory/ItemFlag.java b/src/main/java/org/bukkit/inventory/ItemFlag.java
+index 2a8af7ba8472d9f09fcc1d844181fab7ebc80c6a..432b2b9c9d98efb2dbb5e0ad84afac46ac766e2e 100644
+--- a/src/main/java/org/bukkit/inventory/ItemFlag.java
++++ b/src/main/java/org/bukkit/inventory/ItemFlag.java
+@@ -29,4 +29,6 @@ public enum ItemFlag {
+      * Setting to show/hide potion effects on this ItemStack
+      */
+     HIDE_POTION_EFFECTS;
++
++    public static final ItemFlag[] VALUES = values(); // Reaper - Single values array
+ }
+diff --git a/src/main/java/org/bukkit/inventory/meta/BookMeta.java b/src/main/java/org/bukkit/inventory/meta/BookMeta.java
+index 75b03ac3553cab0b4204a9ea442f7ade1dcb1ae5..29e090962de78c045e98ceda814ee8b43f89ec84 100644
+--- a/src/main/java/org/bukkit/inventory/meta/BookMeta.java
++++ b/src/main/java/org/bukkit/inventory/meta/BookMeta.java
+@@ -31,6 +31,8 @@ public interface BookMeta extends ItemMeta {
+          * Unused; unobtainable by players. Can't be copied.
+          */
+         TATTERED;
++
++        public static final BookMeta.Generation[] VALUES = values(); // Reaper - Single values array
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/scoreboard/Team.java b/src/main/java/org/bukkit/scoreboard/Team.java
+index ac5cc32cd5c1b5b3ba8da1c8e5195c0a210331b0..ede6b0f700986b9e2fdef7364f4bc1183505ce87 100644
+--- a/src/main/java/org/bukkit/scoreboard/Team.java
++++ b/src/main/java/org/bukkit/scoreboard/Team.java
+@@ -324,5 +324,7 @@ public interface Team {
+          * Apply this option for only team members.
+          */
+         FOR_OWN_TEAM;
++
++        public static final Team.OptionStatus[] VALUES = values(); // Reaper - Single values array
+     }
+ }

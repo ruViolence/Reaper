@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sat, 28 May 2022 14:21:29 +0500
+Subject: [PATCH] fix: entity portal dupe
+
+
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 3a86396457d310f4084dce633d84daa3fb12c52b..fc3920fe0aedbe2a88a5ff3db20ce8555f4026aa 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -2562,7 +2562,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+             // CraftBukkit end */
+             // CraftBukkit start - Ensure chunks are loaded in case TravelAgent is not used which would initially cause chunks to load during find/create
+             // minecraftserver.getPlayerList().changeWorld(this, j, worldserver, worldserver1);
+-            worldserver1.getMinecraftServer().getPlayerList().repositionEntity(this, exit, portal);
++            // worldserver1.getMinecraftServer().getPlayerList().repositionEntity(this, exit, portal); // Reaper - Moved down
+             // worldserver.entityJoinedWorld(this, false); // Handled in repositionEntity
+             // CraftBukkit end
+             this.world.methodProfiler.c("reloading");
+@@ -2570,6 +2570,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+ 
+             if (entity != null) {
+                 entity.a(this);
++                worldserver1.getMinecraftServer().getPlayerList().repositionEntity(this, exit, portal); // Reaper
+                 /* CraftBukkit start - We need to do this...
+                 if (j == 1 && i == 1) {
+                     BlockPosition blockposition1 = worldserver1.q(worldserver1.getSpawn());
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index f7f419832a18f2c5c8464d872e6416d787771e88..32c9907be51619ce1e3d0f91d6836929e9f62e57 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -1125,6 +1125,7 @@ public abstract class EntityLiving extends Entity {
+     }
+ 
+     public void die(DamageSource damagesource) {
++        if (this.dead) return; // Reaper
+         if (!this.aU) {
+             Entity entity = damagesource.getEntity();
+             EntityLiving entityliving = this.ci();

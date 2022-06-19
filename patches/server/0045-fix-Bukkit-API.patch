@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 1 Jun 2022 11:16:36 +0500
+Subject: [PATCH] fix: Bukkit API
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaKnowledgeBook.java b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaKnowledgeBook.java
+index e68a7d0662372d10806039c66e7833801e773b68..e8f06f20da203db5151f49ce4aa0ea649fe64a1b 100644
+--- a/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaKnowledgeBook.java
++++ b/src/main/java/org/bukkit/craftbukkit/inventory/CraftMetaKnowledgeBook.java
+@@ -116,7 +116,7 @@ public class CraftMetaKnowledgeBook extends CraftMetaItem implements KnowledgeBo
+     @Override
+     public void setRecipes(List<NamespacedKey> recipes) {
+         this.recipes.clear();
+-        for (NamespacedKey recipe : this.recipes) {
++        for (NamespacedKey recipe : recipes) { // Reaper - Fix Bukkit API
+             addRecipe(recipe);
+         }
+     }

@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 10 Jun 2022 16:09:59 +0500
+Subject: [PATCH] feat: configurable ping period
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 989a47410eb0a86d0b26b77e2b7d25d31ff693f8..60d1893d0569d9b1e00985c1fe57b06e37ce766f 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -250,4 +250,9 @@ public class ReaperConfig {
+     private static void roundPlayerPing() {
+         roundPlayerPing = getBoolean("round-player-ping", false);
+     }
++
++    public static long pingPeriod;
++    private static void pingPeriod() {
++        pingPeriod = MathHelper.clamp(getInt("ping-period", 15), 1, 30) * 1000L;
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 6010ffaea49e00377962b542791293db23336ae7..6715d6c0d235be24222080f8ec5c684c4c55bf6c 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -193,7 +193,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+                 this.disconnect(new ChatMessage("disconnect.timeout"));
+             }
+         } else {
+-            if (elapsedTime >= 15000L) { // 15 seconds
++            if (elapsedTime >= com.github.ruviolence.reaper.ReaperConfig.pingPeriod) { // Reaper
+                 this.setPendingPing(true);
+                 this.setLastPing(currentTime);
+                 this.setKeepAliveID(currentTime);

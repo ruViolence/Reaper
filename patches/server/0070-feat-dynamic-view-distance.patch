@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 26 May 2022 07:36:38 +0500
+Subject: [PATCH] feat: dynamic view distance
+
+Sets the player's view distance based on their client settings.
+
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index c53cd688c58b6355c3837b461945fca80792e12f..c13eb8b015afbaaafa4306a4cfe1a9efac0bcc0c 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -76,8 +76,14 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     }
+     public void setViewDistance(int viewDistance) {
+         this.viewDistance = viewDistance;
++        this.furthestViewableBlock = PlayerChunkMap.getFurthestViewableBlock(getViewDistance()); // Reaper - Dynamic view distance
+     }
+     // Paper end
++    // Reaper start - Dynamic view distance
++    private int clientsideViewDistance = 0; public int getClientsideViewDistance() { return this.clientsideViewDistance; }
++    private int nextViewDistanceUpdateTick = 0;
++    private int furthestViewableBlock = PlayerChunkMap.getFurthestViewableBlock(getViewDistance()); public int getFurthestViewableBlock() { return furthestViewableBlock; }
++    // Reaper end
+     private int containerUpdateDelay; // Paper
+     // Paper start - cancellable death event
+     public boolean queueHealthUpdatePacket = false;
+@@ -1322,6 +1328,17 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         // CraftBukkit end
+         this.cl = EnumChatVisibility.FULL; // Reaper - Always full chat visibility
+         this.cm = packetplayinsettings.d();
++        // Reaper start - Dynamic view distance
++        if (viewDistance != packetplayinsettings.getViewDistance() && nextViewDistanceUpdateTick < MinecraftServer.currentTick) {
++            this.nextViewDistanceUpdateTick = MinecraftServer.currentTick + (20 * 15);
++            this.clientsideViewDistance = packetplayinsettings.getViewDistance();
++            int distance = (getBukkitEntity().hasPermission("reaper.dynvd_" + clientsideViewDistance) || getBukkitEntity().hasPermission("reaper.unlimitvd"))
++                    ? clientsideViewDistance
++                    : Math.min(clientsideViewDistance, world.spigotConfig.viewDistance);
++            ((WorldServer) world).getPlayerChunkMap().updateViewDistance(this, distance);
++            ((WorldServer) world).getTracker().a(this); // Update entity tracker
++        }
++        // Reaper end
+         this.getDataWatcher().set(EntityPlayer.br, Byte.valueOf((byte) packetplayinsettings.e()));
+         this.getDataWatcher().set(EntityPlayer.bs, Byte.valueOf((byte) (packetplayinsettings.getMainHand() == EnumMainHand.LEFT ? 0 : 1)));
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+index 2218b542908688972e23c7c0296617e2975a8eef..79036b71eb37a29282e05ef6fbabc4aaecb5d7d0 100644
+--- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+@@ -57,7 +57,7 @@ public class EntityTrackerEntry {
+         entity.tracker = this; // Paper
+         this.tracker = entity;
+         this.e = i;
+-        this.f = j;
++        // this.f = j; // Reaper - Unused
+         this.g = k;
+         this.u = flag;
+         this.xLoc = EntityTracker.a(entity.locX);
+@@ -509,7 +509,7 @@ public class EntityTrackerEntry {
+         double d0 = entityplayer.locX - this.tracker.locX;
+         double d1 = entityplayer.locZ - this.tracker.locZ;
+         // Reaper end
+-        int i = Math.min(this.e, this.f);
++        int i = Math.min(this.e, entityplayer.getFurthestViewableBlock()); // Reaper - Dynamic view distance
+ 
+         return d0 >= (double) (-i) && d0 <= (double) i && d1 >= (double) (-i) && d1 <= (double) i && this.tracker.a(entityplayer);
+     }
+@@ -653,7 +653,7 @@ public class EntityTrackerEntry {
+     }
+ 
+     public void a(int i) {
+-        this.f = i;
++        // this.f = i; // Reaper - Unused
+     }
+ 
+     public void c() {
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInSettings.java b/src/main/java/net/minecraft/server/PacketPlayInSettings.java
+index dbdca94e39cb84822730882133aad91ddbe5caeb..50201509db5c90ccdc5c13c5f3f0246c1c0b6aaf 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayInSettings.java
++++ b/src/main/java/net/minecraft/server/PacketPlayInSettings.java
+@@ -5,7 +5,7 @@ import java.io.IOException;
+ public class PacketPlayInSettings implements Packet<PacketListenerPlayIn> {
+ 
+     private String a;
+-    private int b;
++    private int b; public int getViewDistance() { return b; } // Reaper
+     private EntityHuman.EnumChatVisibility c;
+     private boolean d;
+     private int e;
+diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+index 003ba96f3924952be5f683fe1486cfb1be8b0f62..5fc140b2f6356d1c84c4421b59f3bd534f554f7e 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+@@ -55,7 +55,7 @@ public class PlayerChunkMap {
+ 
+     public PlayerChunkMap(WorldServer worldserver) {
+         this.world = worldserver;
+-        this.a(worldserver.spigotConfig.viewDistance); // Spigot
++        this.a(3); // Reaper - Dynamic view distance
+     }
+ 
+     public WorldServer getWorld() {
+@@ -355,7 +355,7 @@ public class PlayerChunkMap {
+             int k = (int) entityplayer.d >> 4;
+             int l = (int) entityplayer.e >> 4;
+             final int viewDistance = entityplayer.getViewDistance(); // Paper - Player view distance API
+-            int i1 = Math.max(getViewDistance(), viewDistance); // Paper - Player view distance API
++            int i1 = viewDistance; // Paper - Player view distance API // Reaper - Dynamic view distance
+ 
+             int j1 = i - k;
+             int k1 = j - l;

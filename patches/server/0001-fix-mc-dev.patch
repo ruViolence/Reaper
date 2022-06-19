@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruviolence@users.noreply.github.com>
+Date: Mon, 23 May 2022 20:07:38 +0500
+Subject: [PATCH] fix: mc-dev
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
+index a7846b845c56d8d5b5ae7fd71073e6e97dae6345..5df404866f9fce331ef43f7a66db473bfee9eed6 100644
+--- a/src/main/java/net/minecraft/server/BlockStateList.java
++++ b/src/main/java/net/minecraft/server/BlockStateList.java
+@@ -87,7 +87,7 @@ public class BlockStateList {
+         if (!BlockStateList.a.matcher(s).matches()) {
+             throw new IllegalArgumentException("Block: " + block.getClass() + " has invalidly named property: " + s);
+         } else {
+-            Iterator iterator = iblockstate.c().iterator();
++            Iterator<T> iterator = iblockstate.c().iterator();
+ 
+             String s1;
+ 
+@@ -96,7 +96,7 @@ public class BlockStateList {
+                     return s;
+                 }
+ 
+-                Comparable comparable = (Comparable) iterator.next();
++                T comparable = iterator.next();
+ 
+                 s1 = iblockstate.a(comparable);
+             } while (BlockStateList.a.matcher(s1).matches());
+@@ -165,7 +165,7 @@ public class BlockStateList {
+             if (comparable == null) {
+                 throw new IllegalArgumentException("Cannot get property " + iblockstate + " as it does not exist in " + this.a.s());
+             } else {
+-                return (Comparable) iblockstate.b().cast(comparable);
++                return iblockstate.b().cast(comparable);
+             }
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/DedicatedPlayerList.java b/src/main/java/net/minecraft/server/DedicatedPlayerList.java
+index f8a4a52eec060d30fa1cca2bd9c71e0f39f2475d..33f8786c894ae2207505316d5af64054896a9f0e 100644
+--- a/src/main/java/net/minecraft/server/DedicatedPlayerList.java
++++ b/src/main/java/net/minecraft/server/DedicatedPlayerList.java
+@@ -145,8 +145,4 @@ public class DedicatedPlayerList extends PlayerList {
+     public boolean f(GameProfile gameprofile) {
+         return this.getOPs().b(gameprofile);
+     }
+-
+-    public MinecraftServer getServer() {
+-        return this.getServer();
+-    }
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityGuardian.java b/src/main/java/net/minecraft/server/EntityGuardian.java
+index d8b88db47e190c4f7a52db98e7a70cc3b8dcb890..1bd98a7b58ff0c29d3274e09d00c05123dbb8f43 100644
+--- a/src/main/java/net/minecraft/server/EntityGuardian.java
++++ b/src/main/java/net/minecraft/server/EntityGuardian.java
+@@ -41,7 +41,7 @@ public class EntityGuardian extends EntityMonster {
+         this.targetSelector.a(1, new PathfinderGoalNearestAttackableTarget(this, EntityLiving.class, 10, true, false, new EntityGuardian.EntitySelectorGuardianTargetHumanSquid(this)));
+     }
+ 
+-    public void initAttributes() {
++    protected void initAttributes() {
+         super.initAttributes();
+         this.getAttributeInstance(GenericAttributes.ATTACK_DAMAGE).setValue(6.0D);
+         this.getAttributeInstance(GenericAttributes.MOVEMENT_SPEED).setValue(0.5D);
+@@ -63,7 +63,7 @@ public class EntityGuardian extends EntityMonster {
+         this.datawatcher.register(EntityGuardian.bB, Integer.valueOf(0));
+     }
+ 
+-    public boolean do() {
++    public boolean isMoving() { // Reaper - MC Dev fix
+         return ((Boolean) this.datawatcher.get(EntityGuardian.bA)).booleanValue();
+     }
+ 
+@@ -152,7 +152,7 @@ public class EntityGuardian extends EntityMonster {
+                 }
+ 
+                 this.bE = this.motY < 0.0D && this.world.d((new BlockPosition(this)).down(), false);
+-            } else if (this.do()) {
++            } else if (this.isMoving()) {
+                 if (this.c < 0.5F) {
+                     this.c = 4.0F;
+                 } else {
+@@ -166,13 +166,13 @@ public class EntityGuardian extends EntityMonster {
+             this.by = this.bx;
+             if (!this.isInWater()) {
+                 this.bx = this.random.nextFloat();
+-            } else if (this.do()) {
++            } else if (this.isMoving()) {
+                 this.bx += (0.0F - this.bx) * 0.25F;
+             } else {
+                 this.bx += (1.0F - this.bx) * 0.06F;
+             }
+ 
+-            if (this.do() && this.isInWater()) {
++            if (this.isMoving() && this.isInWater()) {
+                 Vec3D vec3d = this.e(0.0F);
+ 
+                 for (int i = 0; i < 2; ++i) {
+@@ -253,7 +253,7 @@ public class EntityGuardian extends EntityMonster {
+     }
+ 
+     public boolean damageEntity(DamageSource damagesource, float f) {
+-        if (!this.do() && !damagesource.isMagic() && damagesource.i() instanceof EntityLiving) {
++        if (!this.isMoving() && !damagesource.isMagic() && damagesource.i() instanceof EntityLiving) {
+             EntityLiving entityliving = (EntityLiving) damagesource.i();
+ 
+             if (!damagesource.isExplosion()) {
+@@ -279,7 +279,7 @@ public class EntityGuardian extends EntityMonster {
+             this.motX *= 0.8999999761581421D;
+             this.motY *= 0.8999999761581421D;
+             this.motZ *= 0.8999999761581421D;
+-            if (!this.do() && this.getGoalTarget() == null) {
++            if (!this.isMoving() && this.getGoalTarget() == null) {
+                 this.motY -= 0.005D;
+             }
+         } else {
+@@ -424,8 +424,9 @@ public class EntityGuardian extends EntityMonster {
+             return (entityliving instanceof EntityHuman || entityliving instanceof EntitySquid) && entityliving.h(this.a) > 9.0D;
+         }
+ 
+-        public boolean apply(@Nullable Object object) {
+-            return this.a((EntityLiving) object);
++        @Override
++        public boolean apply(@Nullable EntityLiving entity) {
++            return this.a(entity);
+         }
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityIllagerWizard.java b/src/main/java/net/minecraft/server/EntityIllagerWizard.java
+index 4587c08039dd048d4296243e0c24fcc0408416cf..cc0787c968fc00bbf41b7699bd515172bbb0bfe6 100644
+--- a/src/main/java/net/minecraft/server/EntityIllagerWizard.java
++++ b/src/main/java/net/minecraft/server/EntityIllagerWizard.java
+@@ -81,7 +81,7 @@ public abstract class EntityIllagerWizard extends EntityIllagerAbstract {
+ 
+         private Spell(int i, double d0, double param5, double d1) {
+             this.g = i;
+-            this.h = new double[] { d0, d1, d2};
++            this.h = new double[] { d0, param5, d1};
+         }
+ 
+         public static EntityIllagerWizard.Spell a(int i) {
+diff --git a/src/main/java/net/minecraft/server/EntityTameableAnimal.java b/src/main/java/net/minecraft/server/EntityTameableAnimal.java
+index 6c86fefcfaab020f0ac908e2e477c62a2b9d9fa1..7b727ac9be358d7a0f18247fb39fc67799ab2a4b 100644
+--- a/src/main/java/net/minecraft/server/EntityTameableAnimal.java
++++ b/src/main/java/net/minecraft/server/EntityTameableAnimal.java
+@@ -190,9 +190,4 @@ public abstract class EntityTameableAnimal extends EntityAnimal implements Entit
+ 
+         super.die(damagesource);
+     }
+-
+-    @Nullable
+-    public Entity getOwner() {
+-        return this.getOwner();
+-    }
+ }
+diff --git a/src/main/java/net/minecraft/server/EnumDirection.java b/src/main/java/net/minecraft/server/EnumDirection.java
+index ef7b951b978d6b30170bb98aafd31782d1797bed..1a2e979e2831bef019d5fb495df413f65bc98477 100644
+--- a/src/main/java/net/minecraft/server/EnumDirection.java
++++ b/src/main/java/net/minecraft/server/EnumDirection.java
+@@ -216,9 +216,9 @@ public enum EnumDirection implements INamable {
+         public Iterator<EnumDirection> iterator() {
+             return Iterators.forArray(this.a());
+         }
+-
+-        public boolean apply(@Nullable Object object) {
+-            return this.a((EnumDirection) object);
++        @Override
++        public boolean apply(@Nullable EnumDirection object) {
++            return this.a(object);
+         }
+     }
+ 
+@@ -284,8 +284,9 @@ public enum EnumDirection implements INamable {
+             return this.e;
+         }
+ 
+-        public boolean apply(@Nullable Object object) {
+-            return this.a((EnumDirection) object);
++        @Override
++        public boolean apply(@Nullable EnumDirection object) {
++            return this.a(object);
+         }
+ 
+         static {
+diff --git a/src/main/java/net/minecraft/server/PacketCompressor.java b/src/main/java/net/minecraft/server/PacketCompressor.java
+index db7dc175239193ade658f7f0fce86463fbf0432c..7b30ba0818b81e395f493b2affc6dff27c7eb781 100644
+--- a/src/main/java/net/minecraft/server/PacketCompressor.java
++++ b/src/main/java/net/minecraft/server/PacketCompressor.java
+@@ -46,7 +46,8 @@ public class PacketCompressor extends MessageToByteEncoder<ByteBuf> {
+         this.c = i;
+     }
+ 
+-    protected void encode(ChannelHandlerContext channelhandlercontext, Object object, ByteBuf bytebuf) throws Exception {
+-        this.a(channelhandlercontext, (ByteBuf) object, bytebuf);
++    @Override
++    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
++        this.a(ctx, msg, out);
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/PacketDecrypter.java b/src/main/java/net/minecraft/server/PacketDecrypter.java
+index aca9356119b88b2b3b3d0e2ccf036a29bf876992..f1948b4b125ea5f1b3da01f7ee615af845e608ad 100644
+--- a/src/main/java/net/minecraft/server/PacketDecrypter.java
++++ b/src/main/java/net/minecraft/server/PacketDecrypter.java
+@@ -18,7 +18,8 @@ public class PacketDecrypter extends MessageToMessageDecoder<ByteBuf> {
+         list.add(this.a.a(channelhandlercontext, bytebuf));
+     }
+ 
+-    protected void decode(ChannelHandlerContext channelhandlercontext, Object object, List list) throws Exception {
+-        this.a(channelhandlercontext, (ByteBuf) object, list);
++    @Override
++    protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
++        this.a(ctx, msg, out);
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/PacketEncrypter.java b/src/main/java/net/minecraft/server/PacketEncrypter.java
+index bd972ebebe43e82b0eae56882ad21fc4feae84b1..9b2155612d6b09feb35947a9609639a95fe41d88 100644
+--- a/src/main/java/net/minecraft/server/PacketEncrypter.java
++++ b/src/main/java/net/minecraft/server/PacketEncrypter.java
+@@ -17,7 +17,8 @@ public class PacketEncrypter extends MessageToByteEncoder<ByteBuf> {
+         this.a.a(bytebuf, bytebuf1);
+     }
+ 
+-    protected void encode(ChannelHandlerContext channelhandlercontext, Object object, ByteBuf bytebuf) throws Exception {
+-        this.a(channelhandlercontext, (ByteBuf) object, bytebuf);
++    @Override
++    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
++        this.a(ctx, msg, out);
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/RegistryBlocks.java b/src/main/java/net/minecraft/server/RegistryBlocks.java
+index fd2d0a791acd75c2603c5fe70ddfa4bc59a560c1..5b90dc1aa7e0b7902be095f336ad705eee2e83ac 100644
+--- a/src/main/java/net/minecraft/server/RegistryBlocks.java
++++ b/src/main/java/net/minecraft/server/RegistryBlocks.java
+@@ -34,28 +34,28 @@ public class RegistryBlocks<K, V> extends RegistryMaterials<K, V> {
+ 
+     @Nonnull
+     public K b(V v0) {
+-        Object object = super.b(v0);
++        K object = super.b(v0);
+ 
+         return object == null ? this.d : object;
+     }
+ 
+     @Nonnull
+     public V get(@Nullable K k0) {
+-        Object object = super.get(k0);
++        V object = super.get(k0);
+ 
+         return object == null ? this.e : object;
+     }
+ 
+     @Nonnull
+     public V getId(int i) {
+-        Object object = super.getId(i);
++        V object = super.getId(i);
+ 
+         return object == null ? this.e : object;
+     }
+ 
+     @Nonnull
+     public V a(Random random) {
+-        Object object = super.a(random);
++        V object = super.a(random);
+ 
+         return object == null ? this.e : object;
+     }
+diff --git a/src/main/java/net/minecraft/server/ShapeDetector.java b/src/main/java/net/minecraft/server/ShapeDetector.java
+index d52d4fd8b3a3429f534c3dce5418b6c096eca7a5..340812fae96aaccebecdae19bce7d5a0eb657825 100644
+--- a/src/main/java/net/minecraft/server/ShapeDetector.java
++++ b/src/main/java/net/minecraft/server/ShapeDetector.java
+@@ -171,8 +171,9 @@ public class ShapeDetector {
+             return new ShapeDetectorBlock(this.a, blockposition, this.b);
+         }
+ 
+-        public Object load(Object object) throws Exception {
+-            return this.a((BlockPosition) object);
++        @Override
++        public ShapeDetectorBlock load(BlockPosition key) throws Exception {
++            return this.a(key);
+         }
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/TileEntityPiston.java b/src/main/java/net/minecraft/server/TileEntityPiston.java
+index 97f3a9ad6ac89e354187a826ddb90196593dc68b..bda60e4d4ecdf99b8db20232bed619859db702b6 100644
+--- a/src/main/java/net/minecraft/server/TileEntityPiston.java
++++ b/src/main/java/net/minecraft/server/TileEntityPiston.java
+@@ -126,7 +126,7 @@ public class TileEntityPiston extends TileEntity implements ITickable {
+                             d1 = Math.min(d1, d0) + 0.01D;
+                             TileEntityPiston.i.set(enumdirection);
+                             entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection.getAdjacentX(), d1 * (double) enumdirection.getAdjacentY(), d1 * (double) enumdirection.getAdjacentZ());
+-                            TileEntityPiston.i.set((Object) null);
++                            TileEntityPiston.i.set(null);
+                             if (!this.g && this.h) {
+                                 this.a(entity, enumdirection, d0);
+                             }
+@@ -220,7 +220,7 @@ public class TileEntityPiston extends TileEntity implements ITickable {
+                 d1 = Math.min(d1, d0) + 0.01D;
+                 TileEntityPiston.i.set(enumdirection);
+                 entity.move(EnumMoveType.PISTON, d1 * (double) enumdirection1.getAdjacentX(), d1 * (double) enumdirection1.getAdjacentY(), d1 * (double) enumdirection1.getAdjacentZ());
+-                TileEntityPiston.i.set((Object) null);
++                TileEntityPiston.i.set(null);
+             }
+         }
+ 

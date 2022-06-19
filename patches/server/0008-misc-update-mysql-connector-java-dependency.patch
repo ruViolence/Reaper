@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 13:24:07 +0500
+Subject: [PATCH] misc: update mysql-connector-java dependency
+
+
+diff --git a/pom.xml b/pom.xml
+index 7c611a9be8ef1adeedd37a54ed3fc1ee4e8b1fbc..b7d0ef7cb2d80c2fcaf4a868ba4a389deed625be 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -62,7 +62,7 @@
+         <dependency>
+             <groupId>mysql</groupId>
+             <artifactId>mysql-connector-java</artifactId>
+-            <version>5.1.45</version>
++            <version>8.0.29</version> <!-- Reaper - Update mysql-connector-java dependency -->
+             <scope>runtime</scope>
+         </dependency>
+         <dependency>

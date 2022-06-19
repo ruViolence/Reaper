@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 13:21:46 +0500
+Subject: [PATCH] misc: update netty dependency
+
+
+diff --git a/pom.xml b/pom.xml
+index e23db48f4dd372e9a554fc98a0b3e51d00278d08..e10f67508c1d2dbbe41a1db8cf900a83987c88d8 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -32,7 +32,7 @@
+         <dependency>
+             <groupId>io.netty</groupId>
+             <artifactId>netty-all</artifactId>
+-            <version>4.1.24.Final</version>
++            <version>4.1.77.Final</version> <!-- Reaper - Update Netty dependency -->
+             <scope>compile</scope>
+         </dependency>
+         <dependency>

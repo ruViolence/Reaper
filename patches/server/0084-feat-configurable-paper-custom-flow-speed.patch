@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 07:22:51 +0500
+Subject: [PATCH] feat: configurable paper custom flow speed
+
+Creates an unnecessary load, even when most people don't need custom flow speed
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 831d48c2e6b689b3a4f512cbd6860a54729a35df..503ffa11262ba042586c56f0bed461d12669020b 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -171,4 +171,9 @@ public class ReaperConfig {
+     private static void halloweenMobFeature() {
+         halloweenMobFeature = getBoolean("halloween-mob-feature", true);
+     }
++
++    public static boolean paperCustomFlowSpeed;
++    private static void paperCustomFlowSpeed() {
++        paperCustomFlowSpeed = getBoolean("paper-custom-flow-speed", true);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/BlockFlowing.java b/src/main/java/net/minecraft/server/BlockFlowing.java
+index ff90e08ebebf536c13ec8c67c205f0f593a8c0e1..e09ae0cf9eb6d967a3dc63f9d974fd5181df468a 100644
+--- a/src/main/java/net/minecraft/server/BlockFlowing.java
++++ b/src/main/java/net/minecraft/server/BlockFlowing.java
+@@ -280,6 +280,7 @@ public class BlockFlowing extends BlockFluids {
+      * Paper - Get flow speed. Throttle if its water and flowing adjacent to lava
+      */
+     public int getFlowSpeed(World world, BlockPosition blockposition) {
++        if (!com.github.ruviolence.reaper.ReaperConfig.paperCustomFlowSpeed) return super.a(world); // Reaper
+         if (this.material == Material.LAVA) {
+             return world.worldProvider.isSkyMissing() ? world.paperConfig.lavaFlowSpeedNether : world.paperConfig.lavaFlowSpeedNormal;
+         }

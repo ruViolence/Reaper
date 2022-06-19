@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 9 Jun 2022 00:59:44 +0500
+Subject: [PATCH] perf: consolidate flush calls for entity tracker packets
+
+Credits to Dionysus:
+https://github.com/nopjmp/Dionysus/blob/3226d1174fdbd7b3194754a59be8fad5cd898af4/patches/server/0040-Per-Tick-Flush-consolidation.patch
+https://github.com/PaperMC/Paper/blob/276d830d223ddf68611beacc248285ae5a4e8a1f/patches/server/0755-Consolidate-flush-calls-for-entity-tracker-packets.patch
+
+Based on patch by SpottedLeaf
+
+[PATCH] Consolidate flush calls for entity tracker packets
+
+Most server packets seem to be sent from here, so try to avoid
+expensive flush calls from them.
+
+This change was motivated due to local testing:
+
+- My server spawn has 130 cows in it (for testing a prev. patch)
+- Try to let 200 players join spawn
+
+Without this change, I could only get 20 players on before they
+all started timing out due to the load put on the Netty I/O threads.
+
+With this change I could get all 200 on at 0ms ping.
+
+(one of the primary issues is that my CPU is kinda trash, and having
+4 extra threads at 100% is just too much for it).
+
+So in general this patch should reduce Netty I/O thread load.
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 73d76ff31453582614043198395372b283799ef1..b52dfca0e2306546f2fe2d363922514c49335704 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -957,7 +957,26 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+ 
+                 this.methodProfiler.b();
+                 this.methodProfiler.a("tracker");
++                // Reaper start - Flush consolidation
++                List<net.minecraft.server.PlayerConnection> disabledFlushes = new java.util.ArrayList<>(worldserver.players.size());
++                for (EntityHuman entityHuman : worldserver.players) {
++                    if (entityHuman instanceof EntityPlayer) {
++                        net.minecraft.server.PlayerConnection playerConnection = ((EntityPlayer) entityHuman).playerConnection;
++                        if (playerConnection != null) {
++                            playerConnection.networkManager.disableAutomaticFlush();
++                            disabledFlushes.add(playerConnection);
++                        }
++                    }
++                }
++                try { // Reaper end - Flush consolidation
+                 worldserver.getTracker().updatePlayers();
++                // Reaper start - Flush consolidation
++                } finally {
++                    for (net.minecraft.server.PlayerConnection playerConnection : disabledFlushes) {
++                        playerConnection.networkManager.enableAutomaticFlush();
++                    }
++                }
++                // Reaper end - Flush consolidation
+                 this.methodProfiler.b();
+                 this.methodProfiler.b();
+                 worldserver.explosionDensityCache.clear(); // Paper - Optimize explosions

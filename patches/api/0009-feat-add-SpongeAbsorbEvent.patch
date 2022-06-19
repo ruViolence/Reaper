@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 26 May 2022 09:22:23 +0500
+Subject: [PATCH] feat: add SpongeAbsorbEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/block/SpongeAbsorbEvent.java b/src/main/java/com/github/ruviolence/reaper/event/block/SpongeAbsorbEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..591af04b30cae0bebc587af5374b354b207edd95
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/block/SpongeAbsorbEvent.java
+@@ -0,0 +1,50 @@
++package com.github.ruviolence.reaper.event.block;
++
++import org.bukkit.block.Block;
++import org.bukkit.event.Cancellable;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.block.BlockEvent;
++
++import java.util.List;
++
++/**
++ * Called when a sponge absorbs water.
++ */
++public class SpongeAbsorbEvent extends BlockEvent implements Cancellable {
++    private static final HandlerList handlers = new HandlerList();
++    private boolean cancelled;
++    private List<Block> blocks;
++
++    public SpongeAbsorbEvent(Block block, List<Block> blocks) {
++        super(block);
++        this.blocks = blocks;
++    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean cancelled) {
++        this.cancelled = cancelled;
++    }
++
++    /**
++     * Returns the list of blocks that would have been removed or were removed from the absorb event.
++     *
++     * @return All absorbed blocks
++     */
++    public List<Block> blockList() {
++        return blocks;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}

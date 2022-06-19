@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 08:14:09 +0500
+Subject: [PATCH] feat: add PlayerAnvilDamageEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/ContainerAnvil.java b/src/main/java/net/minecraft/server/ContainerAnvil.java
+index b0d4962bfc16a059672da7a1ae9ce1d355c18889..1e90178125910222e459d8b246726b073a1347a7 100644
+--- a/src/main/java/net/minecraft/server/ContainerAnvil.java
++++ b/src/main/java/net/minecraft/server/ContainerAnvil.java
+@@ -74,6 +74,7 @@ public class ContainerAnvil extends Container {
+                     int i = ((Integer) iblockdata.get(BlockAnvil.DAMAGE)).intValue();
+ 
+                     ++i;
++                    if (new com.github.ruviolence.reaper.event.inventory.PlayerAnvilDamageEvent(getBukkitView(), world.getWorld().getBlockAt(blockposition.getX(), blockposition.getY(), blockposition.getZ()), i).callEvent()) // Reaper - PlayerAnvilDamageEvent
+                     if (i > 2) {
+                         world.setAir(blockposition);
+                         world.triggerEffect(1029, blockposition, 0);

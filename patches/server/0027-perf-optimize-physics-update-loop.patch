@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 00:35:07 +0500
+Subject: [PATCH] perf: optimize physics update loop
+
+Significantly increases the performance of the block physics. But slightly changes the order of updates. StackOverflowException is completely fixed.
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 58cf2cb04fcdd243939bb24be7102d1f8a8faa74..98a7ff62ece0d6e059b773b87b3ac3e7249e1f5b 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -148,6 +148,11 @@ public abstract class World implements IBlockAccess {
+     private org.spigotmc.TickLimiter tileLimiter;
+     private int tileTickPosition;
+     public final Map<Explosion.CacheKey, Float> explosionDensityCache = new HashMap<>(); // Paper - Optimize explosions
++    // Reaper start - Improve the physics update loop
++    private final List<org.apache.commons.lang3.tuple.ImmutableTriple<BlockPosition, Block, BlockPosition>> pendingUpdates = new ArrayList<>();
++    private final List<org.apache.commons.lang3.tuple.ImmutableTriple<BlockPosition, Block, BlockPosition>> toIterate = new ArrayList<>();
++    private boolean isUpdatingBlocks = false;
++    // Reaper end
+ 
+     public CraftWorld getWorld() {
+         return this.world;
+@@ -580,13 +585,21 @@ public abstract class World implements IBlockAccess {
+ 
+     public void a(BlockPosition blockposition, final Block block, BlockPosition blockposition1) {
+         if (true) { // Reaper - Remove isClientSide check
+-            IBlockData iblockdata = this.getType(blockposition);
++            // Reaper start - Optimize physics update loop
++            if (isUpdatingBlocks) {
++                pendingUpdates.add(new org.apache.commons.lang3.tuple.ImmutableTriple<>(blockposition, block, blockposition1));
++                return;
++            }
++            isUpdatingBlocks = true;
++            // IBlockData iblockdata = this.getType(blockposition); // Reaper - Move down 
+ 
+             try {
++                int depth = 1; // Reaper
+                 // CraftBukkit start
+                 CraftWorld world = ((WorldServer) this).getWorld();
+-                if (world != null && !((WorldServer)this).stopPhysicsEvent) { // Paper
+-                    BlockPhysicsEvent event = new BlockPhysicsEvent(world.getBlockAt(blockposition.getX(), blockposition.getY(), blockposition.getZ()), CraftMagicNumbers.getId(block), blockposition1.getX(), blockposition1.getY(), blockposition1.getZ()); // Paper - add source block
++                boolean hasPhysicsEvent = world != null && !((WorldServer) this).stopPhysicsEvent; // Reaper
++                if (hasPhysicsEvent) { // Paper
++                    BlockPhysicsEvent event = new BlockPhysicsEvent(world.getBlockAt(blockposition.getX(), blockposition.getY(), blockposition.getZ()), CraftMagicNumbers.getId(block), blockposition1.getX(), blockposition1.getY(), blockposition1.getZ(), depth); // Reaper - Add depth API // Paper - add source block
+                     this.getServer().getPluginManager().callEvent(event);
+ 
+                     if (event.isCancelled()) {
+@@ -594,7 +607,38 @@ public abstract class World implements IBlockAccess {
+                     }
+                 }
+                 // CraftBukkit end
+-                iblockdata.doPhysics(this, blockposition, block, blockposition1);
++                this.getType(blockposition).doPhysics(this, blockposition, block, blockposition1); // Reaper
++                if (pendingUpdates.isEmpty()) return; // If the next updates have not been queued after the first update
++
++                List<org.apache.commons.lang3.tuple.ImmutableTriple<BlockPosition, Block, BlockPosition>> pendingUpdates = this.pendingUpdates;
++                List<org.apache.commons.lang3.tuple.ImmutableTriple<BlockPosition, Block, BlockPosition>> toIterate = this.toIterate;
++                while (!pendingUpdates.isEmpty()) {
++                    toIterate.clear();
++                    for (int i = pendingUpdates.size() - 1; i >= 0; i--) { // reversed
++                        toIterate.add(pendingUpdates.get(i));
++                    }
++                    pendingUpdates.clear();
++
++                    for (int i = 0; i < toIterate.size(); i++) {
++                        ++depth;
++                        org.apache.commons.lang3.tuple.ImmutableTriple<BlockPosition, Block, BlockPosition> triple = toIterate.get(i);
++
++                        BlockPosition pos = triple.getLeft();
++                        Block b = triple.getMiddle();
++                        BlockPosition sourcePos = triple.getRight();
++
++                        if (hasPhysicsEvent) {
++                            BlockPhysicsEvent event = new BlockPhysicsEvent(world.getBlockAt(pos.getX(), pos.getY(), pos.getZ()), CraftMagicNumbers.getId(b), sourcePos.getX(), sourcePos.getY(), sourcePos.getZ(), depth); // Reaper - Add depth API
++                            this.getServer().getPluginManager().callEvent(event);
++
++                            if (event.isCancelled()) {
++                                continue;
++                            }
++                        }
++
++                        this.getType(pos).doPhysics(this, pos, b, sourcePos);
++                    }
++                }
+             } catch (StackOverflowError stackoverflowerror) { // Spigot Start
+                 haveWeSilencedAPhysicsCrash = true;
+                 blockLocation = blockposition.getX() + ", " + blockposition.getY() + ", " + blockposition.getZ();
+@@ -616,8 +660,11 @@ public abstract class World implements IBlockAccess {
+                         return this.a();
+                     }
+                 });
+-                CrashReportSystemDetails.a(crashreportsystemdetails, blockposition, iblockdata);
++                CrashReportSystemDetails.a(crashreportsystemdetails, blockposition, this.getType(blockposition));
+                 throw new ReportedException(crashreport);
++            } finally {
++                isUpdatingBlocks = false;
++                // Reaper end - Optimize physics update loop
+             }
+         }
+     }

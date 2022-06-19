@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 08:04:40 +0500
+Subject: [PATCH] feat: configurable step sounds
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 503ffa11262ba042586c56f0bed461d12669020b..6a79123dc9e8e495da6948cf85f8a4460db9e294 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -176,4 +176,9 @@ public class ReaperConfig {
+     private static void paperCustomFlowSpeed() {
+         paperCustomFlowSpeed = getBoolean("paper-custom-flow-speed", true);
+     }
++
++    public static boolean stepSounds;
++    private static void stepSounds() {
++        stepSounds = getBoolean("step-sounds", true);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 74da653cf7414da2924af7b07dab9af19ddfd278..4ca4084ea4a7b28669294b3d318e7f6076deef19 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -954,6 +954,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+ 
+                         this.a(this.ae(), f1, 1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.4F);
+                     } else {
++                        if (com.github.ruviolence.reaper.ReaperConfig.stepSounds) // Reaper
+                         this.a(blockposition, block1);
+                     }
+                 } else if (this.K > this.ay && this.ah() && iblockdata.getMaterial() == Material.AIR) {

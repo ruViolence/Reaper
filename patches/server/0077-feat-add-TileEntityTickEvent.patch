@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 3 Jun 2022 02:58:12 +0500
+Subject: [PATCH] feat: add TileEntityTickEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index ae4c221ae05938323a519d5316d1f0f2c2950b84..c69c5fb12db34118e628f8bf0cae81910e11bafb 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -127,6 +127,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+     // Reaper start
+     boolean hasEntityMoveEvent;
+     boolean hasEntityTickEvent;
++    boolean hasTileEntityTickEvent;
+     // Reaper end
+ 
+     public MinecraftServer(OptionSet options, Proxy proxy, DataConverterManager dataconvertermanager, YggdrasilAuthenticationService yggdrasilauthenticationservice, MinecraftSessionService minecraftsessionservice, GameProfileRepository gameprofilerepository, UserCache usercache) {
+@@ -889,6 +890,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         // Reaper start
+         hasEntityMoveEvent = com.github.ruviolence.reaper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length != 0;
+         hasEntityTickEvent = com.github.ruviolence.reaper.event.entity.EntityTickEvent.getHandlerList().getRegisteredListeners().length != 0;
++        hasTileEntityTickEvent = com.github.ruviolence.reaper.event.block.TileEntityTickEvent.getHandlerList().getRegisteredListeners().length != 0;
+         // Reaper end
+ 
+         int i;
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index b174b014a366b5fc429a0a0d4eda0ddbfb893b86..c5c1b2444509920b0553202959d1430fd759621e 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1706,6 +1706,7 @@ public abstract class World implements IBlockAccess {
+ 
+         this.O = true;
+         // Spigot start
++        boolean hasTileEntityTickEvent = getMinecraftServer().hasTileEntityTickEvent; // Reaper - Add TileEntityTickEvent
+         // Iterator iterator = this.tileEntityListTick.iterator();
+         int tilesThisCycle = 0;
+         for (tileTickPosition = 0; tileTickPosition < tileEntityListTick.size(); tileTickPosition++) { // Paper - Disable tick limiters
+@@ -1730,6 +1731,7 @@ public abstract class World implements IBlockAccess {
+                     shouldTick = shouldTick && !chunk.isUnloading() && chunk.scheduledForUnload == null;
+                 if (shouldTick && this.P.a(blockposition)) {
+                     // Paper end
++                    if (!hasTileEntityTickEvent || CraftEventFactory.callTileEntityTickEvent(tileentity)) // Reaper - Add TileEntityTickEvent
+                     try {
+                         this.methodProfiler.a(() -> {
+                             return String.valueOf(TileEntity.a(tileentity.getClass()));
+diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+index 97331a2179aaba64c232992e14ae8ddbb3fff14c..c04504623c38bc77ea7589f33020c33bcc112537 100644
+--- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
++++ b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+@@ -77,6 +77,7 @@ public class CraftEventFactory {
+     private static final com.github.ruviolence.reaper.event.entity.EntityMoveEvent entityMoveEvent = new com.github.ruviolence.reaper.event.entity.EntityMoveEvent(null);
+     private static final com.github.ruviolence.reaper.event.entity.AnyEntitySpawnEvent anyEntitySpawnEvent = new com.github.ruviolence.reaper.event.entity.AnyEntitySpawnEvent(null);
+     private static final com.github.ruviolence.reaper.event.entity.EntityTickEvent entityTickEvent = new com.github.ruviolence.reaper.event.entity.EntityTickEvent(null);
++    private static final com.github.ruviolence.reaper.event.block.TileEntityTickEvent tileEntityTickEvent = new com.github.ruviolence.reaper.event.block.TileEntityTickEvent(null);
+     // Reaper end
+ 
+     // helper methods
+@@ -1216,5 +1217,18 @@ public class CraftEventFactory {
+ 
+         return !event.isCancelled();
+     }
++
++    public static boolean callTileEntityTickEvent(TileEntity tileEntity) {
++        com.github.ruviolence.reaper.event.block.TileEntityTickEvent event = CraftEventFactory.tileEntityTickEvent;
++
++        BlockPosition pos = tileEntity.getPosition();
++        Block block = tileEntity.getWorld().getWorld().getBlockAt(pos.getX(), pos.getY(), pos.getZ());
++
++        event.setData(block);
++
++        Bukkit.getPluginManager().callEvent(event);
++
++        return !event.isCancelled();
++    }
+     // Reaper end
+ }

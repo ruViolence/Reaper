@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 12:15:31 +0500
+Subject: [PATCH] fix: dispenser shulker box crash
+
+https://youtu.be/zFrCb1RVyys?t=104
+
+diff --git a/src/main/java/net/minecraft/server/DispenserRegistry.java b/src/main/java/net/minecraft/server/DispenserRegistry.java
+index 718f2cb722c94e84eb9ff1587a28bb5021d69a4e..3b976e3765bc7700ac8dc9e424582bcc71844d83 100644
+--- a/src/main/java/net/minecraft/server/DispenserRegistry.java
++++ b/src/main/java/net/minecraft/server/DispenserRegistry.java
+@@ -758,7 +758,10 @@ public class DispenserRegistry {
+                 EnumDirection enumdirection1 = world.isEmpty(blockposition.down()) ? enumdirection : EnumDirection.UP;
+                 IBlockData iblockdata = block.getBlockData().set(BlockShulkerBox.a, enumdirection1);
+ 
+-                world.setTypeUpdate(blockposition, iblockdata);
++                // Reaper start
++                boolean wasPlaced = world.setTypeUpdate(blockposition, iblockdata);
++                if (!wasPlaced) return itemstack;
++                // Reaper end
+                 TileEntity tileentity = world.getTileEntity(blockposition);
+                 ItemStack itemstack1 = itemstack.cloneAndSubtract(1);
+ 

@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sat, 28 May 2022 18:06:45 +0500
+Subject: [PATCH] fix: rail and carpet dupe
+
+
+diff --git a/src/main/java/net/minecraft/server/BlockCarpet.java b/src/main/java/net/minecraft/server/BlockCarpet.java
+index 488c33a90b2406f07b2f0f68cf6ac3bca39ddd6d..0f4d96cf2871f5f088e3c612c1b7a69f8ce2ce6f 100644
+--- a/src/main/java/net/minecraft/server/BlockCarpet.java
++++ b/src/main/java/net/minecraft/server/BlockCarpet.java
+@@ -38,8 +38,10 @@ public class BlockCarpet extends Block {
+ 
+     private boolean e(World world, BlockPosition blockposition, IBlockData iblockdata) {
+         if (!this.b(world, blockposition)) {
++            if (!BlockPiston.IS_WORKING) { // Reaper start - Fix carpet dupe
+             this.b(world, blockposition, iblockdata, 0);
+             world.setAir(blockposition);
++            } // Reaper end
+             return false;
+         } else {
+             return true;
+diff --git a/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java b/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java
+index 7365b75c45af07271c33c90c7f1e3fd576e352b6..f442f5fca83667f0969d2112c2b0917f6ff330b9 100644
+--- a/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java
++++ b/src/main/java/net/minecraft/server/BlockMinecartTrackAbstract.java
+@@ -84,8 +84,10 @@ public abstract class BlockMinecartTrackAbstract extends Block {
+             }
+ 
+             if (flag && !world.isEmpty(blockposition)) {
++                if (!BlockPiston.IS_WORKING) { // Reaper start - Fix rail dupe
+                 this.b(world, blockposition, iblockdata, 0);
+                 world.setAir(blockposition);
++                } // Reaper end
+             } else {
+                 this.a(iblockdata, world, blockposition, block);
+             }
+diff --git a/src/main/java/net/minecraft/server/BlockPiston.java b/src/main/java/net/minecraft/server/BlockPiston.java
+index 154b0187e15363947825afbdfbcc6356fd58c5b4..891f976207ba84dce6b788c6153c7854835cc008 100644
+--- a/src/main/java/net/minecraft/server/BlockPiston.java
++++ b/src/main/java/net/minecraft/server/BlockPiston.java
+@@ -27,6 +27,7 @@ public class BlockPiston extends BlockDirectional {
+     protected static final AxisAlignedBB f = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.75D, 1.0D);
+     protected static final AxisAlignedBB g = new AxisAlignedBB(0.0D, 0.25D, 0.0D, 1.0D, 1.0D, 1.0D);
+     private final boolean sticky;
++    static boolean IS_WORKING = false; // Reaper - Fix rail and carpet dupe
+ 
+     public BlockPiston(boolean flag) {
+         super(Material.PISTON);
+@@ -357,6 +358,7 @@ public class BlockPiston extends BlockDirectional {
+                 aiblockdata[j] = iblockdata;
+             }
+ 
++            IS_WORKING = true; // Reaper - Fix rail and carpet dupe
+             for (k = list.size() - 1; k >= 0; --k) {
+                 blockposition2 = (BlockPosition) list.get(k);
+                 iblockdata = world.getType(blockposition2);
+@@ -367,6 +369,7 @@ public class BlockPiston extends BlockDirectional {
+                 --j;
+                 aiblockdata[j] = iblockdata;
+             }
++            IS_WORKING = false; // Reaper - Fix rail and carpet dupe
+ 
+             BlockPosition blockposition3 = blockposition.shift(enumdirection);
+ 

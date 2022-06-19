@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 1 Jun 2022 08:19:40 +0500
+Subject: [PATCH] perf: don't tick enchantment tables
+
+This ticking is only needed for clientside animation processing, so we don't need it.
+
+diff --git a/src/main/java/net/minecraft/server/TileEntityEnchantTable.java b/src/main/java/net/minecraft/server/TileEntityEnchantTable.java
+index 2c5ebde7ed7ad2a3fec0605f584432051413714b..0c6ebc8ff0fb7fc68c7902168449c4735b0757f0 100644
+--- a/src/main/java/net/minecraft/server/TileEntityEnchantTable.java
++++ b/src/main/java/net/minecraft/server/TileEntityEnchantTable.java
+@@ -2,8 +2,9 @@ package net.minecraft.server;
+ 
+ import java.util.Random;
+ 
+-public class TileEntityEnchantTable extends TileEntity implements ITickable, ITileEntityContainer {
++public class TileEntityEnchantTable extends TileEntity implements /*ITickable,*/ ITileEntityContainer { // Reaper - Don't tick enchantment tables
+ 
++    /* // Reaper start - Unused clientside animation fields
+     public int a;
+     public float f;
+     public float g;
+@@ -15,6 +16,7 @@ public class TileEntityEnchantTable extends TileEntity implements ITickable, ITi
+     public float m;
+     public float n;
+     private static final Random o = new Random();
++    */ // Reaper end
+     private String p;
+ 
+     public TileEntityEnchantTable() {}
+@@ -36,6 +38,7 @@ public class TileEntityEnchantTable extends TileEntity implements ITickable, ITi
+ 
+     }
+ 
++    /* // Reaper start - Don't tick enchantment tables
+     public void e() {
+         this.k = this.j;
+         this.m = this.l;
+@@ -96,6 +99,7 @@ public class TileEntityEnchantTable extends TileEntity implements ITickable, ITi
+         this.i += (f2 - this.i) * 0.9F;
+         this.f += this.i;
+     }
++    */ // Reaper end
+ 
+     public String getName() {
+         return this.hasCustomName() ? this.p : "container.enchant";

@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 1 Jun 2022 07:37:14 +0500
+Subject: [PATCH] perf: remove unnecessary synchronization
+
+
+diff --git a/src/main/java/net/minecraft/server/ChunkRegionLoader.java b/src/main/java/net/minecraft/server/ChunkRegionLoader.java
+index dee82ad78296644205f41401fd20cf269bf4df9a..e98a638eb3a2146a5e1cb68d34727c2bd627a78f 100644
+--- a/src/main/java/net/minecraft/server/ChunkRegionLoader.java
++++ b/src/main/java/net/minecraft/server/ChunkRegionLoader.java
+@@ -180,7 +180,7 @@ public class ChunkRegionLoader implements IChunkLoader, IAsyncChunkSaver {
+         return this.processSaveQueueEntry(false);
+     }
+ 
+-    private synchronized boolean processSaveQueueEntry(boolean logCompletion) {
++    private /*synchronized*/ boolean processSaveQueueEntry(boolean logCompletion) { // Reaper - Remove unnecessary synchronization
+         // CraftBukkit start
+         // Paper start - Chunk queue improvements
+         QueuedChunk chunk = queue.poll();

@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 11:26:51 +0500
+Subject: [PATCH] perf: use lambda over reflection in the EntityTypes
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityTypes.java b/src/main/java/net/minecraft/server/EntityTypes.java
+index 2359b31f4d94498d8d01eedaef9ff8323d65248c..3a16ce36873fb1e83317ec3f5387e289887e8a14 100644
+--- a/src/main/java/net/minecraft/server/EntityTypes.java
++++ b/src/main/java/net/minecraft/server/EntityTypes.java
+@@ -11,6 +11,12 @@ import javax.annotation.Nullable;
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+ 
++// Reaper start
++import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
++import java.lang.invoke.*;
++import java.util.function.Function;
++// Reaper end
++
+ public class EntityTypes {
+ 
+     // Paper start
+@@ -25,6 +31,7 @@ public class EntityTypes {
+     public static final Map<MinecraftKey, EntityTypes.MonsterEggInfo> eggInfo = Maps.newLinkedHashMap();
+     public static final Set<MinecraftKey> d = Sets.newHashSet();
+     private static final List<String> g = Lists.newArrayList();
++    private static final Map<Class<?>, Function<World, ? extends Entity>> entityGenerators = new Object2ObjectOpenHashMap<>(); // Reaper - Use lambda constructor
+ 
+     @Nullable public static MinecraftKey getKey(Entity entity) { return a(entity); } // Paper - OBFHELPER
+     @Nullable
+@@ -57,8 +64,10 @@ public class EntityTypes {
+             return null;
+         } else {
+             try {
+-                return (Entity) oclass.getConstructor(new Class[] { World.class}).newInstance(new Object[] { world});
+-            } catch (Exception exception) {
++                // Reaper start - Use lambda constructor
++                return entityGenerators.get(oclass).apply(world);
++            } catch (Throwable exception) {
++                // Reaper end
+                 exception.printStackTrace();
+                 return null;
+             }
+@@ -245,8 +254,16 @@ public class EntityTypes {
+ 
+     private static void a(int i, String s, Class<? extends Entity> oclass, String s1) {
+         try {
+-            oclass.getConstructor(new Class[] { World.class});
+-        } catch (NoSuchMethodException nosuchmethodexception) {
++            // Reaper start - Use lambda constructor
++            CallSite site = LambdaMetafactory.metafactory(MethodHandles.lookup(),
++                    "apply",
++                    MethodType.methodType(Function.class),
++                    MethodType.methodType(Entity.class, World.class).generic(),
++                    MethodHandles.lookup().unreflectConstructor(oclass.getConstructor(World.class)),
++                    MethodType.methodType(Entity.class, World.class));
++            entityGenerators.put(oclass, (Function<World, ? extends Entity>) site.getTarget().invoke());
++        } catch (Throwable e) {
++            // Reaper end
+             throw new RuntimeException("Invalid class " + oclass + " no constructor taking " + World.class.getName());
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/SpawnerCreature.java b/src/main/java/net/minecraft/server/SpawnerCreature.java
+index adfdecbc2048c50b28784214f5d97e2a6ea77696..afabca370253e71b69a518523f0de7c663ce0f84 100644
+--- a/src/main/java/net/minecraft/server/SpawnerCreature.java
++++ b/src/main/java/net/minecraft/server/SpawnerCreature.java
+@@ -215,7 +215,7 @@ public final class SpawnerCreature {
+                                                         EntityInsentient entityinsentient;
+ 
+                                                         try {
+-                                                            entityinsentient = (EntityInsentient) biomebase_biomemeta.b.getConstructor(new Class[] { World.class}).newInstance(new Object[] { worldserver});
++                                                            entityinsentient = (EntityInsentient) EntityTypes.a(biomebase_biomemeta.b, worldserver); // Reaper start - Use lambda constructor
+                                                         } catch (Exception exception) {
+                                                             exception.printStackTrace();
+                                                             ServerInternalException.reportInternalException(exception); // Paper
+@@ -327,7 +327,7 @@ public final class SpawnerCreature {
+                             EntityInsentient entityinsentient;
+ 
+                             try {
+-                                entityinsentient = (EntityInsentient) biomebase_biomemeta.b.getConstructor(new Class[] { World.class}).newInstance(new Object[] { world});
++                                entityinsentient = (EntityInsentient) EntityTypes.a(biomebase_biomemeta.b, world); // Reaper start - Use lambda constructor
+                             } catch (Exception exception) {
+                                 exception.printStackTrace();
+                                 ServerInternalException.reportInternalException(exception); // Paper

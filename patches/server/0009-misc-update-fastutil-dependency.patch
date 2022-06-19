@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 00:43:50 +0500
+Subject: [PATCH] misc: update fastutil dependency
+
+
+diff --git a/pom.xml b/pom.xml
+index b7d0ef7cb2d80c2fcaf4a868ba4a389deed625be..208fdbe93ed25bab64d62e7bda4a56af4c6152ac 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -28,6 +28,14 @@
+     </parent>
+ 
+     <dependencies>
++        <!-- Reaper start - Update fastutil dependency -->
++        <dependency>
++            <groupId>it.unimi.dsi</groupId>
++            <artifactId>fastutil</artifactId>
++            <version>8.5.8</version>
++            <scope>compile</scope>
++        </dependency>
++        <!-- Reaper end -->
+         <!-- bugfixes (netty#6607) -->
+         <dependency>
+             <groupId>io.netty</groupId>

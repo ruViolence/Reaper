@@ -1,0 +1,282 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 21:31:01 +0500
+Subject: [PATCH] perf: add Velocity natives for encryption and compression
+
+Credits to Tuinity: https://github.com/Tuinity/Tuinity/blob/935b901c15b04b8cfcade5fa06c67ec8f504ac96/patches/server/0050-Add-Velocity-natives-for-encryption-and-compression.patch
+
+diff --git a/pom.xml b/pom.xml
+index 7fd06792d7feaff91c1140c6655143fe9d6b892c..3ce010078065e367e04cf19c2bcc103a0cbed0a0 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -149,6 +149,14 @@
+             <version>1.3</version>
+             <scope>test</scope>
+         </dependency>
++        <!-- Reaper start - Add Velocity natives for encryption and compression -->
++        <dependency>
++            <groupId>com.velocitypowered</groupId>
++            <artifactId>velocity-native</artifactId>
++            <version>1.1.0-SNAPSHOT</version>
++            <scope>compile</scope>
++        </dependency>
++        <!-- Reaper end -->
+     </dependencies>
+ 
+     <repositories>
+diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
+index 63f5785aede6799d5229751f5c09126ebad93e6f..1a03c3ff0810b9c43f3b7553e78cb92f28ea5773 100644
+--- a/src/main/java/net/minecraft/server/NetworkManager.java
++++ b/src/main/java/net/minecraft/server/NetworkManager.java
+@@ -284,8 +284,14 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet<?>> {
+ 
+     public void a(SecretKey secretkey) {
+         this.o = true;
+-        this.channel.pipeline().addBefore("splitter", "decrypt", new PacketDecrypter(MinecraftEncryption.a(2, secretkey)));
+-        this.channel.pipeline().addBefore("prepender", "encrypt", new PacketEncrypter(MinecraftEncryption.a(1, secretkey)));
++        // Reaper start
++        try {
++            this.channel.pipeline().addBefore("splitter", "decrypt", new PacketDecrypter(/*MinecraftEncryption.a(2, secretkey)*/ secretkey));
++            this.channel.pipeline().addBefore("prepender", "encrypt", new PacketEncrypter(/*MinecraftEncryption.a(1, secretkey)*/ secretkey));
++        } catch (java.security.GeneralSecurityException e) {
++            throw new RuntimeException("Couldn't enable encryption", e);
++        }
++        // Reaper end
+     }
+ 
+     public boolean isConnected() {
+diff --git a/src/main/java/net/minecraft/server/PacketCompressor.java b/src/main/java/net/minecraft/server/PacketCompressor.java
+index 7b30ba0818b81e395f493b2affc6dff27c7eb781..4bc0cb9624ac5912dfecfe01e297a0ceabe18854 100644
+--- a/src/main/java/net/minecraft/server/PacketCompressor.java
++++ b/src/main/java/net/minecraft/server/PacketCompressor.java
+@@ -7,13 +7,20 @@ import java.util.zip.Deflater;
+ 
+ public class PacketCompressor extends MessageToByteEncoder<ByteBuf> {
+ 
++    /* // Reaper start
+     private final byte[] a = new byte[8192];
+     private final Deflater b;
++    */
++    private final com.velocitypowered.natives.compression.VelocityCompressor compressor;
++    // Reaper end
+     private int c;
+ 
+     public PacketCompressor(int i) {
+         this.c = i;
+-        this.b = new Deflater();
++        // Reaper start
++        // this.b = new Deflater();
++        this.compressor = com.velocitypowered.natives.util.Natives.compress.get().create(-1);
++        // Reaper end
+     }
+ 
+     protected void a(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, ByteBuf bytebuf1) throws Exception {
+@@ -24,6 +31,7 @@ public class PacketCompressor extends MessageToByteEncoder<ByteBuf> {
+             packetdataserializer.d(0);
+             packetdataserializer.writeBytes(bytebuf);
+         } else {
++            /* // Reaper start
+             byte[] abyte = new byte[i];
+ 
+             bytebuf.readBytes(abyte);
+@@ -38,10 +46,32 @@ public class PacketCompressor extends MessageToByteEncoder<ByteBuf> {
+             }
+ 
+             this.b.reset();
++            */
++            packetdataserializer.d(i);
++            ByteBuf source = com.velocitypowered.natives.util.MoreByteBufUtils.ensureCompatible(channelhandlercontext.alloc(),
++                    this.compressor, bytebuf);
++            try {
++                this.compressor.deflate(source, bytebuf1);
++            } finally {
++                source.release();
++            }
++            // Reaper end
+         }
+ 
+     }
+ 
++    // Reaper start
++    @Override
++    protected ByteBuf allocateBuffer(ChannelHandlerContext ctx, ByteBuf msg, boolean preferDirect) throws Exception {
++        return com.velocitypowered.natives.util.MoreByteBufUtils.preferredBuffer(ctx.alloc(), this.compressor, msg.readableBytes() + 1);
++    }
++
++    @Override
++    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
++        this.compressor.close();
++    }
++    // Reaper end
++
+     public void a(int i) {
+         this.c = i;
+     }
+diff --git a/src/main/java/net/minecraft/server/PacketDecompressor.java b/src/main/java/net/minecraft/server/PacketDecompressor.java
+index ae558c33cbc0aca5c4c855620b2e0d6e329d9cb8..06b5643ca2f18ff9cd43fd6b90f77af88fa9e1bd 100644
+--- a/src/main/java/net/minecraft/server/PacketDecompressor.java
++++ b/src/main/java/net/minecraft/server/PacketDecompressor.java
+@@ -10,12 +10,18 @@ import java.util.zip.Inflater;
+ 
+ public class PacketDecompressor extends ByteToMessageDecoder {
+ 
+-    private final Inflater a;
++    // Reaper start
++    // private final Inflater a;
++    private final com.velocitypowered.natives.compression.VelocityCompressor compressor;
++    // Reaper end
+     private int b;
+ 
+     public PacketDecompressor(int i) {
+         this.b = i;
+-        this.a = new Inflater();
++        // Reaper start
++        // this.a = new Inflater();
++        this.compressor = com.velocitypowered.natives.util.Natives.compress.get().create(-1);
++        // Reaper end
+     }
+ 
+     protected void decode(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, List<Object> list) throws Exception {
+@@ -34,6 +40,7 @@ public class PacketDecompressor extends ByteToMessageDecoder {
+                     throw new DecoderException("Badly compressed packet - size of " + i + " is larger than protocol maximum of " + 2097152);
+                 }
+ 
++                /* // Reaper start
+                 byte[] abyte = new byte[packetdataserializer.readableBytes()];
+ 
+                 packetdataserializer.readBytes(abyte);
+@@ -43,11 +50,32 @@ public class PacketDecompressor extends ByteToMessageDecoder {
+                 this.a.inflate(abyte1);
+                 list.add(Unpooled.wrappedBuffer(abyte1));
+                 this.a.reset();
++                */
++                ByteBuf compatibleIn = com.velocitypowered.natives.util.MoreByteBufUtils.ensureCompatible(channelhandlercontext.alloc(), compressor, bytebuf);
++                ByteBuf uncompressed = com.velocitypowered.natives.util.MoreByteBufUtils.preferredBuffer(channelhandlercontext.alloc(), compressor, i);
++                try {
++                    compressor.inflate(compatibleIn, uncompressed, i);
++                    list.add(uncompressed);
++                    bytebuf.clear();
++                } catch (Exception e) {
++                    uncompressed.release();
++                    throw e;
++                } finally {
++                    compatibleIn.release();
++                }
++                // Reaper end
+             }
+ 
+         }
+     }
+ 
++    // Reaper start
++    @Override
++    public void handlerRemoved0(ChannelHandlerContext ctx) throws Exception {
++        this.compressor.close();
++    }
++    // Reaper end
++
+     public void a(int i) {
+         this.b = i;
+     }
+diff --git a/src/main/java/net/minecraft/server/PacketDecrypter.java b/src/main/java/net/minecraft/server/PacketDecrypter.java
+index f1948b4b125ea5f1b3da01f7ee615af845e608ad..0d6577b335cd81af1337988548bbf684a165eaec 100644
+--- a/src/main/java/net/minecraft/server/PacketDecrypter.java
++++ b/src/main/java/net/minecraft/server/PacketDecrypter.java
+@@ -8,14 +8,27 @@ import javax.crypto.Cipher;
+ 
+ public class PacketDecrypter extends MessageToMessageDecoder<ByteBuf> {
+ 
+-    private final PacketEncryptionHandler a;
++    // Reaper start
++    // private final PacketEncryptionHandler a;
++    private final com.velocitypowered.natives.encryption.VelocityCipher cipher;
+ 
+-    public PacketDecrypter(Cipher cipher) {
+-        this.a = new PacketEncryptionHandler(cipher);
++    public PacketDecrypter(/*Cipher cipher*/ javax.crypto.SecretKey key) throws java.security.GeneralSecurityException {
++        // this.a = new PacketEncryptionHandler(cipher);
++        this.cipher = com.velocitypowered.natives.util.Natives.cipher.get().forDecryption(key);
++        // Reaper end
+     }
+ 
+     protected void a(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, List<Object> list) throws Exception {
+-        list.add(this.a.a(channelhandlercontext, bytebuf));
++        // Reaper start
++        ByteBuf compatible = com.velocitypowered.natives.util.MoreByteBufUtils.ensureCompatible(channelhandlercontext.alloc(), cipher, bytebuf).slice();
++        try {
++            cipher.process(compatible);
++            list.add(compatible);
++        } catch (Exception e) {
++            compatible.release(); // compatible will never be used if we throw an exception
++            throw e;
++        }
++        // Reaper end
+     }
+ 
+     @Override
+diff --git a/src/main/java/net/minecraft/server/PacketEncrypter.java b/src/main/java/net/minecraft/server/PacketEncrypter.java
+index 9b2155612d6b09feb35947a9609639a95fe41d88..8186b0765a6a27a9258cdb68179accde31268dc5 100644
+--- a/src/main/java/net/minecraft/server/PacketEncrypter.java
++++ b/src/main/java/net/minecraft/server/PacketEncrypter.java
+@@ -5,20 +5,39 @@ import io.netty.channel.ChannelHandlerContext;
+ import io.netty.handler.codec.MessageToByteEncoder;
+ import javax.crypto.Cipher;
+ 
+-public class PacketEncrypter extends MessageToByteEncoder<ByteBuf> {
++// Reaper start
++// We rewrite this class as the Velocity natives support in-place encryption
++public class PacketEncrypter extends io.netty.handler.codec.MessageToMessageEncoder<ByteBuf> {
+ 
+-    private final PacketEncryptionHandler a;
++    private final com.velocitypowered.natives.encryption.VelocityCipher cipher;
++    // private final PacketEncryptionHandler a;
+ 
+-    public PacketEncrypter(Cipher cipher) {
+-        this.a = new PacketEncryptionHandler(cipher);
++    public PacketEncrypter(/*Cipher cipher*/ javax.crypto.SecretKey key) throws java.security.GeneralSecurityException {
++        // this.a = new PacketEncryptionHandler(cipher);
++        this.cipher = com.velocitypowered.natives.util.Natives.cipher.get().forEncryption(key);
+     }
+ 
++    /*
+     protected void a(ChannelHandlerContext channelhandlercontext, ByteBuf bytebuf, ByteBuf bytebuf1) throws Exception {
+         this.a.a(bytebuf, bytebuf1);
+     }
++    */
+ 
+     @Override
+-    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+-        this.a(ctx, msg, out);
++    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, java.util.List<Object> out) throws Exception {
++        ByteBuf compatible = com.velocitypowered.natives.util.MoreByteBufUtils.ensureCompatible(ctx.alloc(), this.cipher, msg);
++        try {
++            this.cipher.process(compatible);
++            out.add(compatible);
++        } catch (Exception e) {
++            compatible.release(); // compatible will never be used if we throw an exception
++            throw e;
++        }
++    }
++
++    @Override
++    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
++        cipher.close();
+     }
+ }
++// Reaper end
+diff --git a/src/main/java/net/minecraft/server/ServerConnection.java b/src/main/java/net/minecraft/server/ServerConnection.java
+index 3551a192237c9f2d9f18a1baac05f04ab780ed4c..696760dfdca1610f36602c145dfc86cbca55d3c5 100644
+--- a/src/main/java/net/minecraft/server/ServerConnection.java
++++ b/src/main/java/net/minecraft/server/ServerConnection.java
+@@ -92,6 +92,11 @@ public class ServerConnection {
+                 ServerConnection.e.info("Using default channel type");
+             }
+ 
++            // Reaper start - Indicate Velocity natives in use
++            ServerConnection.e.info("Reaper: using " + com.velocitypowered.natives.util.Natives.compress.getLoadedVariant() + " compression from Velocity.");
++            ServerConnection.e.info("Reaper: using " + com.velocitypowered.natives.util.Natives.cipher.getLoadedVariant() + " cipher from Velocity.");
++            // Reaper end
++
+             this.g.add(((ServerBootstrap) ((ServerBootstrap) (new ServerBootstrap()).channel(oclass)).childHandler(new ChannelInitializer() {
+                 protected void initChannel(Channel channel) throws Exception {
+                     try {

@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 16 Jun 2022 19:01:36 +0500
+Subject: [PATCH] feat: add new "setTypeIdAndData" method to the Block class
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 88cd8bd316b3fbd667b63a4cdd607b5b91849e96..7ac6d65b325e3095575e0b42b5d978659c5b5337 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -500,8 +500,12 @@ public class Chunk {
+     }
+     */ // Reaper end
+ 
++    // Reaper start
++    @Nullable
++    public IBlockData a(BlockPosition blockposition, IBlockData iblockdata) { return setBlockState(blockposition, iblockdata, true, true); }
+     @Nullable
+-    public IBlockData a(BlockPosition blockposition, IBlockData iblockdata) {
++    public IBlockData setBlockState(BlockPosition blockposition, IBlockData iblockdata, boolean notify, boolean updateLight) {
++        // Reaper end
+         int i = blockposition.getX() & 15;
+         int j = blockposition.getY();
+         int k = blockposition.getZ() & 15;
+@@ -535,15 +539,22 @@ public class Chunk {
+             chunksection.setType(i, j & 15, k, iblockdata);
+             if (block1 != block) {
+                 if (true) { // Reaper - Remove isClientSide check
++                    if (notify) // Reaper
+                     block1.remove(this.world, blockposition, iblockdata1);
+                 } else if (block1 instanceof ITileEntity) {
+                     this.world.s(blockposition);
+                 }
++                // Reaper start
++                if (!notify && block1 instanceof ITileEntity) {
++                    world.s(blockposition);
++                }
++                // Reaper end
+             }
+ 
+             if (chunksection.getType(i, j & 15, k).getBlock() != block) {
+                 return null;
+             } else {
++                if (updateLight) // Reaper start
+                 if (flag) {
+                     this.initLighting();
+                 } else {
+@@ -575,6 +586,7 @@ public class Chunk {
+                 }
+ 
+                 // CraftBukkit - Don't place while processing the BlockPlaceEvent, unless it's a BlockContainer. Prevents blocks such as TNT from activating when cancelled.
++                if (notify) // Reaper
+                 if (block1 != block && (!this.world.captureBlockStates || block instanceof BlockTileEntity)) { // Reaper - Remove isClientSide check
+                     block.onPlace(this.world, blockposition, iblockdata);
+                 }
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 0df4136a684cb686f09412524d9cb3d257834b72..ab3e140cdc2438d4ae73d0ccc784146fbae86bcc 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -363,7 +363,10 @@ public abstract class World implements IBlockAccess {
+         return this.isChunkLoaded(i, j, false) ? true : this.chunkProvider.e(i, j);
+     }
+ 
+-    public boolean setTypeAndData(BlockPosition blockposition, IBlockData iblockdata, int i) {
++    // Reaper start
++    public boolean setTypeAndData(BlockPosition blockposition, IBlockData iblockdata, int i) { return setTypeAndData(blockposition, iblockdata, i, true, true); }
++    public boolean setTypeAndData(BlockPosition blockposition, IBlockData iblockdata, int i, boolean notify, boolean updateLight) {
++        // Reaper end
+         // CraftBukkit start - tree generation
+         if (this.captureTreeGeneration) {
+             BlockState blockstate = null;
+@@ -402,7 +405,7 @@ public abstract class World implements IBlockAccess {
+             }
+             // CraftBukkit end
+ 
+-            IBlockData iblockdata1 = chunk.a(blockposition, iblockdata);
++            IBlockData iblockdata1 = chunk.setBlockState(blockposition, iblockdata, notify, updateLight); // Reaper
+ 
+             if (iblockdata1 == null) {
+                 // CraftBukkit start - remove blockstate if failed
+@@ -412,6 +415,7 @@ public abstract class World implements IBlockAccess {
+                 // CraftBukkit end
+                 return false;
+             } else {
++                if (updateLight) // Reaper
+                 if (iblockdata.c() != iblockdata1.c() || iblockdata.d() != iblockdata1.d()) {
+                     this.methodProfiler.a("checkLight");
+                     // chunk.runOrQueueLightUpdate(() -> this.w(blockposition)); // Reaper - Remove Paper lighting queue // Paper - Queue light update
+diff --git a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+index cc77e85cdcc8f6f61e771337f231f13ee90dfcbf..700e917fef9bebe294442c08d50888723bb20bf0 100644
+--- a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
++++ b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+@@ -132,20 +132,23 @@ public class CraftBlock implements Block {
+         return setTypeIdAndData(type, (byte) block.toLegacyData(block.getBlockData()), applyPhysics);
+     }
+ 
+-    public boolean setTypeIdAndData(final int type, final byte data, final boolean applyPhysics) {
++    // Reaper start
++    public boolean setTypeIdAndData(final int type, final byte data, final boolean applyPhysics) { return setTypeIdAndData(type, data, applyPhysics, true, true); }
++    public boolean setTypeIdAndData(final int type, final byte data, final boolean applyPhysics, final boolean notify, final boolean updateLight) {
++        // Reaper end
+         IBlockData blockData = getNMSBlock(type).fromLegacyData(data);
+         BlockPosition position = new BlockPosition(x, y, z);
+ 
+         // SPIGOT-611: need to do this to prevent glitchiness. Easier to handle this here (like /setblock) than to fix weirdness in tile entity cleanup
+         if (type != 0 && blockData.getBlock() instanceof BlockTileEntity && type != getTypeId()) {
+-            chunk.getHandle().getWorld().setTypeAndData(position, Blocks.AIR.getBlockData(), 0);
++            chunk.getHandle().getWorld().setTypeAndData(position, Blocks.AIR.getBlockData(), 0, notify, updateLight); // Reaper
+         }
+ 
+         if (applyPhysics) {
+-            return chunk.getHandle().getWorld().setTypeAndData(position, blockData, 3);
++            return chunk.getHandle().getWorld().setTypeAndData(position, blockData, 3, notify, updateLight); // Reaper
+         } else {
+             IBlockData old = chunk.getHandle().getBlockData(position);
+-            boolean success = chunk.getHandle().getWorld().setTypeAndData(position, blockData, 18); // NOTIFY | NO_OBSERVER
++            boolean success = chunk.getHandle().getWorld().setTypeAndData(position, blockData, 18, notify, updateLight); // NOTIFY | NO_OBSERVER // Reaper
+             if (success) {
+                 chunk.getHandle().getWorld().notify(
+                         position,

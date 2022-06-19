@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 10:24:33 +0500
+Subject: [PATCH] fix: attempt to reduce EntityTracker memory leakage
+
+If some plugins cause entity memory leaks, this will reduce the amount of memory they take up. But I'm not sure if it really works.
+
+diff --git a/src/main/java/net/minecraft/server/EntityTracker.java b/src/main/java/net/minecraft/server/EntityTracker.java
+index 4822c22b3b1b57d0aa7555aad39a9b6521798448..b644fb09a69b8494d3ccf9595857c9a35f1a1308 100644
+--- a/src/main/java/net/minecraft/server/EntityTracker.java
++++ b/src/main/java/net/minecraft/server/EntityTracker.java
+@@ -168,6 +168,7 @@ public class EntityTracker {
+         if (entitytrackerentry1 != null) {
+             this.c.remove(entitytrackerentry1);
+             entitytrackerentry1.a();
++            entitytrackerentry1.trackedPlayers.clear(); // Reaper - Attempt to reduce memory leakage
+         }
+ 
+     }
+diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
+index eb3f6df703416c0a9c26b68eb841c3ae8f835d99..acafc38b5a730777578b87966da612beb5b10155 100644
+--- a/src/main/java/net/minecraft/server/PlayerList.java
++++ b/src/main/java/net/minecraft/server/PlayerList.java
+@@ -499,6 +499,7 @@ public abstract class PlayerList {
+         // CraftBukkit end
+ 
+         ChunkIOExecutor.adjustPoolSize(this.getPlayerCount()); // CraftBukkit
++        worldserver.getTracker().untrackPlayer(entityplayer); // Reaper - Attempt to reduce memory leakage
+ 
+         return playerQuitEvent.getQuitMessage(); // CraftBukkit
+     }

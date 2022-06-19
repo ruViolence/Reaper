@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 26 May 2022 10:12:29 +0500
+Subject: [PATCH] perf: optimize unused
+
+
+diff --git a/src/main/java/org/bukkit/ChatColor.java b/src/main/java/org/bukkit/ChatColor.java
+index 5a960f3c7bab6845f1a901c28e2648eb972cdd41..ffa8c6b60ee5d97e39a2d6d06d116949f3eecc37 100644
+--- a/src/main/java/org/bukkit/ChatColor.java
++++ b/src/main/java/org/bukkit/ChatColor.java
+@@ -221,7 +221,7 @@ public enum ChatColor{
+     private final char code;
+     private final boolean isFormat;
+     private final String toString;
+-    private final static Map<Integer, ChatColor> BY_ID = Maps.newHashMap();
++    // private final static Map<Integer, ChatColor> BY_ID = Maps.newHashMap(); // Reaper - Optimize unused
+     private final static Map<Character, ChatColor> BY_CHAR = Maps.newHashMap();
+ 
+     private ChatColor(char code, int intCode) {
+@@ -364,7 +364,7 @@ public enum ChatColor{
+ 
+     static {
+         for (ChatColor color : values()) {
+-            BY_ID.put(color.intCode, color);
++            // BY_ID.put(color.intCode, color); // Reaper - Optimize unused
+             BY_CHAR.put(color.code, color);
+         }
+     }
+diff --git a/src/main/java/org/bukkit/plugin/SimplePluginManager.java b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+index 391713f443bffc87bb49947a88c7d0cb20f506f0..9393459f0a1666ddf0b988042655eb47d6c2f367 100644
+--- a/src/main/java/org/bukkit/plugin/SimplePluginManager.java
++++ b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+@@ -51,7 +51,7 @@ public final class SimplePluginManager implements PluginManager {
+     private final Map<Boolean, Set<Permission>> defaultPerms = new LinkedHashMap<Boolean, Set<Permission>>();
+     private final Map<String, Map<Permissible, Boolean>> permSubs = new HashMap<String, Map<Permissible, Boolean>>();
+     private final Map<Boolean, Map<Permissible, Boolean>> defSubs = new HashMap<Boolean, Map<Permissible, Boolean>>();
+-    private boolean useTimings = false;
++    // private boolean useTimings = false; // Reaper - Optimize unused
+ 
+     public SimplePluginManager(Server instance, SimpleCommandMap commandMap) {
+         server = instance;

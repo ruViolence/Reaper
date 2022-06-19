@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 3 Jun 2022 05:24:58 +0500
+Subject: [PATCH] perf: use custom PacketPlayOutBlockChange constructor
+
+
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutBlockChange.java b/src/main/java/net/minecraft/server/PacketPlayOutBlockChange.java
+index 1ca03882983bfd2f04fa0e5300e3db56f99771b9..33447e1b5370edd4533f7d52499e00d0693d89cb 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutBlockChange.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutBlockChange.java
+@@ -14,6 +14,13 @@ public class PacketPlayOutBlockChange implements Packet<PacketListenerPlayOut> {
+         this.block = world.getType(blockposition);
+     }
+ 
++    // Reaper start
++    public PacketPlayOutBlockChange(BlockPosition blockposition, IBlockData iblockdata) {
++        this.a = blockposition;
++        this.block = iblockdata;
++    }
++    // Reaper end
++
+     public void a(PacketDataSerializer packetdataserializer) throws IOException {
+         this.a = packetdataserializer.e();
+         this.block = (IBlockData) Block.REGISTRY_ID.fromId(packetdataserializer.g());
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 26f881e9f3bc2ec29f19f0cc283221372d847011..b2685bce3dfa8767598f7f4e6797584d81c39cfb 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -950,8 +950,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+                         this.player.playerInteractManager.e();
+                     }
+ 
+-                    if (worldserver.getType(blockposition).getMaterial() != Material.AIR) {
+-                        this.player.playerConnection.sendPacket(new PacketPlayOutBlockChange(worldserver, blockposition));
++                    // Reaper start - Use custom constructor
++                    IBlockData blockData = worldserver.getType(blockposition);
++                    if (blockData.getMaterial() != Material.AIR) {
++                        this.player.playerConnection.sendPacket(new PacketPlayOutBlockChange(blockposition, blockData));
++                        // Reaper end
+                     }
+                 }
+ 
+diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+index f6b15a4d78e8b7ae7213b2a2bbbf6dc6e74b1086..5458e442916d4912c4c6eec6223c07d2f2eb95f2 100644
+--- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
++++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+@@ -157,10 +157,10 @@ public class PlayerInteractManager {
+                 if (block == Blocks.WOODEN_DOOR) {
+                     // For some reason *BOTH* the bottom/top part have to be marked updated.
+                     boolean bottom = data.get(BlockDoor.HALF) == BlockDoor.EnumDoorHalf.LOWER;
+-                    ((EntityPlayer) this.player).playerConnection.sendPacket(new PacketPlayOutBlockChange(this.world, blockposition));
++                    ((EntityPlayer) this.player).playerConnection.sendPacket(new PacketPlayOutBlockChange(blockposition, data)); // Reaper - Use custom constructor
+                     ((EntityPlayer) this.player).playerConnection.sendPacket(new PacketPlayOutBlockChange(this.world, bottom ? blockposition.up() : blockposition.down()));
+                 } else if (block == Blocks.TRAPDOOR) {
+-                    ((EntityPlayer) this.player).playerConnection.sendPacket(new PacketPlayOutBlockChange(this.world, blockposition));
++                    ((EntityPlayer) this.player).playerConnection.sendPacket(new PacketPlayOutBlockChange(blockposition, data));
+                 }
+             } else if (iblockdata.getMaterial() != Material.AIR) {
+                 block.attack(this.world, blockposition, this.player);
+@@ -504,8 +504,7 @@ public class PlayerInteractManager {
+                     ((EntityPlayer) entityhuman).playerConnection.sendPacket(new PacketPlayOutCloseWindow());
+                 } else if (blockdata.getBlock() instanceof BlockFlowerPot) {
+                     // Send a block change to air and then send back the correct block, just to make the client happy
+-                    PacketPlayOutBlockChange packet = new PacketPlayOutBlockChange(this.world, blockposition);
+-                    packet.block = Blocks.AIR.getBlockData();
++                    PacketPlayOutBlockChange packet = new PacketPlayOutBlockChange(blockposition, Blocks.AIR.getBlockData()); // Reaper - Use custom constructor
+                     this.player.playerConnection.sendPacket(packet);
+ 
+                     this.player.playerConnection.sendPacket(new PacketPlayOutBlockChange(this.world, blockposition));
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+index b0934ae20b8a05b96048cfd25b4fcadf2c47d4b4..82392c3439c1692ec2179c87415204ee02f3dd2a 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftPlayer.java
+@@ -519,9 +519,8 @@ public class CraftPlayer extends CraftHumanEntity implements Player {
+     public void sendBlockChange(Location loc, int material, byte data) {
+         if (getHandle().playerConnection == null) return;
+ 
+-        PacketPlayOutBlockChange packet = new PacketPlayOutBlockChange(((CraftWorld) loc.getWorld()).getHandle(), new BlockPosition(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
++        PacketPlayOutBlockChange packet = new PacketPlayOutBlockChange(new BlockPosition(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()), CraftMagicNumbers.getBlock(material).fromLegacyData(data)); // Reaper - Use custom constructor
+ 
+-        packet.block = CraftMagicNumbers.getBlock(material).fromLegacyData(data);
+         getHandle().playerConnection.sendPacket(packet);
+     }
+ 

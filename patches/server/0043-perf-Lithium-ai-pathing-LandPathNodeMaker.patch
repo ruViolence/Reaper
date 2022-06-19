@@ -1,0 +1,586 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 01:41:54 +0500
+Subject: [PATCH] perf: Lithium - ai/pathing/LandPathNodeMaker
+
+Determining the type of node offered by a block state is a very slow operation due to the nasty chain of tag, instanceof, and block property checks. Since each blockstate can only map to one type of node, we can create a cache which stores the result of this complicated code path. This provides a significant speed-up in path-finding code and should be relatively safe.
+
+Credits to Lithium: https://github.com/CaffeineMC/lithium-fabric/blob/a25ca4782f7170a5b38805894ffb56990b91a0b5/src/main/java/me/jellysquid/mods/lithium/mixin/ai/pathing/LandPathNodeMakerMixin.java
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/lithium/WorldHelper.java b/src/main/java/com/github/ruviolence/reaper/lithium/WorldHelper.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a0bb7323dc2b6e7f5be84f707f9805a99671f46
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/lithium/WorldHelper.java
+@@ -0,0 +1,11 @@
++package com.github.ruviolence.reaper.lithium;
++
++public class WorldHelper {
++    public static boolean areNeighborsWithinSameChunk(int x, int y, int z) {
++        int localX = x & 15;
++        int localY = y & 15;
++        int localZ = z & 15;
++
++        return localX > 0 && localY > 0 && localZ > 0 && localX < 15 && localY < 15 && localZ < 15;
++    }
++}
+diff --git a/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/BlockPathingBehavior.java b/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/BlockPathingBehavior.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9f295474d01adaa044bb3048e87c26c5ec554c43
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/BlockPathingBehavior.java
+@@ -0,0 +1,40 @@
++package com.github.ruviolence.reaper.lithium.ai.pathing;
++
++import net.minecraft.server.IBlockAccess;
++import net.minecraft.server.PathType;
++import net.minecraft.server.PathfinderNormal;
++
++/**
++ * Provides the ability for mods to specify what {@link PathType} their block uses for path-finding. This exists
++ * because Lithium replaces a large amount of entity path-finding logic, which can cause other mods which mixin to
++ * this code to fail or explode into other issues.
++ */
++public interface BlockPathingBehavior {
++    /**
++     * Controls how the given block state is seen in path-finding.
++     * <p>
++     * If you were mixing into the method {@link PathfinderNormal#b(IBlockAccess, int, int, int)},
++     * you will want to implement this method with your logic instead.
++     * <p>
++     * The result of this method is cached in the block state and will only be called on block initialization.
++     *
++     * @return The path node type for the given block state
++     */
++    PathType getPathNodeType();
++
++    /**
++     * Controls the behavior of the "neighbor" check for path finding. This is used when scanning the blocks next
++     * to another path node for nearby obstacles (i.e. dangerous blocks the entity could possibly collide with, such as
++     * fire or cactus.)
++     * <p>
++     * If you were mixing into the method {@link PathfinderNormal#a(IBlockAccess, int, int, int, PathType)}, you will
++     * want to implement
++     * this method with your logic instead.
++     * <p>
++     * The result of this method is cached in the block state and will only be called on block initialization.
++     *
++     * @return The path node type for the given block state when this block is being searched as a
++     * neighbor of another path node
++     */
++    PathType getNeighborPathNodeType();
++}
+diff --git a/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/PathNodeCache.java b/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/PathNodeCache.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..b5c8c66efa21fc97656e75f78620303fb24d860f
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/PathNodeCache.java
+@@ -0,0 +1,98 @@
++package com.github.ruviolence.reaper.lithium.ai.pathing;
++
++import it.unimi.dsi.fastutil.objects.Reference2BooleanMap;
++import it.unimi.dsi.fastutil.objects.Reference2BooleanOpenHashMap;
++import net.minecraft.server.*;
++
++public class PathNodeCache {
++    /**
++     * A transient hash table of chunk sections and whether or not they contain dangerous block types. Used as a cache
++     * to avoid scanning for many neighbors when we know the chunk is free of dangers. This is only safe to use when
++     * we know the world is not going to be modified while it is active.
++     */
++    private static final Reference2BooleanMap<ChunkSection> chunkNeighborDangerCache = new Reference2BooleanOpenHashMap<>();
++
++    /**
++     * True if the chunk danger cache is enabled and can be used.
++     */
++    private static boolean dangerCacheEnabled = false;
++
++    /**
++     * The previous chunk section that was queried for neighboring dangers.
++     */
++    private static ChunkSection prevQueriedNeighborSectionKey;
++
++    /**
++     * The result of the previous query belonging to {@link PathNodeCache#prevQueriedNeighborSectionKey}.
++     */
++    private static boolean prevQueriedNeighborSectionResult;
++
++    /**
++     * Enables the chunk danger cache. This should be called immediately before a controlled path-finding code path
++     * begins so that we can accelerate nearby danger checks.
++     */
++    public static void enableChunkCache() {
++        dangerCacheEnabled = true;
++    }
++
++    /**
++     * Disables and clears the chunk danger cache. This should be called immediately before path-finding ends so that
++     * block updates are reflected for future path-finding tasks.
++     */
++    public static void disableChunkCache() {
++        dangerCacheEnabled = false;
++        chunkNeighborDangerCache.clear();
++
++        prevQueriedNeighborSectionKey = null;
++        prevQueriedNeighborSectionResult = false;
++    }
++
++    private static boolean isChunkSectionDangerousNeighbor(ChunkSection section) {
++        DataPaletteBlock palette = section.getBlocks();
++        DataBits dataBits = palette.getDataBits();
++        int size = dataBits.b();
++        for (int i = 0; i < size; ++i) {
++            if (getNeighborPathNodeType(palette.a(dataBits.a(i))) != PathType.OPEN) {
++                return true;
++            }
++        }
++        return false;
++    }
++
++//    public static PathType getPathNodeType(IBlockData state) {
++//        return state.getPathNodeType();
++//    }
++
++    public static PathType getNeighborPathNodeType(IBlockData state) {
++        return state.getNeighborPathNodeType();
++    }
++
++    /**
++     * Returns whether or not a chunk section is free of dangers. This makes use of a caching layer to greatly
++     * accelerate neighbor danger checks when path-finding.
++     *
++     * @param section The chunk section to test for dangers
++     *
++     * @return True if this neighboring section is free of any dangers, otherwise false if it could
++     * potentially contain dangers
++     */
++    public static boolean isSectionSafeAsNeighbor(ChunkSection section) {
++        // Empty sections can never contribute a danger
++        if (section.isEmpty()) {
++            return true;
++        }
++
++        // If the caching code path is disabled, the section must be assumed to potentially contain dangers
++        if (!dangerCacheEnabled) {
++            return false;
++        }
++
++        if (prevQueriedNeighborSectionKey != section) {
++            prevQueriedNeighborSectionKey = section;
++            prevQueriedNeighborSectionResult = !chunkNeighborDangerCache.computeBooleanIfAbsent(section,
++                PathNodeCache::isChunkSectionDangerousNeighbor);
++        }
++
++        return prevQueriedNeighborSectionResult;
++    }
++}
+diff --git a/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/PathNodeDefaults.java b/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/PathNodeDefaults.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..483c4001b2d58fd307da540f162cb9aecf84b45b
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/lithium/ai/pathing/PathNodeDefaults.java
+@@ -0,0 +1,51 @@
++package com.github.ruviolence.reaper.lithium.ai.pathing;
++
++import net.minecraft.server.*;
++
++public class PathNodeDefaults {
++    public static PathType getNeighborNodeType(Block block) {
++        // [VanillaCopy] LandPathNodeMaker#getNodeTypeFromNeighbors
++        // Determine what kind of obstacle type this neighbor is
++        if (block == Blocks.CACTUS) {
++            return PathType.DANGER_CACTUS;
++        } else if (block == Blocks.FIRE) {
++            return PathType.DANGER_FIRE;
++        } else {
++            return PathType.OPEN;
++        }
++    }
++
++    public static PathType getNodeType(IBlockData state) {
++        Block block = state.getBlock();
++        Material material = state.getMaterial();
++        if (material == Material.AIR) {
++            return PathType.OPEN;
++        } else if (block != Blocks.TRAPDOOR && block != Blocks.IRON_TRAPDOOR && block != Blocks.WATERLILY) {
++            if (block == Blocks.FIRE) {
++                return PathType.DAMAGE_FIRE;
++            } else if (block == Blocks.CACTUS) {
++                return PathType.DAMAGE_CACTUS;
++            } else if (block instanceof BlockDoor && material == Material.WOOD && !(Boolean) state.get(BlockDoor.OPEN)) {
++                return PathType.DOOR_WOOD_CLOSED;
++            } else if (block instanceof BlockDoor && material == Material.ORE && !(Boolean) state.get(BlockDoor.OPEN)) {
++                return PathType.DOOR_IRON_CLOSED;
++            } else if (block instanceof BlockDoor && state.get(BlockDoor.OPEN)) {
++                return PathType.DOOR_OPEN;
++            } else if (block instanceof BlockMinecartTrackAbstract) {
++                return PathType.RAIL;
++            } else if (!(block instanceof BlockFence) && !(block instanceof BlockCobbleWall) && (!(block instanceof BlockFenceGate) || state.get(BlockFenceGate.OPEN))) {
++                if (material == Material.WATER) {
++                    return PathType.WATER;
++                } else if (material == Material.LAVA) {
++                    return PathType.LAVA;
++                } else {
++                    return PathType.OPEN;
++                }
++            } else {
++                return PathType.FENCE;
++            }
++        } else {
++            return PathType.TRAPDOOR;
++        }
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
+index 1b9349444f9d9cb2d757e515af0e25f73a76e5fe..f764e59177acc358baf6d408c6cfcd74adb4e648 100644
+--- a/src/main/java/net/minecraft/server/Block.java
++++ b/src/main/java/net/minecraft/server/Block.java
+@@ -967,6 +967,15 @@ public class Block {
+             }
+         }
+ 
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        DispenserRegistry.isBlocksInitialized = true;
++        for (Block b : Block.REGISTRY) {
++            BlockStateList blockStateList = b.s();
++            for (IBlockData data : blockStateList.a()) {
++                ((BlockStateList.BlockData) data).initPathTypeCache();
++            }
++        }
++        // Reaper end
+     }
+ 
+     // CraftBukkit start
+diff --git a/src/main/java/net/minecraft/server/BlockStateList.java b/src/main/java/net/minecraft/server/BlockStateList.java
+index 5df404866f9fce331ef43f7a66db473bfee9eed6..5f0c7dcbfe46f33d3f35139114cc6adc7c8a7e70 100644
+--- a/src/main/java/net/minecraft/server/BlockStateList.java
++++ b/src/main/java/net/minecraft/server/BlockStateList.java
+@@ -23,6 +23,7 @@ import java.util.Map;
+ import java.util.Map.Entry;
+ import java.util.regex.Pattern;
+ import javax.annotation.Nullable;
++import com.github.ruviolence.reaper.lithium.ai.pathing.PathNodeDefaults;// Reaper - Lithium: ai/pathing/LandPathNodeMaker
+ 
+ public class BlockStateList {
+ 
+@@ -149,12 +150,23 @@ public class BlockStateList {
+         private final Block a;
+         private final ImmutableMap<IBlockState<?>, Comparable<?>> b;
+         private ImmutableTable<IBlockState<?>, Comparable<?>, IBlockData> c;
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        private PathType pathNodeType = PathType.OPEN;
++        private PathType pathNodeTypeNeighbor = PathType.OPEN;
++        // Reaper end
+ 
+         private BlockData(Block block, ImmutableMap<IBlockState<?>, Comparable<?>> immutablemap) {
+             this.a = block;
+             this.b = immutablemap;
+         }
+ 
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        public void initPathTypeCache() {
++            this.pathNodeType = PathNodeDefaults.getNodeType(this);
++            this.pathNodeTypeNeighbor = PathNodeDefaults.getNeighborNodeType(getBlock());
++        }
++        // Reaper end
++
+         public Collection<IBlockState<?>> s() {
+             return Collections.unmodifiableCollection(this.b.keySet());
+         }
+@@ -371,5 +383,17 @@ public class BlockStateList {
+         BlockData(Block block, ImmutableMap immutablemap, Object object) {
+             this(block, immutablemap);
+         }
++
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        @Override
++        public PathType getPathNodeType() {
++            return this.pathNodeType;
++        }
++
++        @Override
++        public PathType getNeighborPathNodeType() {
++            return this.pathNodeTypeNeighbor;
++        }
++        // Reaper end
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/ChunkCache.java b/src/main/java/net/minecraft/server/ChunkCache.java
+index 8f8d9cd57ab1c69e22d81525f8530e97e16d3749..637c495da02117038cc86335396ebebd2c0468a6 100644
+--- a/src/main/java/net/minecraft/server/ChunkCache.java
++++ b/src/main/java/net/minecraft/server/ChunkCache.java
+@@ -110,4 +110,17 @@ public class ChunkCache implements IBlockAccess {
+     public int getBlockPower(BlockPosition blockposition, EnumDirection enumdirection) {
+         return this.getType(blockposition).b(this, blockposition, enumdirection);
+     }
++
++    // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++    @Override
++    public Chunk getChunkAt(int x, int z) {
++        int chunkX = x - this.a;
++        int chunkZ = z - this.b;
++        if (chunkX >= 0 && chunkX < this.xLen && chunkZ >= 0 && chunkZ < this.zLen) {
++            return this.chunksFlat[(chunkX * this.zLen) + chunkZ];
++        } else {
++            return null;
++        }
++    }
++    // Reaper end
+ }
+diff --git a/src/main/java/net/minecraft/server/ChunkSection.java b/src/main/java/net/minecraft/server/ChunkSection.java
+index afdc4a779a61c1ccbf6b42cf3214bfef9e819a71..1562a450aaaedf29e2ed0bf88ab56328bd5bd7de 100644
+--- a/src/main/java/net/minecraft/server/ChunkSection.java
++++ b/src/main/java/net/minecraft/server/ChunkSection.java
+@@ -131,4 +131,10 @@ public class ChunkSection {
+     public void b(NibbleArray nibblearray) {
+         this.skyLight = nibblearray;
+     }
++
++    // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++    public boolean isEmpty() {
++        return this.nonEmptyBlockCount == 0;
++    }
++    // Reaper end
+ }
+diff --git a/src/main/java/net/minecraft/server/DataPaletteBlock.java b/src/main/java/net/minecraft/server/DataPaletteBlock.java
+index 31459ddd7d8a9bef7a9e6c76407bee7e3eab4d87..ff3a3cad408fb61a4e239c452d02398467606dba 100644
+--- a/src/main/java/net/minecraft/server/DataPaletteBlock.java
++++ b/src/main/java/net/minecraft/server/DataPaletteBlock.java
+@@ -6,7 +6,7 @@ public class DataPaletteBlock implements DataPaletteExpandable {
+ 
+     private static final DataPalette d = new DataPaletteGlobal();
+     protected static final IBlockData a = Blocks.AIR.getBlockData(); public static final IBlockData DEFAULT_BLOCK_DATA = DataPaletteBlock.a; // Paper - OBFHELPER
+-    protected DataBits b;
++    protected DataBits b; public DataBits getDataBits() { return this.b; } // Reaper
+     protected DataPalette c;
+     private int e;
+ 
+@@ -67,7 +67,7 @@ public class DataPaletteBlock implements DataPaletteExpandable {
+         return this.a(b(i, j, k));
+     }
+ 
+-    protected IBlockData a(int i) {
++    public IBlockData a(int i) { // Reaper - protected -> public
+         IBlockData iblockdata = this.c.a(this.b.a(i));
+ 
+         return iblockdata == null ? DataPaletteBlock.a : iblockdata;
+diff --git a/src/main/java/net/minecraft/server/DispenserRegistry.java b/src/main/java/net/minecraft/server/DispenserRegistry.java
+index 6087da4d089a8a465cef063a4dca6f5cba888c62..718f2cb722c94e84eb9ff1587a28bb5021d69a4e 100644
+--- a/src/main/java/net/minecraft/server/DispenserRegistry.java
++++ b/src/main/java/net/minecraft/server/DispenserRegistry.java
+@@ -23,6 +23,7 @@ public class DispenserRegistry {
+     private static boolean c;
+     public static boolean b;
+     private static final Logger d = LogManager.getLogger();
++    public static boolean isBlocksInitialized = false;// Reaper - Lithium: ai/pathing/LandPathNodeMaker
+ 
+     public static boolean a() {
+         return DispenserRegistry.c;
+diff --git a/src/main/java/net/minecraft/server/IBlockAccess.java b/src/main/java/net/minecraft/server/IBlockAccess.java
+index 751d7f0bc831dbbefb59d85a3322ccd51e745a6f..87bac87c0372e00e65257cd44721e4f80f326ec3 100644
+--- a/src/main/java/net/minecraft/server/IBlockAccess.java
++++ b/src/main/java/net/minecraft/server/IBlockAccess.java
+@@ -12,4 +12,6 @@ public interface IBlockAccess {
+     boolean isEmpty(BlockPosition blockposition);
+ 
+     int getBlockPower(BlockPosition blockposition, EnumDirection enumdirection);
++
++    Chunk getChunkAt(int x, int z); // Reaper - Lithium: ai/pathing/LandPathNodeMaker
+ }
+diff --git a/src/main/java/net/minecraft/server/IBlockData.java b/src/main/java/net/minecraft/server/IBlockData.java
+index 6881d3dcb5e17fa2ac89dd1b1f85129cc85bba18..709ab2df1b8005dc401b8b9050e44ad33d5f87c6 100644
+--- a/src/main/java/net/minecraft/server/IBlockData.java
++++ b/src/main/java/net/minecraft/server/IBlockData.java
+@@ -3,7 +3,7 @@ package net.minecraft.server;
+ import com.google.common.collect.ImmutableMap;
+ import java.util.Collection;
+ 
+-public interface IBlockData extends IBlockPhysics, IBlockProperties {
++public interface IBlockData extends IBlockPhysics, IBlockProperties, com.github.ruviolence.reaper.lithium.ai.pathing.BlockPathingBehavior { // Reaper - Lithium: ai/pathing/LandPathNodeMaker
+ 
+     Collection<IBlockState<?>> s();
+ 
+diff --git a/src/main/java/net/minecraft/server/Pathfinder.java b/src/main/java/net/minecraft/server/Pathfinder.java
+index e4217181e537160f8c3ef5deab4a936796336cc5..5b4898905b57b73741e78cd4d8577cb858a475d2 100644
+--- a/src/main/java/net/minecraft/server/Pathfinder.java
++++ b/src/main/java/net/minecraft/server/Pathfinder.java
+@@ -3,6 +3,7 @@ package net.minecraft.server;
+ import com.google.common.collect.Sets;
+ import java.util.Set;
+ import javax.annotation.Nullable;
++import com.github.ruviolence.reaper.lithium.ai.pathing.PathNodeCache;// Reaper - Lithium: ai/pathing/LandPathNodeMaker
+ 
+ public class Pathfinder {
+ 
+@@ -17,12 +18,22 @@ public class Pathfinder {
+ 
+     @Nullable
+     public PathEntity a(IBlockAccess iblockaccess, EntityInsentient entityinsentient, Entity entity, float f) {
+-        return this.a(iblockaccess, entityinsentient, entity.locX, entity.getBoundingBox().b, entity.locZ, f);
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        PathNodeCache.enableChunkCache();
++        PathEntity result = this.a(iblockaccess, entityinsentient, entity.locX, entity.getBoundingBox().b, entity.locZ, f);
++        PathNodeCache.disableChunkCache();
++        return result;
++        // Reaper end
+     }
+ 
+     @Nullable
+     public PathEntity a(IBlockAccess iblockaccess, EntityInsentient entityinsentient, BlockPosition blockposition, float f) {
+-        return this.a(iblockaccess, entityinsentient, (double) ((float) blockposition.getX() + 0.5F), (double) ((float) blockposition.getY() + 0.5F), (double) ((float) blockposition.getZ() + 0.5F), f);
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        PathNodeCache.enableChunkCache();
++        PathEntity result = this.a(iblockaccess, entityinsentient, (blockposition.getX() + 0.5F), (blockposition.getY() + 0.5F), (blockposition.getZ() + 0.5F), f);
++        PathNodeCache.disableChunkCache();
++        return result;
++        // Reaper end
+     }
+ 
+     @Nullable
+diff --git a/src/main/java/net/minecraft/server/PathfinderNormal.java b/src/main/java/net/minecraft/server/PathfinderNormal.java
+index a0e17cba05148860c9d539140e0dc344d0f57659..374a1dba102d2cbc3b985093f4d4d270605bc9a0 100644
+--- a/src/main/java/net/minecraft/server/PathfinderNormal.java
++++ b/src/main/java/net/minecraft/server/PathfinderNormal.java
+@@ -6,6 +6,11 @@ import java.util.HashSet;
+ import java.util.Iterator;
+ import javax.annotation.Nullable;
+ 
++// Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++import com.github.ruviolence.reaper.lithium.WorldHelper;
++import com.github.ruviolence.reaper.lithium.ai.pathing.PathNodeCache;
++// Reaper end
++
+ public class PathfinderNormal extends PathfinderAbstract {
+ 
+     protected float j;
+@@ -322,34 +327,90 @@ public class PathfinderNormal extends PathfinderAbstract {
+     }
+ 
+     public PathType a(IBlockAccess iblockaccess, int i, int j, int k, PathType pathtype) {
+-        BlockPosition.PooledBlockPosition blockposition_pooledblockposition = BlockPosition.PooledBlockPosition.s();
+-
+-        if (pathtype == PathType.WALKABLE) {
+-            for (int l = -1; l <= 1; ++l) {
+-                for (int i1 = -1; i1 <= 1; ++i1) {
+-                    if (l != 0 || i1 != 0) {
+-                        Block block = iblockaccess.getType(blockposition_pooledblockposition.f(l + i, j, i1 + k)).getBlock();
+-
+-                        if (block == Blocks.CACTUS) {
+-                            pathtype = PathType.DANGER_CACTUS;
+-                        } else if (block == Blocks.FIRE) {
+-                            pathtype = PathType.DANGER_FIRE;
+-                        }
+-                    }
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        if (pathtype != PathType.WALKABLE) return pathtype;
++        ChunkSection section = null;
++
++        // Check that all the block's neighbors are within the same chunk column. If so, we can isolate all our block
++        // reads to just one chunk and avoid hits against the server chunk manager.
++        if (WorldHelper.areNeighborsWithinSameChunk(i, j, k)) {
++            // If the y-coordinate is within bounds, we can cache the chunk section. Otherwise, the if statement to check
++            // if the cached chunk section was initialized will early-exit.
++            if (j >= 0 && j < 256) {
++                // This cast is always safe and is necessary to obtain direct references to chunk sections.
++                Chunk chunk = iblockaccess.getChunkAt(i >> 4, k >> 4);
++
++                // If the chunk is absent, the cached section above will remain null, as there is no chunk section anyways.
++                // An empty chunk or section will never pose any danger sources, which will be caught later.
++                if (chunk != null) {
++                    section = chunk.getSections()[j >> 4];
++                }
++            }
++
++            // If we can guarantee that blocks won't be modified while the cache is active, try to see if the chunk
++            // section is empty or contains any dangerous blocks within the palette. If not, we can assume any checks
++            // against this chunk section will always fail, allowing us to fast-exit.
++            if (section == null || section.isEmpty() || PathNodeCache.isSectionSafeAsNeighbor(section)) {
++                return pathtype;
++            }
++        }
++
++        // Optimal iteration order is ZX
++        for (int z2 = -1; z2 <= 1; ++z2) {
++            for (int x2 = -1; x2 <= 1; ++x2) {
++                if (x2 == 0 && z2 == 0) {
++                    continue;
++                }
++
++                IBlockData state;
++
++                // If we're not accessing blocks outside a given section, we can greatly accelerate block state
++                // retrieval by calling upon the cached chunk directly.
++                if (section != null) {
++                    state = section.getType((x2 + i) & 15, j & 15, (z2 + k) & 15);
++                } else {
++                    state = iblockaccess.getType(new BlockPosition(x2 + i, j, z2 + k));
++                }
++
++                // Ensure that the block isn't air first to avoid expensive hash table accesses
++                if (state.getBlock() == Blocks.AIR) {
++                    continue;
++                }
++
++                PathType neighborType = state.getNeighborPathNodeType();
++
++                if (neighborType != PathType.OPEN) {
++                    return neighborType;
+                 }
+             }
+         }
+ 
+-        blockposition_pooledblockposition.t();
+         return pathtype;
++        // Reaper end
+     }
+ 
+     protected PathType b(IBlockAccess iblockaccess, int i, int j, int k) {
+-        BlockPosition blockposition = new BlockPosition(i, j, k);
+-        IBlockData iblockdata = iblockaccess.getType(blockposition);
+-        Block block = iblockdata.getBlock();
+-        Material material = iblockdata.getMaterial();
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        IBlockData blockState = iblockaccess.getType(new BlockPosition(i, j, k));
++        PathType type = blockState.getPathNodeType();
++
++        // If the node type is open, it means that we were unable to determine a more specific type, so we need
++        // to check the fallback path.
++        if (type == PathType.OPEN) {
++            // This is only ever called in vanilla after all other possibilities are exhausted, but before fluid checks
++            // It should be safe to perform it last in actuality and take advantage of the cache for fluid types as well
++            // since fluids will always pass this check.
++            Block block = blockState.getBlock();
++            if (!block.b(iblockaccess, new BlockPosition(i, j, k))) {
++                return PathType.BLOCKED;
++            }
++
++            // All checks succeed, this path node really is open!
++            return PathType.OPEN;
++        }
+ 
+-        return material == Material.AIR ? PathType.OPEN : (block != Blocks.TRAPDOOR && block != Blocks.IRON_TRAPDOOR && block != Blocks.WATERLILY ? (block == Blocks.FIRE ? PathType.DAMAGE_FIRE : (block == Blocks.CACTUS ? PathType.DAMAGE_CACTUS : (block instanceof BlockDoor && material == Material.WOOD && !((Boolean) iblockdata.get(BlockDoor.OPEN)).booleanValue() ? PathType.DOOR_WOOD_CLOSED : (block instanceof BlockDoor && material == Material.ORE && !((Boolean) iblockdata.get(BlockDoor.OPEN)).booleanValue() ? PathType.DOOR_IRON_CLOSED : (block instanceof BlockDoor && ((Boolean) iblockdata.get(BlockDoor.OPEN)).booleanValue() ? PathType.DOOR_OPEN : (block instanceof BlockMinecartTrackAbstract ? PathType.RAIL : (!(block instanceof BlockFence) && !(block instanceof BlockCobbleWall) && (!(block instanceof BlockFenceGate) || ((Boolean) iblockdata.get(BlockFenceGate.OPEN)).booleanValue()) ? (material == Material.WATER ? PathType.WATER : (material == Material.LAVA ? PathType.LAVA : (block.b(iblockaccess, blockposition) ? PathType.OPEN : PathType.BLOCKED))) : PathType.FENCE))))))) : PathType.TRAPDOOR);
++        // Return the cached value since we found an obstacle earlier
++        return type;
++        // Reaper end
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/RegistryBlocks.java b/src/main/java/net/minecraft/server/RegistryBlocks.java
+index 5b90dc1aa7e0b7902be095f336ad705eee2e83ac..845a56df7fedb3fcd62fe5dccde764b54a0aff13 100644
+--- a/src/main/java/net/minecraft/server/RegistryBlocks.java
++++ b/src/main/java/net/minecraft/server/RegistryBlocks.java
+@@ -18,6 +18,15 @@ public class RegistryBlocks<K, V> extends RegistryMaterials<K, V> {
+         if (this.d.equals(k0)) {
+             this.e = v0;
+         }
++        // Reaper start - Lithium: ai/pathing/LandPathNodeMaker
++        if (v0 instanceof Block && DispenserRegistry.isBlocksInitialized) {
++            Block block = (Block) v0;
++            BlockStateList blockStateList = block.s();
++            for (IBlockData data : blockStateList.a()) {
++                ((BlockStateList.BlockData) data).initPathTypeCache();
++            }
++        }
++        // Reaper end        
+ 
+         super.a(i, k0, v0);
+     }

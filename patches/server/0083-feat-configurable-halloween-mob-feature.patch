@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 10:57:30 +0500
+Subject: [PATCH] feat: configurable halloween mob feature
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 3b89f2db92d81825f98d3a21def6957419eaa6e5..831d48c2e6b689b3a4f512cbd6860a54729a35df 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -166,4 +166,9 @@ public class ReaperConfig {
+         shapeCheckEndPortal = getBoolean("shape-check.end-portal", true);
+         shapeCheckNetherPortal = getBoolean("shape-check.nether-portal", true);
+     }
++
++    public static boolean halloweenMobFeature;
++    private static void halloweenMobFeature() {
++        halloweenMobFeature = getBoolean("halloween-mob-feature", true);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityBat.java b/src/main/java/net/minecraft/server/EntityBat.java
+index 72efa158e1c0cbd62fecfd721c05413dc5036456..94f68e8c6dbf25179b2c5f6b93fe77913e426511 100644
+--- a/src/main/java/net/minecraft/server/EntityBat.java
++++ b/src/main/java/net/minecraft/server/EntityBat.java
+@@ -175,7 +175,7 @@ public class EntityBat extends EntityAmbient {
+             int i = this.world.getLightLevel(blockposition);
+             byte b0 = 4;
+ 
+-            if (this.a(this.world.ae())) {
++            if (com.github.ruviolence.reaper.ReaperConfig.halloweenMobFeature && this.a(this.world.ae())) { // Reaper
+                 b0 = 7;
+             } else if (this.random.nextBoolean()) {
+                 return false;
+diff --git a/src/main/java/net/minecraft/server/EntitySkeletonAbstract.java b/src/main/java/net/minecraft/server/EntitySkeletonAbstract.java
+index f51640d1da21daeeb5fd78c2dc14567939f54821..ee8376aef967349cfb4246b7a936ebe61282830d 100644
+--- a/src/main/java/net/minecraft/server/EntitySkeletonAbstract.java
++++ b/src/main/java/net/minecraft/server/EntitySkeletonAbstract.java
+@@ -118,7 +118,7 @@ public abstract class EntitySkeletonAbstract extends EntityMonster implements IR
+         this.b(difficultydamagescaler);
+         this.dm();
+         this.m(this.random.nextFloat() < 0.55F * difficultydamagescaler.d());
+-        if (this.getEquipment(EnumItemSlot.HEAD).isEmpty()) {
++        if (com.github.ruviolence.reaper.ReaperConfig.halloweenMobFeature && this.getEquipment(EnumItemSlot.HEAD).isEmpty()) { // Reaper
+             Calendar calendar = this.world.ae();
+ 
+             if (calendar.get(2) + 1 == 10 && calendar.get(5) == 31 && this.random.nextFloat() < 0.25F) {
+diff --git a/src/main/java/net/minecraft/server/EntityZombie.java b/src/main/java/net/minecraft/server/EntityZombie.java
+index 9d9b58def1f8aa1679ae9e3804113b216e3e5691..8091049992b6d822eb705df8616c49e6ef16c239 100644
+--- a/src/main/java/net/minecraft/server/EntityZombie.java
++++ b/src/main/java/net/minecraft/server/EntityZombie.java
+@@ -364,7 +364,7 @@ public class EntityZombie extends EntityMonster {
+         this.p(this.random.nextFloat() < f * 0.1F);
+         this.a(difficultydamagescaler);
+         this.b(difficultydamagescaler);
+-        if (this.getEquipment(EnumItemSlot.HEAD).isEmpty()) {
++        if (com.github.ruviolence.reaper.ReaperConfig.halloweenMobFeature && this.getEquipment(EnumItemSlot.HEAD).isEmpty()) { // Reaper
+             Calendar calendar = this.world.ae();
+ 
+             if (calendar.get(2) + 1 == 10 && calendar.get(5) == 31 && this.random.nextFloat() < 0.25F) {

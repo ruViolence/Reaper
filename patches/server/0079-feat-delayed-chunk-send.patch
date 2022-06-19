@@ -1,0 +1,372 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 09:55:35 +0500
+Subject: [PATCH] feat: delayed chunk send
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperCommand.java b/src/main/java/com/github/ruviolence/reaper/ReaperCommand.java
+index 66099259d578cc6addd0342eba19ab2dac275bf9..7b40040a4222ec6a2eeeb7c94040efaf03ecb787 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperCommand.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperCommand.java
+@@ -6,6 +6,8 @@ import org.bukkit.ChatColor;
+ import org.bukkit.Location;
+ import org.bukkit.command.Command;
+ import org.bukkit.command.CommandSender;
++import org.bukkit.craftbukkit.entity.CraftPlayer;
++import org.bukkit.entity.Player;
+ 
+ import java.io.File;
+ import java.util.Collections;
+@@ -17,14 +19,14 @@ public class ReaperCommand extends Command {
+     public ReaperCommand(String name) {
+         super(name);
+         this.description = "Reaper related commands";
+-        this.usageMessage = "/reaper [reload]";
++        this.usageMessage = "/reaper [reload | chunksendlimit]";
+         this.setPermission("bukkit.command.reaper");
+     }
+ 
+     @Override
+     public List<String> tabComplete(CommandSender sender, String alias, String[] args, Location location) throws IllegalArgumentException {
+         if (args.length <= 1)
+-            return CommandAbstract.getListMatchingLast(args, "reload");
++            return CommandAbstract.getListMatchingLast(args, "reload", "chunksendlimit");
+         return Collections.emptyList();
+     }
+ 
+@@ -41,6 +43,9 @@ public class ReaperCommand extends Command {
+             case "reload":
+                 doReload(sender);
+                 break;
++            case "chunksendlimit":
++                chunkSendLimit(sender, args);
++                break;
+             default:
+                 sender.sendMessage(ChatColor.RED + "Usage: " + usageMessage);
+                 return false;
+@@ -58,4 +63,24 @@ public class ReaperCommand extends Command {
+ 
+         Command.broadcastCommandMessage(sender, ChatColor.GREEN + "Reaper config reload complete.");
+     }
++
++    private void chunkSendLimit(CommandSender sender, String[] args) {
++        if (!(sender instanceof Player)) {
++            sender.sendMessage(ChatColor.RED + "This command is only for players.");
++            return;
++        }
++        if (args.length < 2) {
++            sender.sendMessage(ChatColor.RED + "You should enter a new limit.");
++            return;
++        }
++
++        try {
++            int limit = Integer.parseInt(args[1]);
++            ((CraftPlayer) sender).getHandle().setChunkSendLimit(limit);
++
++            sender.sendMessage(ChatColor.GREEN + "The chunk send limit was successfully set.");
++        } catch (NumberFormatException e) {
++            sender.sendMessage(ChatColor.RED + "You have to enter a number.");
++        }
++    }
+ }
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 9b7a1ce6caf7ac513d85174817fb0173a8b2ad42..008062def50ea86d67a61545aa6a4df73f966dda 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -1,6 +1,9 @@
+ package com.github.ruviolence.reaper;
+ 
+ import com.google.common.base.Throwables;
++import net.minecraft.server.DispenserRegistry;
++import net.minecraft.server.EntityPlayer;
++import net.minecraft.server.MathHelper;
+ import net.minecraft.server.MinecraftServer;
+ import org.bukkit.Bukkit;
+ import org.bukkit.command.Command;
+@@ -130,4 +133,28 @@ public class ReaperConfig {
+         portalTravelCacheLife = 20 * getInt("portal-travel.cache-life", 15);
+         portalTravelInstantExpire = getBoolean("portal-travel.instant-expire", false);
+     }
++
++    public static boolean delayedChunksEnabled;
++    public static int delayedChunksLimit;
++    private static void delayedChunks() {
++        boolean prevEnabled = delayedChunksEnabled;
++        delayedChunksEnabled = getBoolean("delayed-chunks.enabled", false);
++        delayedChunksLimit = MathHelper.clamp(getInt("delayed-chunks.limit", 4), 1, Integer.MAX_VALUE);
++        if (!delayedChunksEnabled) delayedChunksLimit = 0;
++
++        if (prevEnabled == delayedChunksEnabled) return;
++        if (!DispenserRegistry.a()) return; // If the server has not yet been initialized
++        List<EntityPlayer> players = MinecraftServer.getServer().getPlayerList().players;
++        if (!delayedChunksEnabled) {
++            delayedChunksEnabled = true;
++            for (EntityPlayer player : players) {
++                player.chunkSendLimitLeft = Integer.MAX_VALUE;
++                player.sendDelayedChunks();
++            }
++            delayedChunksEnabled = false;
++        }
++        for (EntityPlayer player : players) {
++            player.initDelayedChunksList();
++        }
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index c13eb8b015afbaaafa4306a4cfe1a9efac0bcc0c..eb7c637963ed9213ed61b296145e379325384b8e 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -89,6 +89,59 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     public boolean queueHealthUpdatePacket = false;
+     public net.minecraft.server.PacketPlayOutUpdateHealth queuedHealthUpdatePacket;
+     // Paper end
++    // Reaper start - Delayed chunks
++    private List<ChunkCoordIntPair> delayedChunks; public List<ChunkCoordIntPair> getDelayedChunks() { return delayedChunks; }
++    private int chunkSendLimit;
++    public int chunkSendLimitLeft;
++
++    void addDelayedChunk(int x, int z) {
++        PlayerChunk chunk = ((WorldServer) world).getPlayerChunkMap().getChunk(x, z);
++        if (chunk != null && chunk.d(this)) return; // If the player is already added to this chunk
++
++        ChunkCoordIntPair chunkCoord = new ChunkCoordIntPair(x, z);
++        if (!delayedChunks.contains(chunkCoord)) {
++            delayedChunks.add(chunkCoord);
++        }
++    }
++
++    boolean removeDelayedChunk(int x, int z) {
++        return delayedChunks.remove(new ChunkCoordIntPair(x, z));
++    }
++
++    void resortDelayedChunks() {
++        delayedChunks.sort(new PlayerChunkMap.ChunkCoordComparator(this).reversed());
++    }
++
++    public void sendDelayedChunks() {
++        if (chunkSendLimitLeft <= 0 || playerConnection.isDisconnected()) return;
++        List<ChunkCoordIntPair> chunks = delayedChunks;
++        while (!chunks.isEmpty()) {
++            ChunkCoordIntPair chunk = chunks.remove(chunks.size() - 1);
++            if (((WorldServer) world).getPlayerChunkMap().c(chunk.x, chunk.z).addPlayerIfNotAdded(this)) {
++                if (--chunkSendLimitLeft <= 0) break;
++            }
++        }
++    }
++
++    public void initDelayedChunksList() {
++        if (com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled) {
++            delayedChunks = new ArrayList<>();
++            chunkSendLimit = com.github.ruviolence.reaper.ReaperConfig.delayedChunksLimit;
++        } else {
++            delayedChunks = null;
++            chunkSendLimitLeft = 0;
++            chunkSendLimit = 0;
++        }
++    }
++
++    public int getChunkSendLimit() {
++        return chunkSendLimit;
++    }
++
++    public void setChunkSendLimit(int limit) {
++        this.chunkSendLimit = limit > 0 ? limit : 1;
++    }
++    // Reaper end
+ 
+     // CraftBukkit start
+     public String displayName;
+@@ -126,6 +179,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         this.canPickUpLoot = true;
+         this.maxHealthCache = this.getMaxHealth();
+         // CraftBukkit end
++        initDelayedChunksList(); // Reaper - Delayed chunks
+     }
+ 
+     public final BlockPosition getSpawnPoint(MinecraftServer minecraftserver, WorldServer worldserver) {
+@@ -422,6 +476,10 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+                 this.oldLevel = this.expLevel;
+             }
+             // CraftBukkit end
++            // Reaper start - Delayed chunks
++            sendDelayedChunks();
++            this.chunkSendLimitLeft = this.chunkSendLimit;
++            // Reaper end
+         } catch (Throwable throwable) {
+             CrashReport crashreport = CrashReport.a(throwable, "Ticking player");
+             CrashReportSystemDetails crashreportsystemdetails = crashreport.a("Player being ticked");
+diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+index 79036b71eb37a29282e05ef6fbabc4aaecb5d7d0..7bcac8e5a0a40275313b11ec0bad359857887819 100644
+--- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+@@ -511,7 +511,8 @@ public class EntityTrackerEntry {
+         // Reaper end
+         int i = Math.min(this.e, entityplayer.getFurthestViewableBlock()); // Reaper - Dynamic view distance
+ 
+-        return d0 >= (double) (-i) && d0 <= (double) i && d1 >= (double) (-i) && d1 <= (double) i && this.tracker.a(entityplayer);
++        return d0 >= (double) (-i) && d0 <= (double) i && d1 >= (double) (-i) && d1 <= (double) i && this.tracker.a(entityplayer)
++                && (!com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled || !entityplayer.getDelayedChunks().contains(new ChunkCoordIntPair(this.tracker.ab, this.tracker.ad))); // Reaper - Delayed chunks
+     }
+ 
+     private boolean e(EntityPlayer entityplayer) {
+diff --git a/src/main/java/net/minecraft/server/PlayerChunk.java b/src/main/java/net/minecraft/server/PlayerChunk.java
+index e8d7d710774e80d1316ac207e3b5ab388e16670b..54fd5f22e564ef3093e74a0b62fe1072e6c9340a 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunk.java
++++ b/src/main/java/net/minecraft/server/PlayerChunk.java
+@@ -81,6 +81,24 @@ public class PlayerChunk {
+         }
+     }
+ 
++    // Reaper start
++    public boolean addPlayerIfNotAdded(EntityPlayer player) {
++        if (this.c.contains(player)) return false;
++
++        if (this.c.isEmpty()) {
++            this.i = this.playerChunkMap.getWorld().getTime();
++        }
++
++        this.c.add(player);
++
++        if (this.done) {
++            this.sendChunk(player);
++        }
++
++        return true;
++    }
++    // Reaper end
++
+     public void b(EntityPlayer entityplayer) {
+         if (this.c.contains(entityplayer)) {
+             // CraftBukkit start - If we haven't loaded yet don't load the chunk just so we can clean it up
+diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+index 5fc140b2f6356d1c84c4421b59f3bd534f554f7e..423ffc955dcd175b789e7191e48abda956717c85 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+@@ -245,7 +245,7 @@ public class PlayerChunkMap {
+         return (PlayerChunk) this.e.get(d(i, j));
+     }
+ 
+-    private PlayerChunk c(int i, int j) {
++    protected PlayerChunk c(int i, int j) { // Reaper - private -> protected
+         long k = d(i, j);
+         PlayerChunk playerchunk = (PlayerChunk) this.e.get(k);
+ 
+@@ -306,10 +306,21 @@ public class PlayerChunkMap {
+             }
+         }
+ 
++        // Reaper start - Delayed chunks
++        if (com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled) {
++            for (int h = 0; h < chunkList.size(); h++) {
++                ChunkCoordIntPair pair = chunkList.get(h);
++                entityplayer.addDelayedChunk(pair.x, pair.z);
++            }
++            entityplayer.resortDelayedChunks();
++            entityplayer.sendDelayedChunks();
++        } else {
+         chunkList.sort(new ChunkCoordComparator(entityplayer)); // Reaper - Optimize
+         for (ChunkCoordIntPair pair : chunkList) {
+             this.c(pair.x, pair.z).a(entityplayer);
+         }
++        }
++        // Reaper end
+         // CraftBukkit end
+ 
+         this.managedPlayers.add(entityplayer);
+@@ -325,6 +336,7 @@ public class PlayerChunkMap {
+         for (int k = i - viewDistance; k <= i + viewDistance; ++k) {
+             for (int l = j - viewDistance; l <= j + viewDistance; ++l) {
+                 // Paper end
++                if (com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled && entityplayer.removeDelayedChunk(k, l)) continue; // Reaper - Delayed chunks
+                 PlayerChunk playerchunk = this.getChunk(k, l);
+ 
+                 if (playerchunk != null) {
+@@ -370,8 +382,13 @@ public class PlayerChunkMap {
+                             chunksToLoad.add(new ChunkCoordIntPair(l1, i2)); // CraftBukkit
+                         }
+ 
+-                        if (!this.a(l1 - j1, i2 - k1, i, j, i1)) {
+-                            PlayerChunk playerchunk = this.getChunk(l1 - j1, i2 - k1);
++                        // Reaper start - Delayed chunks
++                        int x = l1 - j1;
++                        int z = i2 - k1;
++                        if (!this.a(x, z, i, j, i1)) {
++                            if (com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled && entityplayer.removeDelayedChunk(x, z)) continue;
++                            PlayerChunk playerchunk = this.getChunk(x, z);
++                            // Reaper end
+ 
+                             if (playerchunk != null) {
+                                 playerchunk.b(entityplayer);
+@@ -383,6 +400,17 @@ public class PlayerChunkMap {
+                 entityplayer.d = entityplayer.locX;
+                 entityplayer.e = entityplayer.locZ;
+                 this.e();
++                // Reaper start - Delayed chunks
++                if (com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled) {
++                    for (int h = 0; h < chunksToLoad.size(); h++) {
++                        ChunkCoordIntPair pair = chunksToLoad.get(h);
++                        entityplayer.addDelayedChunk(pair.x, pair.z);
++                    }
++                    entityplayer.resortDelayedChunks();
++                    entityplayer.sendDelayedChunks();
++                    return;
++                }
++                // Reaper end
+ 
+                 // CraftBukkit start - send nearest chunks first
+                 chunksToLoad.sort(new ChunkCoordComparator(entityplayer)); // Reaper - Optimize
+@@ -436,10 +464,17 @@ public class PlayerChunkMap {
+             // Reaper end
+             int i1;
+             int j1;
++            boolean delayedChunksEnabled = com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled; // Reaper
+ 
+             if (j > 0) {
+                 for (i1 = k - i; i1 <= k + i; ++i1) {
+                     for (j1 = l - i; j1 <= l + i; ++j1) {
++                        // Reaper start - Delayed chunks
++                        if (delayedChunksEnabled) {
++                            entityplayer.addDelayedChunk(i1, j1);
++                            continue;
++                        }
++                        // Reaper end
+                         PlayerChunk playerchunk = this.c(i1, j1);
+ 
+                         if (!playerchunk.d(entityplayer)) {
+@@ -447,14 +482,27 @@ public class PlayerChunkMap {
+                         }
+                     }
+                 }
++                // Reaper start - Delayed chunks
++                if (delayedChunksEnabled) {
++                    entityplayer.resortDelayedChunks();
++                    entityplayer.sendDelayedChunks();
++                }
++                // Reaper end
+             } else {
+                 for (i1 = k - oldViewDistance; i1 <= k + oldViewDistance; ++i1) {
+                     for (j1 = l - oldViewDistance; j1 <= l + oldViewDistance; ++j1) {
+                         if (!this.a(i1, j1, k, l, i)) {
++                            if (delayedChunksEnabled && entityplayer.removeDelayedChunk(i1, j1)) continue; // Reaper - Delayed chunks
+                             PlayerChunk chunk = this.getChunk(i1, j1); if (chunk != null) chunk.b(entityplayer); // Reaper - Fix memory leak
+                         }
+                     }
+                 }
++                // Reaper start - Delayed chunks
++                if (delayedChunksEnabled) {
++                    entityplayer.resortDelayedChunks();
++                    entityplayer.sendDelayedChunks();
++                }
++                // Reaper end
+                 if (markSort) {
+                     this.e();
+                 }
+@@ -507,7 +555,7 @@ public class PlayerChunkMap {
+     }
+ 
+     // CraftBukkit start - Sorter to load nearby chunks first
+-    private static class ChunkCoordComparator implements java.util.Comparator<ChunkCoordIntPair> {
++    protected static class ChunkCoordComparator implements java.util.Comparator<ChunkCoordIntPair> { // Reaper - private -> protected
+         private int x;
+         private int z;
+ 

@@ -1,0 +1,1351 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 08:58:44 +0500
+Subject: [PATCH] perf: optimizations
+
+
+diff --git a/src/main/java/co/aikar/timings/TimingsExport.java b/src/main/java/co/aikar/timings/TimingsExport.java
+index e6ea1ffb58c9df7331b61224d6dd270606134058..3c7bf24fba71a03264211820b18ff31c267e7471 100644
+--- a/src/main/java/co/aikar/timings/TimingsExport.java
++++ b/src/main/java/co/aikar/timings/TimingsExport.java
+@@ -45,6 +45,7 @@ import java.lang.management.RuntimeMXBean;
+ import java.net.HttpURLConnection;
+ import java.net.InetAddress;
+ import java.net.URL;
++import java.nio.charset.StandardCharsets;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Set;
+@@ -295,7 +296,7 @@ class TimingsExport extends Thread {
+                 this.def.setLevel(7);
+             }};
+ 
+-            request.write(JSONValue.toJSONString(out).getBytes("UTF-8"));
++            request.write(JSONValue.toJSONString(out).getBytes(StandardCharsets.UTF_8));
+             request.close();
+ 
+             response = getResponse(con);
+diff --git a/src/main/java/co/aikar/timings/TimingsReportListener.java b/src/main/java/co/aikar/timings/TimingsReportListener.java
+index e7c389c05d34f3b5458235f7de61bf9f8c06a966..4b5dbe66033662389e5f371a4c1a28dd7dfcbf24 100644
+--- a/src/main/java/co/aikar/timings/TimingsReportListener.java
++++ b/src/main/java/co/aikar/timings/TimingsReportListener.java
+@@ -55,7 +55,9 @@ public class TimingsReportListener implements MessageCommandSender {
+ 
+     @Override
+     public void sendMessage(String message) {
+-        senders.forEach((sender) -> sender.sendMessage(message));
++        for (CommandSender sender : senders) {
++            sender.sendMessage(message);
++        }
+     }
+ 
+     public void addConsoleIfNeeded() {
+@@ -63,6 +65,7 @@ public class TimingsReportListener implements MessageCommandSender {
+         for (CommandSender sender : this.senders) {
+             if (sender instanceof ConsoleCommandSender || sender instanceof RemoteConsoleCommandSender) {
+                 hasConsole = true;
++                break;
+             }
+         }
+         if (!hasConsole) {
+diff --git a/src/main/java/co/aikar/util/Counter.java b/src/main/java/co/aikar/util/Counter.java
+index 23ac07f2cda05c2c1b73ed35fde345c40792ef15..8401d33657f97827c57c29a041eed612bf7f1da8 100644
+--- a/src/main/java/co/aikar/util/Counter.java
++++ b/src/main/java/co/aikar/util/Counter.java
+@@ -18,7 +18,7 @@ public class Counter <T> extends ForwardingMap<T, Long> {
+         return decrement(key, -amount);
+     }
+     public long increment(T key, long amount) {
+-        Long count = this.getCount(key);
++        long count = this.getCount(key);
+         count += amount;
+         this.counts.put(key, count);
+         return count;
+diff --git a/src/main/java/co/aikar/util/LoadingMap.java b/src/main/java/co/aikar/util/LoadingMap.java
+index dfefda357a2a7d584b8de61596649d8e5c89e9f5..d7006cc4967e5f7d5b71c77487fabdbcccddb266 100644
+--- a/src/main/java/co/aikar/util/LoadingMap.java
++++ b/src/main/java/co/aikar/util/LoadingMap.java
+@@ -303,7 +303,7 @@ public class LoadingMap <K, V> extends AbstractMap<K, V> {
+                 }
+             } catch (NoSuchMethodException e) {
+                 throw new IllegalStateException(
+-                    valueClass.getName() + " does not have a constructor for " + (keyClass != null ? keyClass.getName() : null));
++                    valueClass.getName() + " does not have a constructor for " + keyClass.getName());
+             }
+         }
+ 
+diff --git a/src/main/java/com/destroystokyo/paper/ParticleBuilder.java b/src/main/java/com/destroystokyo/paper/ParticleBuilder.java
+index feebfb6536ab6542e1af27bbf342dd39b698016e..dbba8bc62ba6664e5e1a8355306eaf69da3133d9 100644
+--- a/src/main/java/com/destroystokyo/paper/ParticleBuilder.java
++++ b/src/main/java/com/destroystokyo/paper/ParticleBuilder.java
+@@ -84,7 +84,7 @@ public class ParticleBuilder {
+      * @return If this particle is going to be sent to someone
+      */
+     public boolean hasReceivers() {
+-        return (receivers == null && !location.getWorld().getPlayers().isEmpty()) || (receivers != null && !receivers.isEmpty());
++        return receivers == null ? !location.getWorld().getPlayers().isEmpty() : !receivers.isEmpty();
+     }
+ 
+     /**
+diff --git a/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java b/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java
+index 9d56a9e7ec7809874eaaf33085a202030a0e442a..a8d272389a47adcd2c9cce9a61d8ec7d78f4ba2c 100644
+--- a/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java
++++ b/src/main/java/com/destroystokyo/paper/event/player/PlayerArmorChangeEvent.java
+@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
+ import javax.annotation.Nullable;
+ import java.util.Arrays;
+ import java.util.Collections;
+-import java.util.HashSet;
++import java.util.EnumSet;
+ import java.util.Set;
+ 
+ import static org.bukkit.Material.*;
+@@ -84,7 +84,7 @@ public class PlayerArmorChangeEvent extends PlayerEvent {
+         LEGS(DIAMOND_LEGGINGS, GOLD_LEGGINGS, IRON_LEGGINGS, CHAINMAIL_LEGGINGS, LEATHER_LEGGINGS),
+         FEET(DIAMOND_BOOTS, GOLD_BOOTS, IRON_BOOTS, CHAINMAIL_BOOTS, LEATHER_BOOTS);
+ 
+-        private final Set<Material> mutableTypes = new HashSet<>();
++        private final Set<Material> mutableTypes = EnumSet.noneOf(Material.class);
+         private Set<Material> immutableTypes;
+ 
+         SlotType(Material... types) {
+diff --git a/src/main/java/com/destroystokyo/paper/event/profile/PreLookupProfileEvent.java b/src/main/java/com/destroystokyo/paper/event/profile/PreLookupProfileEvent.java
+index aa0666d54b4442b6a4c2037f385269026154dbf1..ffd362f8264ce6f71022306a98ddb9e735e4f94b 100644
+--- a/src/main/java/com/destroystokyo/paper/event/profile/PreLookupProfileEvent.java
++++ b/src/main/java/com/destroystokyo/paper/event/profile/PreLookupProfileEvent.java
+@@ -93,9 +93,9 @@ public class PreLookupProfileEvent extends Event {
+     @Deprecated
+     public void setProperties(Multimap<String, Property> properties) {
+         this.properties = new HashSet<>();
+-        properties.values().forEach(property -> {
++        for (Property property : properties.values()) {
+             this.properties.add(new ProfileProperty(property.getName(), property.getValue(), property.getSignature()));
+-        });
++        }
+     }
+ 
+     /**
+@@ -105,9 +105,9 @@ public class PreLookupProfileEvent extends Event {
+      */
+     @Deprecated
+     public void addProperties(Multimap<String, Property> properties) {
+-        properties.values().forEach(property -> {
++        for (Property property : properties.values()) {
+             this.properties.add(new ProfileProperty(property.getName(), property.getValue(), property.getSignature()));
+-        });
++        }
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/ChatColor.java b/src/main/java/org/bukkit/ChatColor.java
+index adbae51a70f883269be2fba50ab3f28be7928958..5a960f3c7bab6845f1a901c28e2648eb972cdd41 100644
+--- a/src/main/java/org/bukkit/ChatColor.java
++++ b/src/main/java/org/bukkit/ChatColor.java
+@@ -215,7 +215,7 @@ public enum ChatColor{
+      * you need to dynamically convert colour codes from your custom format.
+      */
+     public static final char COLOR_CHAR = '\u00A7';
+-    private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)" + String.valueOf(COLOR_CHAR) + "[0-9A-FK-OR]");
++    private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)" + COLOR_CHAR + "[0-9A-FK-OR]");
+ 
+     private final int intCode;
+     private final char code;
+diff --git a/src/main/java/org/bukkit/Color.java b/src/main/java/org/bukkit/Color.java
+index 83927ddec6abef7e14f78b4c53cb98bacb9fd25e..11597a1dc3e1ea1e7fbabab412cc61b4c734d8be 100644
+--- a/src/main/java/org/bukkit/Color.java
++++ b/src/main/java/org/bukkit/Color.java
+@@ -143,7 +143,7 @@ public final class Color implements ConfigurationSerializable {
+      */
+     public static Color fromRGB(int rgb) throws IllegalArgumentException {
+         Validate.isTrue((rgb >> 24) == 0, "Extrenuous data in: ", rgb);
+-        return fromRGB(rgb >> 16 & BIT_MASK, rgb >> 8 & BIT_MASK, rgb >> 0 & BIT_MASK);
++        return fromRGB(rgb >> 16 & BIT_MASK, rgb >> 8 & BIT_MASK, rgb & BIT_MASK);
+     }
+ 
+     /**
+@@ -157,7 +157,7 @@ public final class Color implements ConfigurationSerializable {
+      */
+     public static Color fromBGR(int bgr) throws IllegalArgumentException {
+         Validate.isTrue((bgr >> 24) == 0, "Extrenuous data in: ", bgr);
+-        return fromBGR(bgr >> 16 & BIT_MASK, bgr >> 8 & BIT_MASK, bgr >> 0 & BIT_MASK);
++        return fromBGR(bgr >> 16 & BIT_MASK, bgr >> 8 & BIT_MASK, bgr & BIT_MASK);
+     }
+ 
+     private Color(int red, int green, int blue) {
+@@ -232,7 +232,7 @@ public final class Color implements ConfigurationSerializable {
+      * @return An integer representation of this color, as 0xRRGGBB
+      */
+     public int asRGB() {
+-        return getRed() << 16 | getGreen() << 8 | getBlue() << 0;
++        return getRed() << 16 | getGreen() << 8 | getBlue();
+     }
+ 
+     /**
+@@ -240,7 +240,7 @@ public final class Color implements ConfigurationSerializable {
+      * @return An integer representation of this color, as 0xBBGGRR
+      */
+     public int asBGR() {
+-        return getBlue() << 16 | getGreen() << 8 | getRed() << 0;
++        return getBlue() << 16 | getGreen() << 8 | getRed();
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/Difficulty.java b/src/main/java/org/bukkit/Difficulty.java
+index a8a5a7858807778be8214921fae80c5f8f0e0afa..5f98dc6091ceaf9cbb56b026afd4c703f429c62a 100644
+--- a/src/main/java/org/bukkit/Difficulty.java
++++ b/src/main/java/org/bukkit/Difficulty.java
+@@ -3,6 +3,7 @@ package org.bukkit;
+ import java.util.Map;
+ 
+ import com.google.common.collect.Maps;
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ 
+ /**
+  * Represents the various difficulty levels that are available.
+@@ -34,7 +35,7 @@ public enum Difficulty {
+     HARD(3);
+ 
+     private final int value;
+-    private final static Map<Integer, Difficulty> BY_ID = Maps.newHashMap();
++    private final static Int2ObjectOpenHashMap<Difficulty> BY_ID = new Int2ObjectOpenHashMap<>(); // Reaper - FastUtil optimization
+ 
+     private Difficulty(final int value) {
+         this.value = value;
+diff --git a/src/main/java/org/bukkit/Effect.java b/src/main/java/org/bukkit/Effect.java
+index eeb258126397ca6207750bd1b4b3b14f3beb07ed..11cb54dc9f0477592c75a766c9c6f82f27563db5 100644
+--- a/src/main/java/org/bukkit/Effect.java
++++ b/src/main/java/org/bukkit/Effect.java
+@@ -4,6 +4,7 @@ import java.util.Map;
+ 
+ import com.google.common.collect.Maps;
+ 
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ import org.bukkit.block.BlockFace;
+ import org.bukkit.material.MaterialData;
+ import org.bukkit.potion.Potion;
+@@ -416,7 +417,7 @@ public enum Effect {
+     private final int id;
+     private final Type type;
+     private final Class<?> data;
+-    private static final Map<Integer, Effect> BY_ID = Maps.newHashMap();
++    private static final Int2ObjectOpenHashMap<Effect> BY_ID = new Int2ObjectOpenHashMap<>(); // Reaper - FastUtil optimization
+     private static final Map<String, Effect> BY_NAME = Maps.newHashMap();
+     private final String particleName;
+ 
+diff --git a/src/main/java/org/bukkit/GameMode.java b/src/main/java/org/bukkit/GameMode.java
+index 803944eaeffafffc0eb7dad6641cf7e6f4685d1e..adfe67f319f813b0dff95a8f3a4a65af74a2332c 100644
+--- a/src/main/java/org/bukkit/GameMode.java
++++ b/src/main/java/org/bukkit/GameMode.java
+@@ -2,6 +2,7 @@ package org.bukkit;
+ 
+ import java.util.Map;
+ 
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ import org.bukkit.entity.HumanEntity;
+ 
+ import com.google.common.collect.Maps;
+@@ -35,7 +36,7 @@ public enum GameMode {
+     SPECTATOR(3);
+ 
+     private final int value;
+-    private final static Map<Integer, GameMode> BY_ID = Maps.newHashMap();
++    private final static Int2ObjectOpenHashMap<GameMode> BY_ID = new Int2ObjectOpenHashMap<>(); // Reaper - FastUtil optimization
+ 
+     private GameMode(final int value) {
+         this.value = value;
+diff --git a/src/main/java/org/bukkit/Location.java b/src/main/java/org/bukkit/Location.java
+index 9457832bcbb165ae4149b41ea538facaece0617a..a1302c7f54f9ef88e06e712bb35061477f975968 100644
+--- a/src/main/java/org/bukkit/Location.java
++++ b/src/main/java/org/bukkit/Location.java
+@@ -918,10 +918,7 @@ public class Location implements Cloneable, ConfigurationSerializable {
+         if (Float.floatToIntBits(this.pitch) != Float.floatToIntBits(other.pitch)) {
+             return false;
+         }
+-        if (Float.floatToIntBits(this.yaw) != Float.floatToIntBits(other.yaw)) {
+-            return false;
+-        }
+-        return true;
++        return Float.floatToIntBits(this.yaw) == Float.floatToIntBits(other.yaw);
+     }
+ 
+     @Override
+diff --git a/src/main/java/org/bukkit/Material.java b/src/main/java/org/bukkit/Material.java
+index fcc76e190244c64843ffa9ad9a1a07f510202008..b43bc24376be6acc562a26b05c0228225f46d7b4 100644
+--- a/src/main/java/org/bukkit/Material.java
++++ b/src/main/java/org/bukkit/Material.java
+@@ -757,12 +757,10 @@ public enum Material {
+ 
+     static {
+         for (Material material : values()) {
+-            if (byId.length > material.id) {
+-                byId[material.id] = material;
+-            } else {
++            if (byId.length <= material.id) {
+                 byId = Arrays.copyOfRange(byId, 0, material.id + 2);
+-                byId[material.id] = material;
+             }
++            byId[material.id] = material;
+             BY_NAME.put(material.name(), material);
+         }
+     }
+diff --git a/src/main/java/org/bukkit/Note.java b/src/main/java/org/bukkit/Note.java
+index 417936fab80534737a9a635f63e1731810e1dca0..99dd24cf7a64ee0f14e32be89cba79fd0bdd6567 100644
+--- a/src/main/java/org/bukkit/Note.java
++++ b/src/main/java/org/bukkit/Note.java
+@@ -264,9 +264,7 @@ public class Note {
+         if (getClass() != obj.getClass())
+             return false;
+         Note other = (Note) obj;
+-        if (note != other.note)
+-            return false;
+-        return true;
++        return note == other.note;
+     }
+ 
+     @Override
+diff --git a/src/main/java/org/bukkit/World.java b/src/main/java/org/bukkit/World.java
+index d5058634982be099a35ff69a1425e53019ea5056..206b83e8e73577cf5a51d4fcf1b71ba271286783 100644
+--- a/src/main/java/org/bukkit/World.java
++++ b/src/main/java/org/bukkit/World.java
+@@ -1,6 +1,7 @@
+ package org.bukkit;
+ 
+ import java.io.File;
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ import org.bukkit.generator.ChunkGenerator;
+ 
+ import java.util.ArrayList;
+@@ -2129,7 +2130,7 @@ public interface World extends PluginMessageRecipient, Metadatable {
+         THE_END(1);
+ 
+         private final int id;
+-        private static final Map<Integer, Environment> lookup = new HashMap<Integer, Environment>();
++        private static final Int2ObjectOpenHashMap<Environment> lookup = new Int2ObjectOpenHashMap<>(); // Reaper - FastUtil optimization
+ 
+         private Environment(int id) {
+             this.id = id;
+diff --git a/src/main/java/org/bukkit/WorldCreator.java b/src/main/java/org/bukkit/WorldCreator.java
+index 53980fdbc60d2bae5eaa14fdc26d629b813a1bc8..17221cc2af18c01b640b514b0ecade7278d1a716 100644
+--- a/src/main/java/org/bukkit/WorldCreator.java
++++ b/src/main/java/org/bukkit/WorldCreator.java
+@@ -299,7 +299,7 @@ public class WorldCreator {
+         }
+ 
+         if (name != null) {
+-            String[] split = name.split(":", 2);
++            String[] split = org.apache.commons.lang3.StringUtils.splitPreserveAllTokens(name, ":", 2);
+             String id = (split.length > 1) ? split[1] : null;
+             Plugin plugin = Bukkit.getPluginManager().getPlugin(split[0]);
+ 
+diff --git a/src/main/java/org/bukkit/block/PistonMoveReaction.java b/src/main/java/org/bukkit/block/PistonMoveReaction.java
+index 3df37d0dce4d7ce5fee3fb2e1f27f3c1c404dd8e..f22d35ebae6d07a445e459abcdf51abd786b6f25 100644
+--- a/src/main/java/org/bukkit/block/PistonMoveReaction.java
++++ b/src/main/java/org/bukkit/block/PistonMoveReaction.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.block;
+ 
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ import java.util.HashMap;
+ import java.util.Map;
+ 
+@@ -34,7 +35,7 @@ public enum PistonMoveReaction {
+     PUSH_ONLY(4);
+ 
+     private int id;
+-    private static Map<Integer, PistonMoveReaction> byId = new HashMap<Integer, PistonMoveReaction>();
++    private static Int2ObjectOpenHashMap<PistonMoveReaction> byId = new Int2ObjectOpenHashMap<>(); // Reaper - FastUtil optimization
+     static {
+         for (PistonMoveReaction reaction : PistonMoveReaction.values()) {
+             byId.put(reaction.id, reaction);
+diff --git a/src/main/java/org/bukkit/command/BufferedCommandSender.java b/src/main/java/org/bukkit/command/BufferedCommandSender.java
+index fd452bce440808af70609cfa187046d4f7a22fcf..9902b7ebf4f6b489edbd7ebef99133db919b25a8 100644
+--- a/src/main/java/org/bukkit/command/BufferedCommandSender.java
++++ b/src/main/java/org/bukkit/command/BufferedCommandSender.java
+@@ -5,7 +5,7 @@ public class BufferedCommandSender implements MessageCommandSender {
+     @Override
+     public void sendMessage(String message) {
+         buffer.append(message);
+-        buffer.append("\n");
++        buffer.append('\n');
+     }
+ 
+     public String getBuffer() {
+diff --git a/src/main/java/org/bukkit/command/Command.java b/src/main/java/org/bukkit/command/Command.java
+index 86c78098266035cf9cbe3b50525630f138999e54..e8c071a7607811ab6f17671739306dcb39fe02c7 100644
+--- a/src/main/java/org/bukkit/command/Command.java
++++ b/src/main/java/org/bukkit/command/Command.java
+@@ -28,7 +28,7 @@ public abstract class Command {
+     private List<String> aliases;
+     private List<String> activeAliases;
+     private CommandMap commandMap = null;
+-    protected String description = "";
++    protected String description;
+     protected String usageMessage;
+     private String permission;
+     private String permissionMessage;
+@@ -111,7 +111,7 @@ public abstract class Command {
+             }
+         }
+ 
+-        Collections.sort(matchedPlayers, String.CASE_INSENSITIVE_ORDER);
++        matchedPlayers.sort(String.CASE_INSENSITIVE_ORDER);
+         return matchedPlayers;
+     }
+ 
+@@ -405,7 +405,7 @@ public abstract class Command {
+         }
+ 
+         Set<Permissible> users = Bukkit.getPluginManager().getPermissionSubscriptions(Server.BROADCAST_CHANNEL_ADMINISTRATIVE);
+-        String colored = ChatColor.GRAY + "" + ChatColor.ITALIC + "[" + result + ChatColor.GRAY + ChatColor.ITALIC + "]";
++        String colored = ChatColor.GRAY.toString() + ChatColor.ITALIC + "[" + result + ChatColor.GRAY + ChatColor.ITALIC + "]";
+ 
+         if (sendToSource && !(source instanceof ConsoleCommandSender)) {
+             source.sendMessage(message);
+diff --git a/src/main/java/org/bukkit/command/FormattedCommandAlias.java b/src/main/java/org/bukkit/command/FormattedCommandAlias.java
+index 631be1cbd8cac620f683ced49d35c939db0253ba..b10eecf37fc67bae92a0c82b0211fe5996a311fd 100644
+--- a/src/main/java/org/bukkit/command/FormattedCommandAlias.java
++++ b/src/main/java/org/bukkit/command/FormattedCommandAlias.java
+@@ -109,7 +109,7 @@ public class FormattedCommandAlias extends Command {
+                 replacement.append(args[position]);
+             }
+ 
+-            formatString = formatString.substring(0, start) + replacement.toString() + formatString.substring(end);
++            formatString = formatString.substring(0, start) + replacement + formatString.substring(end);
+             // Move index past the replaced data so we don't process it again
+             index = start + replacement.length();
+ 
+diff --git a/src/main/java/org/bukkit/command/PluginCommand.java b/src/main/java/org/bukkit/command/PluginCommand.java
+index c660c178cad6495806c673cb5942df561a04b5e8..42c0c4f228c00cae53baf509511f34c3665a4e55 100644
+--- a/src/main/java/org/bukkit/command/PluginCommand.java
++++ b/src/main/java/org/bukkit/command/PluginCommand.java
+@@ -30,7 +30,7 @@ public final class PluginCommand extends Command implements PluginIdentifiableCo
+      */
+     @Override
+     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
+-        boolean success = false;
++        boolean success;
+ 
+         if (!owningPlugin.isEnabled()) {
+             throw new CommandException("Cannot execute command '" + commandLabel + "' in plugin " + owningPlugin.getDescription().getFullName() + " - plugin is disabled.");
+diff --git a/src/main/java/org/bukkit/command/SimpleCommandMap.java b/src/main/java/org/bukkit/command/SimpleCommandMap.java
+index 474cf4c38d8f84a958a15bfa672e5e5d31c297cf..d211cecd1c9c393dfee659954de0cd4ee4c7e49f 100644
+--- a/src/main/java/org/bukkit/command/SimpleCommandMap.java
++++ b/src/main/java/org/bukkit/command/SimpleCommandMap.java
+@@ -107,8 +107,6 @@ public class SimpleCommandMap implements CommandMap {
+             return false;
+         }
+ 
+-        boolean registered = true;
+-
+         // If the command exists but is an alias we overwrite it, otherwise we return
+         Command conflict = knownCommands.get(label);
+         if (conflict != null && conflict.getLabel().equals(label)) {
+@@ -120,14 +118,14 @@ public class SimpleCommandMap implements CommandMap {
+         }
+         knownCommands.put(label, command);
+ 
+-        return registered;
++        return true;
+     }
+ 
+     /**
+      * {@inheritDoc}
+      */
+     public boolean dispatch(CommandSender sender, String commandLine) throws CommandException {
+-        String[] args = PATTERN_ON_SPACE.split(commandLine);
++        String[] args = org.apache.commons.lang3.StringUtils.splitPreserveAllTokens(commandLine, ' ');
+ 
+         if (args.length == 0) {
+             return false;
+@@ -175,8 +173,7 @@ public class SimpleCommandMap implements CommandMap {
+     }
+ 
+     public Command getCommand(String name) {
+-        Command target = knownCommands.get(name.toLowerCase(java.util.Locale.ENGLISH));
+-        return target;
++        return knownCommands.get(name.toLowerCase(java.util.Locale.ENGLISH));
+     }
+ 
+     public List<String> tabComplete(CommandSender sender, String cmdLine) {
+@@ -209,7 +206,7 @@ public class SimpleCommandMap implements CommandMap {
+                 }
+             }
+ 
+-            Collections.sort(completions, String.CASE_INSENSITIVE_ORDER);
++            completions.sort(String.CASE_INSENSITIVE_ORDER);
+             return completions;
+         }
+ 
+diff --git a/src/main/java/org/bukkit/command/defaults/HelpCommand.java b/src/main/java/org/bukkit/command/defaults/HelpCommand.java
+index a8f8a19bfd7510dc586c7e061239b040d9865c22..4b9685fcacd984266c5a94d58c16368cd1e0dc09 100644
+--- a/src/main/java/org/bukkit/command/defaults/HelpCommand.java
++++ b/src/main/java/org/bukkit/command/defaults/HelpCommand.java
+@@ -179,7 +179,7 @@ public class HelpCommand extends BukkitCommand {
+         if (s1 != null && s2 == null) {
+             return s1.length();
+         }
+-        if (s1 == null && s2 != null) {
++        if (s1 == null) {
+             return s2.length();
+         }
+ 
+diff --git a/src/main/java/org/bukkit/command/defaults/PluginsCommand.java b/src/main/java/org/bukkit/command/defaults/PluginsCommand.java
+index b1d384e820137d5556db00e18e773c17b78f4158..f6d8a8f329fc01a7c52225579ae77043085177c0 100644
+--- a/src/main/java/org/bukkit/command/defaults/PluginsCommand.java
++++ b/src/main/java/org/bukkit/command/defaults/PluginsCommand.java
+@@ -51,7 +51,7 @@ public class PluginsCommand extends BukkitCommand {
+             pluginList.append(entry.getKey());
+         }
+ 
+-        return "(" + plugins.size() + "): " + pluginList.toString();
++        return "(" + plugins.size() + "): " + pluginList;
+         // Paper end
+     }
+ }
+diff --git a/src/main/java/org/bukkit/configuration/MemorySection.java b/src/main/java/org/bukkit/configuration/MemorySection.java
+index fe7762b98990ad76c84aa02300ccea982c26a296..d3f7719fc4e0be16e668623cbec59cbb2b48baab 100644
+--- a/src/main/java/org/bukkit/configuration/MemorySection.java
++++ b/src/main/java/org/bukkit/configuration/MemorySection.java
+@@ -628,14 +628,14 @@ public class MemorySection implements ConfigurationSection {
+     public <T extends ConfigurationSerializable> T getSerializable(String path, Class<T> clazz) {
+         Validate.notNull(clazz, "ConfigurationSerializable class cannot be null");
+         Object def = getDefault(path);
+-        return getSerializable(path, clazz, (def != null && clazz.isInstance(def)) ? clazz.cast(def) : null);
++        return getSerializable(path, clazz, (clazz.isInstance(def)) ? clazz.cast(def) : null);
+     }
+ 
+     @Override
+     public <T extends ConfigurationSerializable> T getSerializable(String path, Class<T> clazz, T def) {
+         Validate.notNull(clazz, "ConfigurationSerializable class cannot be null");
+         Object val = get(path);
+-        return (val != null && clazz.isInstance(val)) ? clazz.cast(val) : def;
++        return (clazz.isInstance(val)) ? clazz.cast(val) : def;
+     }
+ 
+     public Vector getVector(String path) {
+@@ -725,7 +725,7 @@ public class MemorySection implements ConfigurationSection {
+ 
+                 if ((deep) && (entry.getValue() instanceof ConfigurationSection)) {
+                     ConfigurationSection subsection = (ConfigurationSection) entry.getValue();
+-                    mapChildrenKeys(output, subsection, deep);
++                    mapChildrenKeys(output, subsection, true);
+                 }
+             }
+         } else {
+@@ -746,7 +746,7 @@ public class MemorySection implements ConfigurationSection {
+ 
+                 if (entry.getValue() instanceof ConfigurationSection) {
+                     if (deep) {
+-                        mapChildrenValues(output, (ConfigurationSection) entry.getValue(), deep);
++                        mapChildrenValues(output, (ConfigurationSection) entry.getValue(), true);
+                     }
+                 }
+             }
+@@ -795,14 +795,12 @@ public class MemorySection implements ConfigurationSection {
+         char separator = root.options().pathSeparator();
+ 
+         StringBuilder builder = new StringBuilder();
+-        if (section != null) {
+-            for (ConfigurationSection parent = section; (parent != null) && (parent != relativeTo); parent = parent.getParent()) {
+-                if (builder.length() > 0) {
+-                    builder.insert(0, separator);
+-                }
+-
+-                builder.insert(0, parent.getName());
++        for (ConfigurationSection parent = section; (parent != null) && (parent != relativeTo); parent = parent.getParent()) {
++            if (builder.length() > 0) {
++                builder.insert(0, separator);
+             }
++
++            builder.insert(0, parent.getName());
+         }
+ 
+         if ((key != null) && (key.length() > 0)) {
+diff --git a/src/main/java/org/bukkit/configuration/file/YamlConfiguration.java b/src/main/java/org/bukkit/configuration/file/YamlConfiguration.java
+index 60eecf4bbe42289a9e8e5b4900002f919c67e60b..ecbde4276e1390be740def2adaf44f6323ba5e6d 100644
+--- a/src/main/java/org/bukkit/configuration/file/YamlConfiguration.java
++++ b/src/main/java/org/bukkit/configuration/file/YamlConfiguration.java
+@@ -91,7 +91,7 @@ public class YamlConfiguration extends FileConfiguration {
+ 
+             if (line.startsWith(COMMENT_PREFIX)) {
+                 if (i > 0) {
+-                    result.append("\n");
++                    result.append('\n');
+                 }
+ 
+                 if (line.length() > COMMENT_PREFIX.length()) {
+@@ -100,7 +100,7 @@ public class YamlConfiguration extends FileConfiguration {
+ 
+                 foundHeader = true;
+             } else if ((foundHeader) && (line.length() == 0)) {
+-                result.append("\n");
++                result.append('\n');
+             } else if (foundHeader) {
+                 readingHeader = false;
+             }
+@@ -116,7 +116,7 @@ public class YamlConfiguration extends FileConfiguration {
+         if (options().copyHeader()) {
+             Configuration def = getDefaults();
+ 
+-            if ((def != null) && (def instanceof FileConfiguration)) {
++            if (def instanceof FileConfiguration) {
+                 FileConfiguration filedefaults = (FileConfiguration) def;
+                 String defaultsHeader = filedefaults.buildHeader();
+ 
+@@ -135,7 +135,7 @@ public class YamlConfiguration extends FileConfiguration {
+         boolean startedHeader = false;
+ 
+         for (int i = lines.length - 1; i >= 0; i--) {
+-            builder.insert(0, "\n");
++            builder.insert(0, '\n');
+ 
+             if ((startedHeader) || (lines[i].length() != 0)) {
+                 builder.insert(0, lines[i]);
+diff --git a/src/main/java/org/bukkit/configuration/serialization/ConfigurationSerialization.java b/src/main/java/org/bukkit/configuration/serialization/ConfigurationSerialization.java
+index f5441bfde386fb651bbb03f021081f1e02504adc..566defedf946fa2848fba69adbdc7e8b8b1840bf 100644
+--- a/src/main/java/org/bukkit/configuration/serialization/ConfigurationSerialization.java
++++ b/src/main/java/org/bukkit/configuration/serialization/ConfigurationSerialization.java
+@@ -110,14 +110,12 @@ public class ConfigurationSerialization {
+         Validate.notNull(args, "Args must not be null");
+ 
+         ConfigurationSerializable result = null;
+-        Method method = null;
++        Method method;
+ 
+-        if (result == null) {
+-            method = getMethod("deserialize", true);
++        method = getMethod("deserialize", true);
+ 
+-            if (method != null) {
+-                result = deserializeViaMethod(method, args);
+-            }
++        if (method != null) {
++            result = deserializeViaMethod(method, args);
+         }
+ 
+         if (result == null) {
+@@ -173,7 +171,7 @@ public class ConfigurationSerialization {
+      * @return New instance of the specified class
+      */
+     public static ConfigurationSerializable deserializeObject(Map<String, ?> args) {
+-        Class<? extends ConfigurationSerializable> clazz = null;
++        Class<? extends ConfigurationSerializable> clazz;
+ 
+         if (args.containsKey(SERIALIZED_TYPE_KEY)) {
+             try {
+@@ -267,19 +265,15 @@ public class ConfigurationSerialization {
+         DelegateDeserialization delegate = clazz.getAnnotation(DelegateDeserialization.class);
+ 
+         if (delegate != null) {
+-            if ((delegate.value() == null) || (delegate.value() == clazz)) {
+-                delegate = null;
+-            } else {
++            if ((delegate.value() != null) && (delegate.value() != clazz)) {
+                 return getAlias(delegate.value());
+             }
+         }
+ 
+-        if (delegate == null) {
+-            SerializableAs alias = clazz.getAnnotation(SerializableAs.class);
++        SerializableAs alias = clazz.getAnnotation(SerializableAs.class);
+ 
+-            if ((alias != null) && (alias.value() != null)) {
+-                return alias.value();
+-            }
++        if ((alias != null) && (alias.value() != null)) {
++            return alias.value();
+         }
+ 
+         return clazz.getName();
+diff --git a/src/main/java/org/bukkit/conversations/ConversationFactory.java b/src/main/java/org/bukkit/conversations/ConversationFactory.java
+index 8a3b39209fe12bb633601c1310e84d203ae8eada..2a30a6391308304e8d0063c21857de60cac92f9e 100644
+--- a/src/main/java/org/bukkit/conversations/ConversationFactory.java
++++ b/src/main/java/org/bukkit/conversations/ConversationFactory.java
+@@ -189,8 +189,7 @@ public class ConversationFactory {
+         }
+ 
+         //Clone any initial session data
+-        Map<Object, Object> copiedInitialSessionData = new HashMap<Object, Object>();
+-        copiedInitialSessionData.putAll(initialSessionData);
++        Map<Object, Object> copiedInitialSessionData = new HashMap<Object, Object>(initialSessionData);
+ 
+         //Build and return a conversation
+         Conversation conversation = new Conversation(plugin, forWhom, firstPrompt, copiedInitialSessionData);
+diff --git a/src/main/java/org/bukkit/enchantments/Enchantment.java b/src/main/java/org/bukkit/enchantments/Enchantment.java
+index ac3a7f99b971ac45a2e2ff7d27619fa61ade2806..a49a19da2c60f623588a3b9a4d9e7dcf6cb9de97 100644
+--- a/src/main/java/org/bukkit/enchantments/Enchantment.java
++++ b/src/main/java/org/bukkit/enchantments/Enchantment.java
+@@ -3,6 +3,7 @@ package org.bukkit.enchantments;
+ import java.util.HashMap;
+ import java.util.Map;
+ 
++import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ import org.bukkit.inventory.ItemStack;
+ 
+ /**
+@@ -160,7 +161,7 @@ public abstract class Enchantment {
+      */
+     public static final Enchantment VANISHING_CURSE = new EnchantmentWrapper(71);
+ 
+-    private static final Map<Integer, Enchantment> byId = new HashMap<Integer, Enchantment>();
++    private static final Int2ObjectOpenHashMap<Enchantment> byId = new Int2ObjectOpenHashMap<>();
+     private static final Map<String, Enchantment> byName = new HashMap<String, Enchantment>();
+     private static boolean acceptingNew = true;
+     private final int id;
+@@ -256,10 +257,7 @@ public abstract class Enchantment {
+             return false;
+         }
+         final Enchantment other = (Enchantment) obj;
+-        if (this.id != other.id) {
+-            return false;
+-        }
+-        return true;
++        return this.id == other.id;
+     }
+ 
+     @Override
+diff --git a/src/main/java/org/bukkit/entity/Villager.java b/src/main/java/org/bukkit/entity/Villager.java
+index f2095f6180aaa6421522869402976381ab89e343..7628b84cb6f9af2c898285d3c75e5492e318806c 100644
+--- a/src/main/java/org/bukkit/entity/Villager.java
++++ b/src/main/java/org/bukkit/entity/Villager.java
+@@ -252,7 +252,7 @@ public interface Villager extends Ageable, NPC, InventoryHolder, Merchant {
+          * profession, or an empty map if the profession was not found
+          */
+         public static List<Career> getCareers(Profession profession) {
+-            return careerMap.containsKey(profession) ? ImmutableList.copyOf(careerMap.get(profession)) : ImmutableList.<Career>of();
++            java.util.Collection<Career> cO = careerMap.get(profession); return cO != null ? ImmutableList.copyOf(cO) : ImmutableList.<Career>of(); // Reaper - Optimize map get
+         }
+ 
+         static {
+diff --git a/src/main/java/org/bukkit/event/block/BlockPistonExtendEvent.java b/src/main/java/org/bukkit/event/block/BlockPistonExtendEvent.java
+index 682ce60aef16556d68b5f689a3e3196ea0ae5792..960f0f61a42d3b598381fdb8d02766719649a025 100644
+--- a/src/main/java/org/bukkit/event/block/BlockPistonExtendEvent.java
++++ b/src/main/java/org/bukkit/event/block/BlockPistonExtendEvent.java
+@@ -51,7 +51,7 @@ public class BlockPistonExtendEvent extends BlockPistonEvent {
+     public List<Block> getBlocks() {
+         if (blocks == null) {
+             ArrayList<Block> tmp = new ArrayList<Block>();
+-            for (int i = 0; i < this.getLength(); i++) {
++            for (int i = 0; i < this.length; i++) {
+                 tmp.add(block.getRelative(getDirection(), i + 1));
+             }
+             blocks = Collections.unmodifiableList(tmp);
+diff --git a/src/main/java/org/bukkit/event/entity/EntityCreatePortalEvent.java b/src/main/java/org/bukkit/event/entity/EntityCreatePortalEvent.java
+index 286c206d6addd2056da911aa8288772c4b6412a1..c5670a8e369862e2cd61ab1f24c0e2e5536edeba 100644
+--- a/src/main/java/org/bukkit/event/entity/EntityCreatePortalEvent.java
++++ b/src/main/java/org/bukkit/event/entity/EntityCreatePortalEvent.java
+@@ -14,7 +14,7 @@ public class EntityCreatePortalEvent extends EntityEvent implements Cancellable
+     private static final HandlerList handlers = new HandlerList();
+     private final List<BlockState> blocks;
+     private boolean cancelled = false;
+-    private PortalType type = PortalType.CUSTOM;
++    private PortalType type;
+ 
+     public EntityCreatePortalEvent(final LivingEntity what, final List<BlockState> blocks, final PortalType type) {
+         super(what);
+diff --git a/src/main/java/org/bukkit/event/entity/EntityDeathEvent.java b/src/main/java/org/bukkit/event/entity/EntityDeathEvent.java
+index fef134c61514210389d055818e11f588bcdd9649..75ef4e072efd8818867ea2f3350d0ebb2004e13d 100644
+--- a/src/main/java/org/bukkit/event/entity/EntityDeathEvent.java
++++ b/src/main/java/org/bukkit/event/entity/EntityDeathEvent.java
+@@ -11,7 +11,7 @@ import org.bukkit.inventory.ItemStack;
+ public class EntityDeathEvent extends EntityEvent implements org.bukkit.event.Cancellable {  // Paper - make cancellable
+     private static final HandlerList handlers = new HandlerList();
+     private final List<ItemStack> drops;
+-    private int dropExp = 0;
++    private int dropExp;
+     // Paper start - make cancellable
+     private boolean cancelled;
+     private double reviveHealth = 0;
+diff --git a/src/main/java/org/bukkit/event/entity/PlayerDeathEvent.java b/src/main/java/org/bukkit/event/entity/PlayerDeathEvent.java
+index aad03549523391d22e574778250f8169bbac33f6..a1952276276f354fb0b8e89f2bb0587bdebcfe6a 100644
+--- a/src/main/java/org/bukkit/event/entity/PlayerDeathEvent.java
++++ b/src/main/java/org/bukkit/event/entity/PlayerDeathEvent.java
+@@ -9,10 +9,10 @@ import org.bukkit.inventory.ItemStack;
+  * Thrown whenever a {@link Player} dies
+  */
+ public class PlayerDeathEvent extends EntityDeathEvent {
+-    private int newExp = 0;
+-    private String deathMessage = "";
+-    private int newLevel = 0;
+-    private int newTotalExp = 0;
++    private int newExp;
++    private String deathMessage;
++    private int newLevel;
++    private int newTotalExp;
+     private boolean keepLevel = false;
+     private boolean keepInventory = false;
+ 
+diff --git a/src/main/java/org/bukkit/event/server/TabCompleteEvent.java b/src/main/java/org/bukkit/event/server/TabCompleteEvent.java
+index df6eb53da7f0709ca45bbd3a96d298c32381578b..5092ff8895efa0d59db8f5c0e0aa9e82eb9a8bb3 100644
+--- a/src/main/java/org/bukkit/event/server/TabCompleteEvent.java
++++ b/src/main/java/org/bukkit/event/server/TabCompleteEvent.java
+@@ -23,7 +23,7 @@ public class TabCompleteEvent extends Event implements Cancellable {
+ 
+     public TabCompleteEvent(CommandSender sender, String buffer, List<String> completions) {
+         // Paper start
+-        this(sender, buffer, completions, sender instanceof org.bukkit.command.ConsoleCommandSender || buffer.startsWith("/"), null);
++        this(sender, buffer, completions, sender instanceof org.bukkit.command.ConsoleCommandSender || !buffer.isEmpty() && buffer.charAt(0) == '/', null);
+     }
+     public TabCompleteEvent(CommandSender sender, String buffer, List<String> completions, boolean isCommand, org.bukkit.Location location) {
+         this.isCommand = isCommand;
+diff --git a/src/main/java/org/bukkit/event/world/PortalCreateEvent.java b/src/main/java/org/bukkit/event/world/PortalCreateEvent.java
+index d83d7a99817bd966f20b31c444aa4de3522dd639..5d301670b814eb8a7fb09ecf86faa1cdde53603a 100644
+--- a/src/main/java/org/bukkit/event/world/PortalCreateEvent.java
++++ b/src/main/java/org/bukkit/event/world/PortalCreateEvent.java
+@@ -15,7 +15,7 @@ public class PortalCreateEvent extends WorldEvent implements Cancellable {
+     private static final HandlerList handlers = new HandlerList();
+     private boolean cancel = false;
+     private final ArrayList<Block> blocks = new ArrayList<Block>();
+-    private CreateReason reason = CreateReason.FIRE;
++    private CreateReason reason;
+ 
+     public PortalCreateEvent(final Collection<Block> blocks, final World world, CreateReason reason) {
+         super(world);
+diff --git a/src/main/java/org/bukkit/inventory/ItemStack.java b/src/main/java/org/bukkit/inventory/ItemStack.java
+index 574cdf3b6602996265f16a9ac772692ae3211de9..342cbc4fba889ee78c9ddd63b4a364ca54aed26d 100644
+--- a/src/main/java/org/bukkit/inventory/ItemStack.java
++++ b/src/main/java/org/bukkit/inventory/ItemStack.java
+@@ -231,7 +231,7 @@ public class ItemStack implements Cloneable, ConfigurationSerializable {
+      */
+     public MaterialData getData() {
+         Material mat = getType();
+-        if (data == null && mat != null && mat.getData() != null) {
++        if (data == null && mat != null) {
+             data = mat.getNewData((byte) this.getDurability());
+         }
+ 
+@@ -246,7 +246,7 @@ public class ItemStack implements Cloneable, ConfigurationSerializable {
+     public void setData(MaterialData data) {
+         Material mat = getType();
+ 
+-        if (data == null || mat == null || mat.getData() == null) {
++        if (data == null || mat == null) {
+             this.data = data;
+         } else {
+             if ((data.getClass() == mat.getData()) || (data.getClass() == MaterialData.class)) {
+@@ -339,7 +339,7 @@ public class ItemStack implements Cloneable, ConfigurationSerializable {
+         if (stack == this) {
+             return true;
+         }
+-        return getTypeId() == stack.getTypeId() && getDurability() == stack.getDurability() && hasItemMeta() == stack.hasItemMeta() && (hasItemMeta() ? Bukkit.getItemFactory().equals(getItemMeta(), stack.getItemMeta()) : true);
++        return getTypeId() == stack.getTypeId() && getDurability() == stack.getDurability() && hasItemMeta() == stack.hasItemMeta() && (!hasItemMeta() || Bukkit.getItemFactory().equals(getItemMeta(), stack.getItemMeta()));
+     }
+ 
+     @Override
+@@ -381,7 +381,7 @@ public class ItemStack implements Cloneable, ConfigurationSerializable {
+      * @return True if this has the given enchantment
+      */
+     public boolean containsEnchantment(Enchantment ench) {
+-        return meta == null ? false : meta.hasEnchant(ench);
++        return meta != null && meta.hasEnchant(ench);
+     }
+ 
+     /**
+diff --git a/src/main/java/org/bukkit/inventory/ShapedRecipe.java b/src/main/java/org/bukkit/inventory/ShapedRecipe.java
+index d7fa6d28ff13be019396775bc3bbe9921e209081..269904000c95c08fe0c1323ea5477af6c37c5271 100644
+--- a/src/main/java/org/bukkit/inventory/ShapedRecipe.java
++++ b/src/main/java/org/bukkit/inventory/ShapedRecipe.java
+@@ -70,9 +70,7 @@ public class ShapedRecipe implements Recipe, Keyed {
+             lastLen = row.length();
+         }
+         this.rows = new String[shape.length];
+-        for (int i = 0; i < shape.length; i++) {
+-            this.rows[i] = shape[i];
+-        }
++        System.arraycopy(shape, 0, this.rows, 0, shape.length);
+ 
+         // Remove character mappings for characters that no longer exist in the shape
+         HashMap<Character, ItemStack> newIngredients = new HashMap<Character, ItemStack>();
+diff --git a/src/main/java/org/bukkit/map/MapPalette.java b/src/main/java/org/bukkit/map/MapPalette.java
+index 2c27d0c93bd08eede0aa53f45ccb5c1a844458a6..20225478df631a67a31e2ee122fb7ec7d74e974b 100644
+--- a/src/main/java/org/bukkit/map/MapPalette.java
++++ b/src/main/java/org/bukkit/map/MapPalette.java
+@@ -246,7 +246,7 @@ public final class MapPalette {
+      */
+     @Deprecated
+     public static Color getColor(byte index) {
+-        if ((index > -49 && index < 0) || index > 127) {
++        if (index > -49 && index < 0) {
+             throw new IndexOutOfBoundsException();
+         } else {
+             // Minecraft has 143 colors, some of which have negative byte representations
+diff --git a/src/main/java/org/bukkit/map/MinecraftFont.java b/src/main/java/org/bukkit/map/MinecraftFont.java
+index 9ec8d10fefb698a3811dd5d4c5ce322dabaca7ae..620be62f34d88bc7f31d73dcf0e134cea6449bd5 100644
+--- a/src/main/java/org/bukkit/map/MinecraftFont.java
++++ b/src/main/java/org/bukkit/map/MinecraftFont.java
+@@ -297,7 +297,7 @@ public class MinecraftFont extends MapFont {
+             }
+ 
+             if (ch == ' ') {
+-                setChar(ch, new CharacterSprite(spaceSize, 8, new boolean[spaceSize * 8]));
++                setChar(ch, new CharacterSprite(spaceSize, 8, new boolean[spaceSize << 3]));
+                 continue;
+             }
+ 
+@@ -312,7 +312,7 @@ public class MinecraftFont extends MapFont {
+             }
+             ++width;
+ 
+-            boolean[] data = new boolean[width * 8];
++            boolean[] data = new boolean[width << 3];
+             for (int r = 0; r < 8; ++r) {
+                 for (int c = 0; c < width; ++c) {
+                     data[r * width + c] = (rows[r] & (1 << c)) != 0;
+diff --git a/src/main/java/org/bukkit/material/MaterialData.java b/src/main/java/org/bukkit/material/MaterialData.java
+index 29826bc3f365b8eb1a34f69f5f8ad84e2d70b181..1cba0f8f8d8bcd8bfb6e4bea3a0ddae3c3ce9756 100644
+--- a/src/main/java/org/bukkit/material/MaterialData.java
++++ b/src/main/java/org/bukkit/material/MaterialData.java
+@@ -8,7 +8,7 @@ import org.bukkit.Material;
+  */
+ public class MaterialData implements Cloneable {
+     private final int type;
+-    private byte data = 0;
++    private byte data;
+ 
+     /**
+      * @param type the raw type id
+@@ -120,7 +120,7 @@ public class MaterialData implements Cloneable {
+ 
+     @Override
+     public boolean equals(Object obj) {
+-        if (obj != null && obj instanceof MaterialData) {
++        if (obj instanceof MaterialData) {
+             MaterialData md = (MaterialData) obj;
+ 
+             return (md.getItemTypeId() == getItemTypeId() && md.getData() == getData());
+diff --git a/src/main/java/org/bukkit/material/types/MushroomBlockTexture.java b/src/main/java/org/bukkit/material/types/MushroomBlockTexture.java
+index 6525ab45451952a134bf58c627bfdf4b760c8c61..586260d81af7e345f350f19858f68c47bfd73461 100644
+--- a/src/main/java/org/bukkit/material/types/MushroomBlockTexture.java
++++ b/src/main/java/org/bukkit/material/types/MushroomBlockTexture.java
+@@ -1,5 +1,6 @@
+ package org.bukkit.material.types;
+ 
++import java.util.EnumMap;
+ import java.util.Map;
+ 
+ import org.bukkit.block.BlockFace;
+@@ -65,7 +66,7 @@ public enum MushroomBlockTexture {
+      */
+     ALL_STEM(15, null);
+     private final static Map<Byte, MushroomBlockTexture> BY_DATA = Maps.newHashMap();
+-    private final static Map<BlockFace, MushroomBlockTexture> BY_BLOCKFACE = Maps.newHashMap();
++    private final static Map<BlockFace, MushroomBlockTexture> BY_BLOCKFACE = new EnumMap<>(BlockFace.class); // Reaper - Optimize
+ 
+     private final Byte data;
+     private final BlockFace capFace;
+@@ -118,13 +119,15 @@ public enum MushroomBlockTexture {
+      * @see BlockFace
+      */
+     public static MushroomBlockTexture getCapByFace(final BlockFace face) {
+-        return BY_BLOCKFACE.get(face);
++        return BY_BLOCKFACE.getOrDefault(face, ALL_STEM);
+     }
+ 
+     static {
+         for (MushroomBlockTexture type : values()) {
+             BY_DATA.put(type.data, type);
+-            BY_BLOCKFACE.put(type.capFace, type);
++            if (type.capFace != null) {
++                BY_BLOCKFACE.put(type.capFace, type);
++            }
+         }
+     }
+ }
+diff --git a/src/main/java/org/bukkit/metadata/MetadataStoreBase.java b/src/main/java/org/bukkit/metadata/MetadataStoreBase.java
+index 6da6abd8ebdcd7ba2a4e6c05fd023201d1c508f7..10ba9ab88a1b91c609122838ded4216d0403bb48 100644
+--- a/src/main/java/org/bukkit/metadata/MetadataStoreBase.java
++++ b/src/main/java/org/bukkit/metadata/MetadataStoreBase.java
+@@ -118,9 +118,7 @@ public abstract class MetadataStoreBase<T> {
+     public void invalidateAll(Plugin owningPlugin) {
+         Validate.notNull(owningPlugin, "Plugin cannot be null");
+         for (Map<Plugin, MetadataValue> values : metadataMap.values()) {
+-            if (values.containsKey(owningPlugin)) {
+-                values.get(owningPlugin).invalidate();
+-            }
++            MetadataValue vO = values.get(owningPlugin); if (vO != null) vO.invalidate(); // Reaper - Optimize map get
+         }
+     }
+ 
+diff --git a/src/main/java/org/bukkit/permissions/PermissibleBase.java b/src/main/java/org/bukkit/permissions/PermissibleBase.java
+index 486f69f86b5f0bfcbe15064e4e82253b28276477..c6bb2018afa0c8b22c41b533629fe5b7f98e45de 100644
+--- a/src/main/java/org/bukkit/permissions/PermissibleBase.java
++++ b/src/main/java/org/bukkit/permissions/PermissibleBase.java
+@@ -14,7 +14,7 @@ import org.bukkit.plugin.Plugin;
+  * Base Permissible for use in any Permissible object via proxy or extension
+  */
+ public class PermissibleBase implements Permissible {
+-    private ServerOperator opable = null;
++    private ServerOperator opable;
+     private Permissible parent = this;
+     private final List<PermissionAttachment> attachments = new LinkedList<PermissionAttachment>();
+     private final Map<String, PermissionAttachmentInfo> permissions = new HashMap<String, PermissionAttachmentInfo>();
+diff --git a/src/main/java/org/bukkit/plugin/SimplePluginManager.java b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+index a7dd902fb689e3d7c5563a091e8947e7f4ab486b..391713f443bffc87bb49947a88c7d0cb20f506f0 100644
+--- a/src/main/java/org/bukkit/plugin/SimplePluginManager.java
++++ b/src/main/java/org/bukkit/plugin/SimplePluginManager.java
+@@ -108,9 +108,8 @@ public final class SimplePluginManager implements PluginManager {
+         Validate.isTrue(directory.isDirectory(), "Directory must be a directory");
+ 
+         List<Plugin> result = new ArrayList<Plugin>();
+-        Set<Pattern> filters = fileAssociations.keySet();
+ 
+-        if (!(server.getUpdateFolder().equals(""))) {
++        if (!(server.getUpdateFolder().isEmpty())) {
+             updateDirectory = new File(directory, server.getUpdateFolder());
+         }
+ 
+@@ -122,16 +121,16 @@ public final class SimplePluginManager implements PluginManager {
+         // This is where it figures out all possible plugins
+         for (File file : directory.listFiles()) {
+             PluginLoader loader = null;
+-            for (Pattern filter : filters) {
+-                Matcher match = filter.matcher(file.getName());
++            for (Map.Entry<Pattern, PluginLoader> entry : fileAssociations.entrySet()) {
++                Matcher match = entry.getKey().matcher(file.getName());
+                 if (match.find()) {
+-                    loader = fileAssociations.get(filter);
++                    loader = entry.getValue();
+                 }
+             }
+ 
+             if (loader == null) continue;
+ 
+-            PluginDescriptionFile description = null;
++            PluginDescriptionFile description;
+             try {
+                 description = loader.getPluginDescription(file);
+                 String name = description.getName();
+@@ -316,15 +315,14 @@ public final class SimplePluginManager implements PluginManager {
+ 
+         checkUpdate(file);
+ 
+-        Set<Pattern> filters = fileAssociations.keySet();
+         Plugin result = null;
+ 
+-        for (Pattern filter : filters) {
++        for (Map.Entry<Pattern, PluginLoader> entry : fileAssociations.entrySet()) {
+             String name = file.getName();
+-            Matcher match = filter.matcher(name);
++            Matcher match = entry.getKey().matcher(name);
+ 
+             if (match.find()) {
+-                PluginLoader loader = fileAssociations.get(filter);
++                PluginLoader loader = entry.getValue();
+ 
+                 result = loader.loadPlugin(file);
+             }
+@@ -574,11 +572,7 @@ public final class SimplePluginManager implements PluginManager {
+         }
+ 
+         executor = new co.aikar.timings.TimedEventExecutor(executor, plugin, null, event); // Spigot
+-        if (false) { // Spigot - RL handles useTimings check now
+-            getEventListeners(event).register(new TimedRegisteredListener(listener, executor, priority, plugin, ignoreCancelled));
+-        } else {
+-            getEventListeners(event).register(new RegisteredListener(listener, executor, priority, plugin, ignoreCancelled));
+-        }
++        getEventListeners(event).register(new RegisteredListener(listener, executor, priority, plugin, ignoreCancelled));
+     }
+ 
+     private HandlerList getEventListeners(Class<? extends Event> type) {
+diff --git a/src/main/java/org/bukkit/plugin/SimpleServicesManager.java b/src/main/java/org/bukkit/plugin/SimpleServicesManager.java
+index 4e1771122b7caaba8a283d9f27ec1ee23d72ccf1..8b56e82c3d7f2e2ee36ef2a3f71a9a4d4b8e18e4 100644
+--- a/src/main/java/org/bukkit/plugin/SimpleServicesManager.java
++++ b/src/main/java/org/bukkit/plugin/SimpleServicesManager.java
+@@ -36,7 +36,7 @@ public class SimpleServicesManager implements ServicesManager {
+      * @param priority priority of the provider
+      */
+     public <T> void register(Class<T> service, T provider, Plugin plugin, ServicePriority priority) {
+-        RegisteredServiceProvider<T> registeredProvider = null;
++        RegisteredServiceProvider<T> registeredProvider;
+         synchronized (providers) {
+             List<RegisteredServiceProvider<?>> registered = providers.get(service);
+             if (registered == null) {
+diff --git a/src/main/java/org/bukkit/plugin/java/JavaPlugin.java b/src/main/java/org/bukkit/plugin/java/JavaPlugin.java
+index 93fa3493bcaa4d01770c2adf87fec5229b76672b..1562c8fe05414c97d7dd53265b407df08883b3f0 100644
+--- a/src/main/java/org/bukkit/plugin/java/JavaPlugin.java
++++ b/src/main/java/org/bukkit/plugin/java/JavaPlugin.java
+@@ -185,7 +185,7 @@ public abstract class JavaPlugin extends PluginBase {
+ 
+     @Override
+     public void saveResource(String resourcePath, boolean replace) {
+-        if (resourcePath == null || resourcePath.equals("")) {
++        if (resourcePath == null || resourcePath.isEmpty()) {
+             throw new IllegalArgumentException("ResourcePath cannot be null or empty");
+         }
+ 
+diff --git a/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java b/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
+index 8b5cea64b5c3d66e761b655b81c7abc076ce8c73..0ef2ec1562047bf9fb866c8a4c8faf9759fd2d6e 100644
+--- a/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
++++ b/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
+@@ -225,7 +225,6 @@ public final class JavaPluginLoader implements PluginLoader {
+         Validate.notNull(plugin, "Plugin can not be null");
+         Validate.notNull(listener, "Listener can not be null");
+ 
+-        boolean useTimings = server.getPluginManager().useTimings();
+         Map<Class<? extends Event>, Set<RegisteredListener>> ret = new HashMap<Class<? extends Event>, Set<RegisteredListener>>();
+         Set<Method> methods;
+         try {
+@@ -288,11 +287,7 @@ public final class JavaPluginLoader implements PluginLoader {
+             }
+ 
+             EventExecutor executor = new co.aikar.timings.TimedEventExecutor(EventExecutor.create(method, eventClass), plugin, method, eventClass); // Spigot // Paper - Use factory method `EventExecutor.create()`
+-            if (false) { // Spigot - RL handles useTimings check now
+-                eventSet.add(new TimedRegisteredListener(listener, executor, eh.priority(), plugin, eh.ignoreCancelled()));
+-            } else {
+-                eventSet.add(new RegisteredListener(listener, executor, eh.priority(), plugin, eh.ignoreCancelled()));
+-            }
++            eventSet.add(new RegisteredListener(listener, executor, eh.priority(), plugin, eh.ignoreCancelled()));
+         }
+         return ret;
+     }
+diff --git a/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java b/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java
+index bd936d9f2eb5ee665d4605bc23f646582fb045ae..dbfb8b776f31820a76712d4bc69ccd5e88a8810a 100644
+--- a/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java
++++ b/src/main/java/org/bukkit/plugin/java/PluginClassLoader.java
+@@ -4,7 +4,6 @@ import com.google.common.io.ByteStreams;
+ import java.io.File;
+ import java.io.IOException;
+ import java.io.InputStream;
+-import java.net.MalformedURLException;
+ import java.net.URL;
+ import java.net.URLClassLoader;
+ import java.security.CodeSigner;
+@@ -44,14 +43,11 @@ public final class PluginClassLoader extends URLClassLoader { // Spigot
+         try
+         {
+             java.lang.reflect.Method method = ClassLoader.class.getDeclaredMethod( "registerAsParallelCapable" );
+-            if ( method != null )
+-            {
+-                boolean oldAccessible = method.isAccessible();
+-                method.setAccessible( true );
+-                method.invoke( null );
+-                method.setAccessible( oldAccessible );
+-                org.bukkit.Bukkit.getLogger().log( java.util.logging.Level.INFO, "Set PluginClassLoader as parallel capable" );
+-            }
++            boolean oldAccessible = method.isAccessible();
++            method.setAccessible( true );
++            method.invoke( null );
++            method.setAccessible( oldAccessible );
++            org.bukkit.Bukkit.getLogger().log( java.util.logging.Level.INFO, "Set PluginClassLoader as parallel capable" );
+         } catch ( NoSuchMethodException ex )
+         {
+             // Ignore
+@@ -62,7 +58,7 @@ public final class PluginClassLoader extends URLClassLoader { // Spigot
+     }
+     // Spigot End
+ 
+-    PluginClassLoader(final JavaPluginLoader loader, final ClassLoader parent, final PluginDescriptionFile description, final File dataFolder, final File file) throws IOException, InvalidPluginException, MalformedURLException {
++    PluginClassLoader(final JavaPluginLoader loader, final ClassLoader parent, final PluginDescriptionFile description, final File dataFolder, final File file) throws IOException, InvalidPluginException {
+         super(new URL[] {file.toURI().toURL()}, parent);
+         Validate.notNull(loader, "Loader cannot be null");
+ 
+@@ -116,7 +112,7 @@ public final class PluginClassLoader extends URLClassLoader { // Spigot
+             }
+ 
+             if (result == null) {
+-                String path = name.replace('.', '/').concat(".class");
++                String path = name.replace('.', '/') + ".class";
+                 JarEntry entry = jar.getJarEntry(path);
+ 
+                 if (entry != null) {
+diff --git a/src/main/java/org/bukkit/plugin/messaging/PluginMessageListenerRegistration.java b/src/main/java/org/bukkit/plugin/messaging/PluginMessageListenerRegistration.java
+index 29929bf7ca202d95156aefb76f3255032ecdcd89..aba682e9af989b2d57114f58eb57001372819709 100644
+--- a/src/main/java/org/bukkit/plugin/messaging/PluginMessageListenerRegistration.java
++++ b/src/main/java/org/bukkit/plugin/messaging/PluginMessageListenerRegistration.java
+@@ -77,28 +77,25 @@ public final class PluginMessageListenerRegistration {
+             return false;
+         }
+         final PluginMessageListenerRegistration other = (PluginMessageListenerRegistration) obj;
+-        if (this.messenger != other.messenger && (this.messenger == null || !this.messenger.equals(other.messenger))) {
++        if (this.messenger != other.messenger && !this.messenger.equals(other.messenger)) {
+             return false;
+         }
+-        if (this.plugin != other.plugin && (this.plugin == null || !this.plugin.equals(other.plugin))) {
++        if (this.plugin != other.plugin && !this.plugin.equals(other.plugin)) {
+             return false;
+         }
+-        if ((this.channel == null) ? (other.channel != null) : !this.channel.equals(other.channel)) {
++        if (!this.channel.equals(other.channel)) {
+             return false;
+         }
+-        if (this.listener != other.listener && (this.listener == null || !this.listener.equals(other.listener))) {
+-            return false;
+-        }
+-        return true;
++        return this.listener == other.listener || this.listener.equals(other.listener);
+     }
+ 
+     @Override
+     public int hashCode() {
+         int hash = 7;
+-        hash = 53 * hash + (this.messenger != null ? this.messenger.hashCode() : 0);
+-        hash = 53 * hash + (this.plugin != null ? this.plugin.hashCode() : 0);
+-        hash = 53 * hash + (this.channel != null ? this.channel.hashCode() : 0);
+-        hash = 53 * hash + (this.listener != null ? this.listener.hashCode() : 0);
++        hash = 53 * hash + this.messenger.hashCode();
++        hash = 53 * hash + this.plugin.hashCode();
++        hash = 53 * hash + this.channel.hashCode();
++        hash = 53 * hash + this.listener.hashCode();
+         return hash;
+     }
+ }
+diff --git a/src/main/java/org/bukkit/potion/Potion.java b/src/main/java/org/bukkit/potion/Potion.java
+index b4a8051cc7062bf211dc4f20b2f497c0645f9e51..dd4ebf7a5d9a3d777242192171820b8acc9f5eca 100644
+--- a/src/main/java/org/bukkit/potion/Potion.java
++++ b/src/main/java/org/bukkit/potion/Potion.java
+@@ -339,7 +339,7 @@ public class Potion {
+                 type = PotionType.WATER;
+         }
+         Potion potion;
+-        if (type == null || type == PotionType.WATER) {
++        if (type == PotionType.WATER) {
+             potion = new Potion(PotionType.WATER);
+         } else {
+             int level = (damage & TIER_BIT) >> TIER_SHIFT;
+diff --git a/src/main/java/org/bukkit/potion/PotionEffectType.java b/src/main/java/org/bukkit/potion/PotionEffectType.java
+index b7c068b5fcab89f2351a24b81a50e92178a15431..b456b313409ad6f7743d9e0c5fa2402de363f4e5 100644
+--- a/src/main/java/org/bukkit/potion/PotionEffectType.java
++++ b/src/main/java/org/bukkit/potion/PotionEffectType.java
+@@ -214,10 +214,7 @@ public abstract class PotionEffectType {
+             return false;
+         }
+         final PotionEffectType other = (PotionEffectType) obj;
+-        if (this.id != other.id) {
+-            return false;
+-        }
+-        return true;
++        return this.id == other.id;
+     }
+ 
+     @Override
+diff --git a/src/main/java/org/bukkit/util/BlockIterator.java b/src/main/java/org/bukkit/util/BlockIterator.java
+index 5c85778ccac8220b84ffab2f29f0c65eea54899d..5ce13c2991b180b0685153075763295d2d2559d2 100644
+--- a/src/main/java/org/bukkit/util/BlockIterator.java
++++ b/src/main/java/org/bukkit/util/BlockIterator.java
+@@ -24,8 +24,8 @@ public class BlockIterator implements Iterator<Block> {
+     private boolean end = false;
+ 
+     private Block[] blockQueue = new Block[3];
+-    private int currentBlock = 0;
+-    private int currentDistance = 0;
++    private int currentBlock;
++    private int currentDistance;
+     private int maxDistanceInt;
+ 
+     private int secondError;
+diff --git a/src/main/java/org/bukkit/util/BlockVector.java b/src/main/java/org/bukkit/util/BlockVector.java
+index bdf8f6d5d64eaa07b758a428868d1f4fd31385ca..7f0330ac2c2009ee583cfb79b5f6d93dbb1d9af6 100644
+--- a/src/main/java/org/bukkit/util/BlockVector.java
++++ b/src/main/java/org/bukkit/util/BlockVector.java
+@@ -95,7 +95,7 @@ public class BlockVector extends Vector {
+      */
+     @Override
+     public int hashCode() {
+-        return (Integer.valueOf((int) x).hashCode() >> 13) ^ (Integer.valueOf((int) y).hashCode() >> 7) ^ Integer.valueOf((int) z).hashCode();
++        return ((int) x >> 13) ^ ((int) y >> 7) ^ (int) z;
+     }
+ 
+     /**
+@@ -113,15 +113,11 @@ public class BlockVector extends Vector {
+         double y = 0;
+         double z = 0;
+ 
+-        if (args.containsKey("x")) {
+-            x = (Double) args.get("x");
+-        }
+-        if (args.containsKey("y")) {
+-            y = (Double) args.get("y");
+-        }
+-        if (args.containsKey("z")) {
+-            z = (Double) args.get("z");
+-        }
++        // Reaper start - Optimize map get
++        Object xO = args.get("x"); if (xO != null) x = (Double) xO;
++        Object yO = args.get("y"); if (yO != null) y = (Double) yO;
++        Object zO = args.get("z"); if (zO != null) z = (Double) zO;
++        // Reaper end
+ 
+         return new BlockVector(x, y, z);
+     }
+diff --git a/src/main/java/org/bukkit/util/ChatPaginator.java b/src/main/java/org/bukkit/util/ChatPaginator.java
+index b0b91ad8c559242befeb36113a0750f09da90b49..932dfa04a95eaeb9cc231acbc0a26dc738627fdd 100644
+--- a/src/main/java/org/bukkit/util/ChatPaginator.java
++++ b/src/main/java/org/bukkit/util/ChatPaginator.java
+@@ -136,8 +136,8 @@ public class ChatPaginator {
+             final String pLine = lines.get(i - 1);
+             final String subLine = lines.get(i);
+ 
+-            char color = pLine.charAt(pLine.lastIndexOf(ChatColor.COLOR_CHAR) + 1);
+             if (subLine.length() == 0 || subLine.charAt(0) != ChatColor.COLOR_CHAR) {
++                char color = pLine.charAt(pLine.lastIndexOf(ChatColor.COLOR_CHAR) + 1);
+                 lines.set(i, ChatColor.getByChar(color) + subLine);
+             }
+         }
+diff --git a/src/main/java/org/bukkit/util/io/BukkitObjectInputStream.java b/src/main/java/org/bukkit/util/io/BukkitObjectInputStream.java
+index 13725531fe0d3d815514848bb2e643ccbd101794..4564328603bab59fbb66276d411db56b668ee558 100644
+--- a/src/main/java/org/bukkit/util/io/BukkitObjectInputStream.java
++++ b/src/main/java/org/bukkit/util/io/BukkitObjectInputStream.java
+@@ -55,8 +55,6 @@ public class BukkitObjectInputStream extends ObjectInputStream {
+     }
+ 
+     private static IOException newIOException(String string, Throwable cause) {
+-        IOException exception = new IOException(string);
+-        exception.initCause(cause);
+-        return exception;
++        return new IOException(string, cause);
+     }
+ }
+diff --git a/src/main/java/org/bukkit/util/permissions/DefaultPermissions.java b/src/main/java/org/bukkit/util/permissions/DefaultPermissions.java
+index 8c0df8e42c06431e068e31a1654d93dde0fa1200..fbeb143a593ed9ad49f70269cf81a812b687189e 100644
+--- a/src/main/java/org/bukkit/util/permissions/DefaultPermissions.java
++++ b/src/main/java/org/bukkit/util/permissions/DefaultPermissions.java
+@@ -39,8 +39,7 @@ public final class DefaultPermissions {
+     }
+ 
+     public static Permission registerPermission(String name, String desc) {
+-        Permission perm = registerPermission(new Permission(name, desc));
+-        return perm;
++        return registerPermission(new Permission(name, desc));
+     }
+ 
+     public static Permission registerPermission(String name, String desc, Permission parent) {
+@@ -50,8 +49,7 @@ public final class DefaultPermissions {
+     }
+ 
+     public static Permission registerPermission(String name, String desc, PermissionDefault def) {
+-        Permission perm = registerPermission(new Permission(name, desc, def));
+-        return perm;
++        return registerPermission(new Permission(name, desc, def));
+     }
+ 
+     public static Permission registerPermission(String name, String desc, PermissionDefault def, Permission parent) {
+@@ -61,8 +59,7 @@ public final class DefaultPermissions {
+     }
+ 
+     public static Permission registerPermission(String name, String desc, PermissionDefault def, Map<String, Boolean> children) {
+-        Permission perm = registerPermission(new Permission(name, desc, def, children));
+-        return perm;
++        return registerPermission(new Permission(name, desc, def, children));
+     }
+ 
+     public static Permission registerPermission(String name, String desc, PermissionDefault def, Map<String, Boolean> children, Permission parent) {
+diff --git a/src/test/java/org/bukkit/materials/MaterialDataTest.java b/src/test/java/org/bukkit/materials/MaterialDataTest.java
+index 0e7b6667e4068f7891a8ecedea9278c1e9135134..abb85b70da1d482ca6b0f5d512b75c77cd4267ca 100644
+--- a/src/test/java/org/bukkit/materials/MaterialDataTest.java
++++ b/src/test/java/org/bukkit/materials/MaterialDataTest.java
+@@ -21,6 +21,7 @@ import org.bukkit.material.Tree;
+ import org.bukkit.material.Wood;
+ import org.bukkit.material.WoodenStep;
+ import org.bukkit.material.types.MushroomBlockTexture;
++import org.hamcrest.core.IsEqual;
+ import org.junit.Test;
+ 
+ public class MaterialDataTest {
+@@ -265,6 +266,7 @@ public class MaterialDataTest {
+                 assertThat("Constructed with correct texture", mushroom.getBlockTexture(), equalTo(texture));
+             }
+         }
++        assertThat(MushroomBlockTexture.getCapByFace(null), IsEqual.equalTo(MushroomBlockTexture.ALL_STEM)); // Reaper
+     }
+ 
+     @Test

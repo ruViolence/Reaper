@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 10:36:47 +0500
+Subject: [PATCH] perf: disable sign commands
+
+Disables the vanilla feature, but protects against exploits and improves performance.
+
+diff --git a/src/main/java/net/minecraft/server/BlockSign.java b/src/main/java/net/minecraft/server/BlockSign.java
+index bc0c9f6b0515309d28fe556c450bf3ba70e387b6..2613f07dc6ec04b5e474d440d2a70c1c01339e14 100644
+--- a/src/main/java/net/minecraft/server/BlockSign.java
++++ b/src/main/java/net/minecraft/server/BlockSign.java
+@@ -52,6 +52,7 @@ public class BlockSign extends BlockTileEntity {
+         if (false) { // Reaper - Remove isClientSide check
+             return true;
+         } else {
++            if (true) return true; // Reaper - Disable sign commands
+             TileEntity tileentity = world.getTileEntity(blockposition);
+ 
+             return tileentity instanceof TileEntitySign ? ((TileEntitySign) tileentity).b(entityhuman) : false;

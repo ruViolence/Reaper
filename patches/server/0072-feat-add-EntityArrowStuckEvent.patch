@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 26 May 2022 21:21:03 +0500
+Subject: [PATCH] feat: add EntityArrowStuckEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityArrow.java b/src/main/java/net/minecraft/server/EntityArrow.java
+index 6ca68349f241546c6e799fc04590b2ba6ec49230..4cdbcb0993194b327bc7117c05e8da32e55ea893 100644
+--- a/src/main/java/net/minecraft/server/EntityArrow.java
++++ b/src/main/java/net/minecraft/server/EntityArrow.java
+@@ -301,6 +301,7 @@ public abstract class EntityArrow extends Entity implements IProjectile {
+                     EntityLiving entityliving = (EntityLiving) entity;
+ 
+                     if (true) { // Reaper - Remove isClientSide check
++                        if (new com.github.ruviolence.reaper.event.entity.EntityArrowStuckEvent(entityliving.getBukkitEntity()).callEvent()) // Reaper - Add EntityArrowStuckEvent
+                         entityliving.setArrowCount(entityliving.getArrowCount() + 1);
+                     }
+ 

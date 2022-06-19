@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 1 Jun 2022 08:44:50 +0500
+Subject: [PATCH] perf: cache entity owner
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityHorseAbstract.java b/src/main/java/net/minecraft/server/EntityHorseAbstract.java
+index c56e170a328c354d330f47aa16f105fec0bf9c04..f074ac108438b63e035970e86f90dfa0e8a287f1 100644
+--- a/src/main/java/net/minecraft/server/EntityHorseAbstract.java
++++ b/src/main/java/net/minecraft/server/EntityHorseAbstract.java
+@@ -41,6 +41,7 @@ public abstract class EntityHorseAbstract extends EntityAnimal implements IInven
+     protected boolean bF = true;
+     protected int bG;
+     public int maxDomestication = 100; // CraftBukkit - store max domestication value
++    private Optional<UUID> cachedOwnerId; // Reaper - Cache entity owner
+ 
+     public EntityHorseAbstract(World world) {
+         super(world);
+@@ -87,11 +88,17 @@ public abstract class EntityHorseAbstract extends EntityAnimal implements IInven
+ 
+     @Nullable
+     public UUID getOwnerUUID() {
+-        return (UUID) ((Optional) this.datawatcher.get(EntityHorseAbstract.bJ)).orNull();
++        // Reaper start - Cache entity owner
++        if (cachedOwnerId == null) cachedOwnerId = this.datawatcher.get(EntityHorseAbstract.bJ);
++        return cachedOwnerId.orNull();
++        // Reaper end
+     }
+ 
+     public void setOwnerUUID(@Nullable UUID uuid) {
+-        this.datawatcher.set(EntityHorseAbstract.bJ, Optional.fromNullable(uuid));
++        // Reaper start - Cache entity owner
++        this.cachedOwnerId = Optional.fromNullable(uuid);
++        this.datawatcher.set(EntityHorseAbstract.bJ, this.cachedOwnerId);
++        // Reaper end
+     }
+ 
+     public float dw() {
+diff --git a/src/main/java/net/minecraft/server/EntityTameableAnimal.java b/src/main/java/net/minecraft/server/EntityTameableAnimal.java
+index e0e65b614e9bb288a463651db7eab0dbf7218281..4c678a30e968c79012ce9ac4ddd12a8d86c1b505 100644
+--- a/src/main/java/net/minecraft/server/EntityTameableAnimal.java
++++ b/src/main/java/net/minecraft/server/EntityTameableAnimal.java
+@@ -9,6 +9,7 @@ public abstract class EntityTameableAnimal extends EntityAnimal implements Entit
+     protected static final DataWatcherObject<Byte> bx = DataWatcher.a(EntityTameableAnimal.class, DataWatcherRegistry.a);
+     protected static final DataWatcherObject<Optional<UUID>> by = DataWatcher.a(EntityTameableAnimal.class, DataWatcherRegistry.m);
+     protected PathfinderGoalSit goalSit;
++    private Optional<UUID> cachedOwnerId; // Reaper - Cache entity owner
+ 
+     public EntityTameableAnimal(World world) {
+         super(world);
+@@ -117,11 +118,17 @@ public abstract class EntityTameableAnimal extends EntityAnimal implements Entit
+ 
+     @Nullable
+     public UUID getOwnerUUID() {
+-        return (UUID) ((Optional) this.datawatcher.get(EntityTameableAnimal.by)).orNull();
++        // Reaper start - Cache entity owner
++        if (cachedOwnerId == null) cachedOwnerId = this.datawatcher.get(EntityTameableAnimal.by);
++        return cachedOwnerId.orNull();
++        // Reaper end
+     }
+ 
+     public void setOwnerUUID(@Nullable UUID uuid) {
+-        this.datawatcher.set(EntityTameableAnimal.by, Optional.fromNullable(uuid));
++        // Reaper start - Cache entity owner
++        this.cachedOwnerId = Optional.fromNullable(uuid);
++        this.datawatcher.set(EntityTameableAnimal.by, this.cachedOwnerId);
++        // Reaper end
+     }
+ 
+     public void c(EntityHuman entityhuman) {

@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 16 Jun 2022 19:01:36 +0500
+Subject: [PATCH] feat: add new "setTypeIdAndData" method to the Block class
+
+
+diff --git a/src/main/java/org/bukkit/block/Block.java b/src/main/java/org/bukkit/block/Block.java
+index 2dbc784cbe151068e9276516b3b2b851da10395c..6e7611e20a3385ec79368231ef496da9f4aa1442 100644
+--- a/src/main/java/org/bukkit/block/Block.java
++++ b/src/main/java/org/bukkit/block/Block.java
+@@ -251,6 +251,24 @@ public interface Block extends Metadatable {
+     @Deprecated
+     boolean setTypeIdAndData(int type, byte data, boolean applyPhysics);
+ 
++    // Reaper start
++    /**
++     * Sets the type-id of this block
++     *
++     * @param type         Type-Id to change this block to
++     * @param data         The data value to change this block to
++     * @param applyPhysics False to cancel physics on the changed block
++     * @param notify       False to cancel "onBlockPlace" and "onBlockRemove" triggers
++     * @param updateLight  False to cancel the light update
++     *
++     * @return whether the block was changed
++     *
++     * @deprecated Magic value
++     */
++    @Deprecated
++    boolean setTypeIdAndData(int type, byte data, boolean applyPhysics, boolean notify, boolean updateLight);
++    // Reaper end
++
+     /**
+      * Gets the face relation of this block compared to the given block.
+      * <p>

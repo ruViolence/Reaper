@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 1 Jun 2022 05:23:52 +0500
+Subject: [PATCH] perf: remove redundant toArray() call
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftChunk.java b/src/main/java/org/bukkit/craftbukkit/CraftChunk.java
+index fd21564b650669592e928a1f715afb261dce58ff..ef04dfc8d14689fbdf4feaa1b064e9746f1eab14 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftChunk.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftChunk.java
+@@ -84,7 +84,10 @@ public class CraftChunk implements Chunk {
+ 
+         for (int i = 0; i < 16; i++) {
+ 
+-            for (Object obj : chunk.entitySlices[i].toArray()) {
++            // Reaper start - Remove redundant toArray() call
++            java.util.List<net.minecraft.server.Entity> slice = org.bukkit.Bukkit.isPrimaryThread() ? chunk.entitySlices[i] : new java.util.ArrayList<>(chunk.entitySlices[i]);
++            for (net.minecraft.server.Entity obj : slice) {
++                // Reaper end
+                 if (obj == null) { // Reaper - Optimize
+                     continue;
+                 }
+@@ -102,7 +105,10 @@ public class CraftChunk implements Chunk {
+ 
+         BlockState[] entities = new BlockState[chunk.tileEntities.size()];
+ 
+-        for (Object obj : chunk.tileEntities.keySet().toArray()) {
++        // Reaper start - Remove redundant toArray() call
++        java.util.Set<BlockPosition> positions = org.bukkit.Bukkit.isPrimaryThread() ? chunk.tileEntities.keySet() : new java.util.HashSet<>(chunk.tileEntities.keySet());
++        for (BlockPosition obj : positions) {
++            // Reaper end
+             if (obj == null) { // Reaper - Optimize
+                 continue;
+             }

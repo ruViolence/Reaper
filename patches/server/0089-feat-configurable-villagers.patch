@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sat, 4 Jun 2022 00:19:58 +0500
+Subject: [PATCH] feat: configurable villagers
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 3d7ade6629db45e94a4a389df57a658f78b8b487..5f5a42c8d316efcd381e143ed959f4dfe37b2f76 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -225,4 +225,9 @@ public class ReaperConfig {
+             ReaperLightingQueue.processQueueAnyway();
+         }
+     }
++
++    public static boolean disableVillages;
++    private static void disableVillages() {
++        disableVillages = getBoolean("disable-villages", false);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/PersistentVillage.java b/src/main/java/net/minecraft/server/PersistentVillage.java
+index a3aa9f82e60a4fc4e90c5a46e37b05e7e3a0b31f..8290d50e12356b88fe090c7750c5fb70cb7718ee 100644
+--- a/src/main/java/net/minecraft/server/PersistentVillage.java
++++ b/src/main/java/net/minecraft/server/PersistentVillage.java
+@@ -21,6 +21,13 @@ public class PersistentVillage extends PersistentBase {
+         super(a(world.worldProvider));
+         this.world = world;
+         this.c();
++        // Reaper start
++        if (com.github.ruviolence.reaper.ReaperConfig.disableVillages) {
++            ((java.util.ArrayList<?>) c).trimToSize();
++            ((java.util.ArrayList<?>) d).trimToSize();
++            ((java.util.ArrayList<?>) villages).trimToSize();
++        }
++        // Reaper end
+     }
+ 
+     public void a(World world) {
+@@ -36,6 +43,7 @@ public class PersistentVillage extends PersistentBase {
+     }
+ 
+     public void a(BlockPosition blockposition) {
++        if (com.github.ruviolence.reaper.ReaperConfig.disableVillages) return; // Reaper
+         if (this.c.size() <= 64) {
+             if (!this.e(blockposition)) {
+                 this.c.add(blockposition);
+@@ -82,6 +90,7 @@ public class PersistentVillage extends PersistentBase {
+     }
+ 
+     public Village getClosestVillage(BlockPosition blockposition, int i) {
++        if (com.github.ruviolence.reaper.ReaperConfig.disableVillages) return null; // Reaper
+         Village village = null;
+         double d0 = 3.4028234663852886E38D;
+         Iterator iterator = this.villages.iterator();
+@@ -238,6 +247,7 @@ public class PersistentVillage extends PersistentBase {
+     }
+ 
+     public void a(NBTTagCompound nbttagcompound) {
++        if (com.github.ruviolence.reaper.ReaperConfig.disableVillages) return; // Reaper
+         this.time = nbttagcompound.getInt("Tick");
+         NBTTagList nbttaglist = nbttagcompound.getList("Villages", 10);
+ 
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index 87ab0dd388ba81772b60f2828357f3ddd675117a..f686daef4813296d56daa3d7c6fbabb022fb977d 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -338,10 +338,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+         this.manager.flush();
+         timings.doChunkMap.stopTiming(); // Spigot
+         this.methodProfiler.c("village");
++        if (!com.github.ruviolence.reaper.ReaperConfig.disableVillages) { // Reaper
+         timings.doVillages.startTiming(); // Spigot
+         this.villages.tick();
+         if (paperConfig.villageSiegesEnabled) { this.siegeManager.a(); } // Paper - Allow disabling village sieges
+         timings.doVillages.stopTiming(); // Spigot
++        } // Reaper
+         this.methodProfiler.c("portalForcer");
+         timings.doPortalForcer.startTiming(); // Spigot
+         this.portalTravelAgent.a(this.getTime());

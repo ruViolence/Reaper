@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 2 Jun 2022 23:27:42 +0500
+Subject: [PATCH] feat: add AnyEntitySpawnEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/entity/AnyEntitySpawnEvent.java b/src/main/java/com/github/ruviolence/reaper/event/entity/AnyEntitySpawnEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..ab25e83417f0872cfa773780109616ab7936846d
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/entity/AnyEntitySpawnEvent.java
+@@ -0,0 +1,64 @@
++package com.github.ruviolence.reaper.event.entity;
++
++import org.bukkit.Location;
++import org.bukkit.entity.Entity;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.entity.CreatureSpawnEvent;
++import org.bukkit.event.entity.EntityEvent;
++
++/**
++ * Called when an any entity is spawned into a world.
++ * <p>
++ * If an Entity Spawn event is cancelled, the entity will not spawn.
++ */
++public class AnyEntitySpawnEvent extends EntityEvent implements org.bukkit.event.Cancellable {
++    private static final HandlerList handlers = new HandlerList();
++    private boolean canceled;
++
++    private CreatureSpawnEvent.SpawnReason spawnReason;
++
++    public AnyEntitySpawnEvent(final Entity spawnee) {
++        super(spawnee);
++    }
++
++    /**
++     * Gets the reason for why the creature is being spawned.
++     *
++     * @return A SpawnReason value detailing the reason for the creature being spawned
++     */
++    public CreatureSpawnEvent.SpawnReason getSpawnReason() {
++        return spawnReason;
++    }
++
++    public boolean isCancelled() {
++        return canceled;
++    }
++
++    public void setCancelled(boolean cancel) {
++        canceled = cancel;
++    }
++
++    /**
++     * Gets the location at which the entity is spawning.
++     *
++     * @return The location at which the entity is spawning
++     */
++    public Location getLocation() {
++        return getEntity().getLocation();
++    }
++
++    public void setData(Entity spawnee, CreatureSpawnEvent.SpawnReason spawnReason) {
++        super.entity = spawnee;
++        this.spawnReason = spawnReason;
++        this.canceled = false;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}

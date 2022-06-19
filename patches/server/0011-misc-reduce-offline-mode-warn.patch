@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 13:38:35 +0500
+Subject: [PATCH] misc: reduce offline mode warn
+
+
+diff --git a/src/main/java/net/minecraft/server/DedicatedServer.java b/src/main/java/net/minecraft/server/DedicatedServer.java
+index 9308ccc85f6243193e49c9a4dd8762ab388a4823..fb5822f7c2c1d96e2711fb081b632ee5d8eb3985 100644
+--- a/src/main/java/net/minecraft/server/DedicatedServer.java
++++ b/src/main/java/net/minecraft/server/DedicatedServer.java
+@@ -226,6 +226,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
+ 
+             if (!this.getOnlineMode()) {
+                 DedicatedServer.LOGGER.warn("**** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!");
++                /* // Reaper start - Reduce offline mode warn
+                 DedicatedServer.LOGGER.warn("The server will make no attempt to authenticate usernames. Beware.");
+                 // Spigot start
+                 if (org.spigotmc.SpigotConfig.bungee) {
+@@ -236,6 +237,7 @@ public class DedicatedServer extends MinecraftServer implements IMinecraftServer
+                 }
+                 // Spigot end
+                 DedicatedServer.LOGGER.warn("To change this, set \"online-mode\" to \"true\" in the server.properties file.");
++                */ // Reaper end
+             }
+ 
+             if (this.aS()) {

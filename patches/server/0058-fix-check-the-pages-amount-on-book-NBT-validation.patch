@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Tue, 7 Jun 2022 18:04:13 +0500
+Subject: [PATCH] fix: check the pages amount on book NBT validation
+
+
+diff --git a/src/main/java/net/minecraft/server/ItemBookAndQuill.java b/src/main/java/net/minecraft/server/ItemBookAndQuill.java
+index 9d2599dfe7cad1c5615ebdd9d475b946017647b2..4a254b30ba4da873304f8c8c012f9d1097c543d2 100644
+--- a/src/main/java/net/minecraft/server/ItemBookAndQuill.java
++++ b/src/main/java/net/minecraft/server/ItemBookAndQuill.java
+@@ -21,6 +21,7 @@ public class ItemBookAndQuill extends Item {
+             return false;
+         } else {
+             NBTTagList nbttaglist = nbttagcompound.getList("pages", 8);
++            if (nbttaglist.size() > 50) return false; // Reaper
+ 
+             for (int i = 0; i < nbttaglist.size(); ++i) {
+                 String s = nbttaglist.getString(i);

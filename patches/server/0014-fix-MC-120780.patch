@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 1 Jun 2022 07:38:51 +0500
+Subject: [PATCH] fix: MC-120780
+
+https://bugs.mojang.com/browse/MC-120780
+
+diff --git a/src/main/java/net/minecraft/server/PlayerChunk.java b/src/main/java/net/minecraft/server/PlayerChunk.java
+index baf72404ec5a26e74667d20070b0a6a58865424a..01c646769e526716c16773d4f141610b3ae49c95 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunk.java
++++ b/src/main/java/net/minecraft/server/PlayerChunk.java
+@@ -142,6 +142,7 @@ public class PlayerChunk {
+             this.dirtyCount = 0;
+             this.h = 0;
+             this.done = true;
++            if (this.c.isEmpty()) return true; // Reaper - Fix MC-120780
+             PacketPlayOutMapChunk packetplayoutmapchunk = new PacketPlayOutMapChunk(this.chunk, '\uffff');
+             Iterator iterator = this.c.iterator();
+ 
