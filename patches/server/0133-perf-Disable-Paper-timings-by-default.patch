@@ -15,7 +15,7 @@ index 3d6e09907b9d416fc011c5d434903baede20ab49..009a7858d768c9d2b7939d40ca15d2e6
 +        // Reaper start
 +        boolean reallyEnableTimings = getBoolean("timings.really-enabled", false);
 +        if (timings && !reallyEnableTimings) {
-+            Bukkit.getLogger().log(Level.WARNING, "[Reaper] To improve performance, timings have been disabled by default");
++            Bukkit.getLogger().log(Level.WARNING, "[Reaper] To improve performance, timings have been disabled by default!");
 +            Bukkit.getLogger().log(Level.WARNING, "[Reaper] You can still use timings by using /timings on, but they will not start on server startup unless you set timings.really-enabled to true in paper.yml");
 +        }
 +        timings = reallyEnableTimings;
