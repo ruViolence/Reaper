@@ -3,6 +3,21 @@ From: Softik Lord <dimap9986@gmail.com>
 Date: Fri, 15 Jul 2022 00:50:41 +0500
 Subject: [PATCH] perf-only-check-for-spooky-season-once-an-hour
 
+Pufferfish
+Copyright (C) 2022 Pufferfish Studios LLC
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 diff --git a/src/main/java/net/minecraft/server/EntityBat.java b/src/main/java/net/minecraft/server/EntityBat.java
 index 94f68e8c6dbf25179b2c5f6b93fe77913e426511..79c6b779755b1e8d6fd8cab1c95d2f8808f97d24 100644
