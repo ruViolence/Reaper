@@ -3,6 +3,7 @@ From: Softik Lord <dimap9986@gmail.com>
 Date: Fri, 15 Jul 2022 03:00:47 +0500
 Subject: [PATCH] perf-optimize-the-advancement-data-player
 
+Optimize the advancement data player iteration to be O(N) rather than O(N^2)
 
 diff --git a/src/main/java/net/minecraft/server/AdvancementDataPlayer.java b/src/main/java/net/minecraft/server/AdvancementDataPlayer.java
 index 6353107bc122731a597131bbfaead2c507b2d7e8..1d22700f01144c6aee00f445cf6a16333f2a827b 100644
