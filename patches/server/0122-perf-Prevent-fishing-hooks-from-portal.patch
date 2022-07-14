@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Thu, 14 Jul 2022 06:29:28 +0500
+Subject: [PATCH] perf-Prevent-fishing-hooks-from-portal
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityFishingHook.java b/src/main/java/net/minecraft/server/EntityFishingHook.java
+index 377b6d21fb6c2dce4645cd174a044b39203075aa..4d285e1f316e0efbc48b5ba0d5a56d873712ce05 100644
+--- a/src/main/java/net/minecraft/server/EntityFishingHook.java
++++ b/src/main/java/net/minecraft/server/EntityFishingHook.java
+@@ -1,11 +1,11 @@
+ package net.minecraft.server;
+ 
+-import java.util.Iterator;
+-import java.util.List;
+-// CraftBukkit start
+-import org.bukkit.entity.Player;
+ import org.bukkit.entity.Fish;
++import org.bukkit.entity.Player;
+ import org.bukkit.event.player.PlayerFishEvent;
++
++import java.util.Iterator;
++import java.util.List;
+ // CraftBukkit end
+ 
+ public class EntityFishingHook extends Entity {
+@@ -153,6 +153,7 @@ public class EntityFishingHook extends Entity {
+                             this.locY = this.hooked.getBoundingBox().b + d1 * 0.8D;
+                             this.locZ = this.hooked.locZ;
+                             this.setPosition(this.locX, this.locY, this.locZ);
++                            if (this.ak) this.die(); // Reaper - Prevent going through portals
+                         }
+                     }
+ 
