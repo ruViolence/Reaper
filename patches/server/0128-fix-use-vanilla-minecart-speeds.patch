@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 14 Jul 2022 23:36:55 +0500
+Subject: [PATCH] fix: use vanilla minecart speeds
+
+CraftBukkit changed the values on flying speed, restore back to vanilla
+
+diff --git a/src/main/java/net/minecraft/server/EntityMinecartAbstract.java b/src/main/java/net/minecraft/server/EntityMinecartAbstract.java
+index 0eadde0968e12bd5e2535363a0b412cf4a57f04e..aaa05f6693cb7e92fbbaeee8e81906f26c6f0956 100644
+--- a/src/main/java/net/minecraft/server/EntityMinecartAbstract.java
++++ b/src/main/java/net/minecraft/server/EntityMinecartAbstract.java
+@@ -39,9 +39,9 @@ public abstract class EntityMinecartAbstract extends Entity implements INamableT
+     private double derailedX = 0.5;
+     private double derailedY = 0.5;
+     private double derailedZ = 0.5;
+-    private double flyingX = 0.95;
+-    private double flyingY = 0.95;
+-    private double flyingZ = 0.95;
++    private double flyingX = 0.94999998807907104D; // Reaper - Restore vanilla precision
++    private double flyingY = 0.94999998807907104D; // Reaper - Restore vanilla precision
++    private double flyingZ = 0.94999998807907104D; // Reaper - Restore vanilla precision
+     public double maxSpeed = 0.4D;
+     // CraftBukkit end
+ 

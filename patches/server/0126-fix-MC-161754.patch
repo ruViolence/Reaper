@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 14 Jul 2022 22:00:28 +0500
+Subject: [PATCH] fix: MC-161754
+
+
+diff --git a/src/main/java/net/minecraft/server/ContainerHorse.java b/src/main/java/net/minecraft/server/ContainerHorse.java
+index 1f2d0a58fd2bbd319e2bbc74a1f3370b26318c8d..ccf1db6c75687e7d7265f0c047ef174b6a129dbc 100644
+--- a/src/main/java/net/minecraft/server/ContainerHorse.java
++++ b/src/main/java/net/minecraft/server/ContainerHorse.java
+@@ -71,7 +71,7 @@ public class ContainerHorse extends Container {
+     }
+ 
+     public boolean canUse(EntityHuman entityhuman) {
+-        return this.a.a(entityhuman) && this.f.isAlive() && this.f.g((Entity) entityhuman) < 8.0F;
++        return this.a.a(entityhuman) && this.f.isAlive() && this.f.valid && this.f.g((Entity) entityhuman) < 8.0F; // Reaper - Fix MC-161754
+     }
+ 
+     public ItemStack shiftClick(EntityHuman entityhuman, int i) {
