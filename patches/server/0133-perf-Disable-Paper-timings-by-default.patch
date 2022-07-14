@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Fri, 15 Jul 2022 00:34:14 +0500
+Subject: [PATCH] perf-Disable-Paper-timings-by-default
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/PaperConfig.java b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+index 3d6e09907b9d416fc011c5d434903baede20ab49..009a7858d768c9d2b7939d40ca15d2e679a86730 100644
+--- a/src/main/java/com/destroystokyo/paper/PaperConfig.java
++++ b/src/main/java/com/destroystokyo/paper/PaperConfig.java
+@@ -183,6 +183,15 @@ public class PaperConfig {
+ 
+     private static void timings() {
+         boolean timings = getBoolean("timings.enabled", true);
++        // Reaper start
++        boolean reallyEnableTimings = getBoolean("timings.really-enabled", false);
++        if (timings && !reallyEnableTimings) {
++            Bukkit.getLogger().log(Level.WARNING, "[Reaper] To improve performance, timings have been disabled by default");
++            Bukkit.getLogger().log(Level.WARNING, "[Airplane] You can still use timings by using /timings on, but they will not start on server startup unless you set timings.really-enabled to true in paper.yml");
++            Bukkit.getLogger().log(Level.WARNING, "[Reaper] If you would like to disable this message, either set timings.really-enabled to true or timings.enabled to false.");
++        }
++        timings = reallyEnableTimings;
++        // Reaper end
+         boolean verboseTimings = getBoolean("timings.verbose", true);
+         TimingsManager.privacy = getBoolean("timings.server-name-privacy", false);
+         TimingsManager.hiddenConfigs = getList("timings.hidden-config-entries", Lists.newArrayList("database", "settings.bungeecord-addresses"));
