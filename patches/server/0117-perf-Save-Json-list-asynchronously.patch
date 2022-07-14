@@ -1,0 +1,165 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Thu, 14 Jul 2022 06:12:14 +0500
+Subject: [PATCH] perf-Save-Json-list-asynchronously
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/AsyncUtil.java b/src/main/java/com/github/ruviolence/reaper/AsyncUtil.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..dbb6aff386cbc3e0e3fb51595df7f2779b6c2118
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/AsyncUtil.java
+@@ -0,0 +1,71 @@
++package com.github.ruviolence.reaper;
++
++import net.minecraft.server.MinecraftServer;
++
++import java.util.concurrent.Executor;
++import java.util.concurrent.ForkJoinPool;
++import java.util.function.Supplier;
++
++public class AsyncUtil {
++
++    /**
++     * Runs a given task async
++     * @param runnable The task to run
++     */
++    public static void run(Runnable runnable) {
++        ForkJoinPool.commonPool().execute(runnable);
++    }
++
++    /**
++     * Runs a given task on a specified Executor
++     * @param runnable The task to run
++     * @param executor The executor to run this task on
++     */
++    public static void run(Runnable runnable, Executor executor) {
++        executor.execute(runnable);
++    }
++
++    /**
++     * Runs a given task the next tick on the main thread
++     * @param runnable The task to run
++     */
++    public static void runSyncNextTick(Runnable runnable) {
++        MinecraftServer.getServer().processQueue.add(runnable);
++    }
++
++    /**
++     * Runs a given task after the current tick on the main thread
++     * @param runnable The task to run
++     */
++    /**
++     * Runs a given task if it is synchronized on an object
++     * @param monitor The object to check for locking
++     * @param runnable The task to run
++     */
++    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
++    public static void runSynchronized(Object monitor, Runnable runnable) {
++        if (Thread.holdsLock(monitor) ) {
++            runnable.run();
++        } else {
++            synchronized (monitor) {
++                runnable.run();
++            }
++        }
++    }
++
++    /**
++     * Runs a given task if it is synchronized on an object
++     * @param monitor The object to check for locking
++     * @param supplier The task to run
++     */
++    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
++    public static <T> T runSynchronized(Object monitor, Supplier<T> supplier) {
++        if (Thread.holdsLock(monitor) ) {
++            return supplier.get();
++        } else {
++            synchronized (monitor) {
++                return supplier.get();
++            }
++        }
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/JsonList.java b/src/main/java/net/minecraft/server/JsonList.java
+index 2a259758b5cf1fd66f5300036d0821c554e457a3..4c92edfce6b020bb1c7331ce5ca20d8c8134ca5e 100644
+--- a/src/main/java/net/minecraft/server/JsonList.java
++++ b/src/main/java/net/minecraft/server/JsonList.java
+@@ -1,36 +1,23 @@
+ package net.minecraft.server;
+ 
+-import com.google.common.collect.Lists;
++import com.github.ruviolence.reaper.AsyncUtil;
+ import com.google.common.collect.Maps;
+ import com.google.common.io.Files;
+-import com.google.gson.Gson;
+-import com.google.gson.GsonBuilder;
+-import com.google.gson.JsonDeserializationContext;
+-import com.google.gson.JsonDeserializer;
+-import com.google.gson.JsonElement;
+-import com.google.gson.JsonObject;
+-import com.google.gson.JsonParseException;
+-import com.google.gson.JsonSerializationContext;
+-import com.google.gson.JsonSerializer;
+-import java.io.BufferedReader;
+-import java.io.BufferedWriter;
+-import java.io.File;
+-import java.io.FileNotFoundException;
+-import java.io.IOException;
+-import java.io.Reader;
++import com.google.gson.*;
++import org.apache.commons.io.Charsets;
++import org.apache.commons.io.IOUtils;
++import org.apache.logging.log4j.LogManager;
++import org.apache.logging.log4j.Logger;
++
++import java.io.*;
+ import java.lang.reflect.ParameterizedType;
+ import java.lang.reflect.Type;
+ import java.nio.charset.StandardCharsets;
+-import java.util.ArrayList;
+ import java.util.Collection;
+ import java.util.Iterator;
+ import java.util.List;
+ import java.util.Map;
+ 
+-import org.apache.commons.io.IOUtils;
+-import org.apache.logging.log4j.LogManager;
+-import org.apache.logging.log4j.Logger;
+-
+ public class JsonList<K, V extends JsonListEntry<K>> {
+ 
+     protected static final Logger a = LogManager.getLogger();
+@@ -166,17 +153,22 @@ public class JsonList<K, V extends JsonListEntry<K>> {
+ 
+     public void save() throws IOException {
+         this.removeStaleEntries(); // Paper - remove expired values before saving
+-        
+-        Collection collection = this.d.values();
+-        String s = this.b.toJson(collection);
+-        BufferedWriter bufferedwriter = null;
+ 
+-        try {
+-            bufferedwriter = Files.newWriter(this.c, StandardCharsets.UTF_8);
+-            bufferedwriter.write(s);
+-        } finally {
+-            IOUtils.closeQuietly(bufferedwriter);
+-        }
++        Runnable runnable = () -> { // Akarin - Save json list async
++            Collection collection = this.d.values();
++            String s = this.b.toJson(collection);
++            BufferedWriter bufferedwriter = null;
++
++            try {
++                bufferedwriter = Files.newWriter(this.c, Charsets.UTF_8);
++                bufferedwriter.write(s);
++            } catch (IOException ex) { // Akarin
++                JsonList.a.warn("Failed to save " + this.c, ex); // Akarin
++            } finally {
++                IOUtils.closeQuietly(bufferedwriter);
++            }
++        }; // Akarin
++        AsyncUtil.run(runnable); // Akarin
+ 
+     }
+ 
