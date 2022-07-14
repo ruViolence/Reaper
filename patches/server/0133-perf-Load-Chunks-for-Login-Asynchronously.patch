@@ -1,0 +1,320 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Fri, 15 Jul 2022 01:59:17 +0500
+Subject: [PATCH] perf-Load-Chunks-for-Login-Asynchronously
+
+Backport of the patch by the same from Paper using the built in chunk async mechanism.
+
+This is not as robust as the newer chunk async changes, but this should get us 99.9% there.
+
+https://github.com/PaperMC/Paper/blob/master/Spigot-Server-Patches/0452-Load-Chunks-for-Login-Asynchronously.patch
+
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 7a9bcb7d85cf1b0db3d6b68cc023bb1bfd16580d..9344bacd3b70e00da70066ea0ea06a34070f9c0b 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -1356,7 +1356,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+             this.lastYaw -= 360.0F;
+         }
+ 
+-        world.getChunkAt((int) Math.floor(this.locX) >> 4, (int) Math.floor(this.locZ) >> 4); // CraftBukkit
++        if (valid) world.getChunkAt((int) Math.floor(this.locX) >> 4, (int) Math.floor(this.locZ) >> 4); // CraftBukkit
+         this.setPosition(this.locX, this.locY, this.locZ);
+         this.setYawPitch(f, f1);
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 66fe15493c90014b1935d08dd56239451221bf80..023ab4603760b82fd1dec4896d3a35fb8bbd1e56 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -65,6 +65,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     private int ct;
+     private boolean cu;
+     private Vec3D cv;
++    public NetworkManager networkManager; // Reaper
+     private int containerCounter;
+     public boolean f;
+     public int ping;
+@@ -156,6 +157,10 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     public boolean sentListPacket = false;
+     // CraftBukkit end
+ 
++// Reaper start
++public boolean didPlayerJoinEvent = false;
++// Reaper end
++
+     public EntityPlayer(MinecraftServer minecraftserver, WorldServer worldserver, GameProfile gameprofile, PlayerInteractManager playerinteractmanager) {
+         super(worldserver, gameprofile);
+         playerinteractmanager.player = this;
+diff --git a/src/main/java/net/minecraft/server/LoginListener.java b/src/main/java/net/minecraft/server/LoginListener.java
+index 13091d1806b53165e20bc787c03d85c639d4ff31..a0db921f4ee83142278b8b6431f501217ea4b947 100644
+--- a/src/main/java/net/minecraft/server/LoginListener.java
++++ b/src/main/java/net/minecraft/server/LoginListener.java
+@@ -69,7 +69,7 @@ public class LoginListener implements PacketLoginInListener, ITickable {
+             }
+             // Paper end
+         } else if (this.g == LoginListener.EnumProtocolState.DELAY_ACCEPT) {
+-            EntityPlayer entityplayer = this.server.getPlayerList().a(this.i.getId());
++            EntityPlayer entityplayer = this.server.getPlayerList().getActivePlayer(this.i.getId()); // Paper
+ 
+             if (entityplayer == null) {
+                 this.g = LoginListener.EnumProtocolState.READY_TO_ACCEPT;
+@@ -169,7 +169,7 @@ public class LoginListener implements PacketLoginInListener, ITickable {
+             }
+ 
+             this.networkManager.sendPacket(new PacketLoginOutSuccess(this.i));
+-            EntityPlayer entityplayer = this.server.getPlayerList().a(this.i.getId());
++            EntityPlayer entityplayer = this.server.getPlayerList().getActivePlayer(this.i.getId());
+ 
+             if (entityplayer != null) {
+                 this.g = LoginListener.EnumProtocolState.DELAY_ACCEPT;
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index afb36ad5497af91685ba3e418007f0fcf4ee5d27..a27629256dc6037bfa7bcf8c1ae437d1917d9765 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -116,6 +116,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+     }
+ 
+     private final org.bukkit.craftbukkit.CraftServer server;
++    Runnable playerJoinReady; // Reaper
+     private boolean processedDisconnect;
+     private int lastTick = MinecraftServer.currentTick;
+     private int allowedPlayerTicks = 1;
+@@ -141,45 +142,53 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+     // CraftBukkit end
+ 
+     public void e() {
+-        this.syncPosition();
+-        this.player.playerTick();
+-        this.player.setLocation(this.l, this.m, this.n, this.player.yaw, this.player.pitch);
+-        ++this.e;
+-        this.processedMovePackets = this.receivedMovePackets;
+-        if (this.B) {
+-            if (++this.C > 80) {
+-                PlayerConnection.LOGGER.warn("{} was kicked for floating too long!", this.player.getName());
+-                this.disconnect(com.destroystokyo.paper.PaperConfig.flyingKickPlayerMessage); // Paper - use configurable kick message
+-                return;
+-            }
+-        } else {
+-            // this.B = false; // Reaper - Optimize
+-            this.C = 0;
+-        }
+-
+-        this.r = this.player.getVehicle();
+-        if (this.r != this.player && this.r.bE() == this.player) {
+-            this.s = this.r.locX;
+-            this.t = this.r.locY;
+-            this.u = this.r.locZ;
+-            this.v = this.r.locX;
+-            this.w = this.r.locY;
+-            this.x = this.r.locZ;
+-            if (this.D && this.player.getVehicle().bE() == this.player) {
+-                if (++this.E > 80) {
+-                    PlayerConnection.LOGGER.warn("{} was kicked for floating a vehicle too long!", this.player.getName());
+-                    this.disconnect(com.destroystokyo.paper.PaperConfig.flyingKickVehicleMessage); // Paper - use configurable kick message
++        // Reaper start - login async
++        Runnable playerJoinReady = this.playerJoinReady;
++        if (playerJoinReady != null) {
++            this.playerJoinReady = null;
++            playerJoinReady.run();
++        }
++        if (this.player.valid) { // Reaper end
++            this.syncPosition();
++            this.player.playerTick();
++            this.player.setLocation(this.l, this.m, this.n, this.player.yaw, this.player.pitch);
++            ++this.e;
++            this.processedMovePackets = this.receivedMovePackets;
++            if (this.B) {
++                if (++this.C > 80) {
++                    PlayerConnection.LOGGER.warn("{} was kicked for floating too long!", this.player.getName());
++                    this.disconnect(com.destroystokyo.paper.PaperConfig.flyingKickPlayerMessage); // Paper - use configurable kick message
+                     return;
+                 }
+             } else {
++                this.B = false;
++                this.C = 0;
++            }
++
++            this.r = this.player.getVehicle();
++            if (this.r != this.player && this.r.bE() == this.player) {
++                this.s = this.r.locX;
++                this.t = this.r.locY;
++                this.u = this.r.locZ;
++                this.v = this.r.locX;
++                this.w = this.r.locY;
++                this.x = this.r.locZ;
++                if (this.D && this.player.getVehicle().bE() == this.player) {
++                    if (++this.E > 80) {
++                        PlayerConnection.LOGGER.warn("{} was kicked for floating a vehicle too long!", this.player.getName());
++                        this.disconnect(com.destroystokyo.paper.PaperConfig.flyingKickVehicleMessage); // Paper - use configurable kick message
++                        return;
++                    }
++                } else {
++                    this.D = false;
++                    this.E = 0;
++                }
++            } else {
++                this.r = null;
+                 this.D = false;
+                 this.E = 0;
+             }
+-        } else {
+-            this.r = null;
+-            this.D = false;
+-            this.E = 0;
+-        }
++        } // Reaper end if
+ 
+         this.minecraftServer.methodProfiler.a("keepAlive");
+         // Paper Start - give clients a longer time to respond to pings as per pre 1.12.2 timings
+diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
+index 210f562508fc7e4674066e9db14ee094a35da865..599886fa80f66fdce044497e384085dc09a34816 100644
+--- a/src/main/java/net/minecraft/server/PlayerList.java
++++ b/src/main/java/net/minecraft/server/PlayerList.java
+@@ -54,7 +54,8 @@ public abstract class PlayerList {
+     private static final SimpleDateFormat g = new SimpleDateFormat("yyyy-MM-dd \'at\' HH:mm:ss z");
+     private final MinecraftServer server;
+     public final List<EntityPlayer> players = new java.util.concurrent.CopyOnWriteArrayList(); // CraftBukkit - ArrayList -> CopyOnWriteArrayList: Iterator safety
+-    private final Map<UUID, EntityPlayer> j = Maps.newHashMap();
++    private final Map<UUID, EntityPlayer> j = Maps.newHashMap(); Map<UUID, EntityPlayer> getUUIDMap() { return j; } // Reaper - OBFHELPER
++    private final Map<UUID, EntityPlayer> pendingPlayers = Maps.newHashMap(); // Reaper
+     private final GameProfileBanList k;
+     private final IpBanList l;
+     private final OpList operators;
+@@ -98,6 +99,11 @@ public abstract class PlayerList {
+     }
+ 
+     public void a(NetworkManager networkmanager, EntityPlayer entityplayer) {
++        EntityPlayer prev = pendingPlayers.put(entityplayer.getUniqueID(), entityplayer); // Reaper
++        if (prev != null) {
++            disconnectPendingPlayer(prev);
++        }
++        entityplayer.networkManager = networkmanager;
+         GameProfile gameprofile = entityplayer.getProfile();
+         UserCache usercache = this.server.getUserCache();
+         GameProfile gameprofile1 = usercache.a(gameprofile.getId());
+@@ -146,7 +152,7 @@ public abstract class PlayerList {
+ 
+         entityplayer.spawnIn(world);
+         entityplayer.setPosition(loc.getX(), loc.getY(), loc.getZ());
+-        entityplayer.setYawPitch(loc.getYaw(), loc.getPitch()); 
++        entityplayer.setYawPitch(loc.getYaw(), loc.getPitch());
+         // Spigot end
+ 
+         // CraftBukkit - Moved message to after join
+@@ -169,6 +175,51 @@ public abstract class PlayerList {
+         entityplayer.F().a(entityplayer);
+         this.sendScoreboard((ScoreboardServer) worldserver.getScoreboard(), entityplayer);
+         this.server.aD();
++        // Reaper start - Backport async load spawning.
++        final int chunkX = loc.getBlockX() >> 4;
++        final int chunkZ = loc.getBlockZ() >> 4;
++        final String finalS = s;
++        final String finalS1 = s1;
++        worldserver.getChunkProviderServer().getChunkAt(chunkX, chunkZ, () -> {
++            // This should be loaded at this point and we should delay the unload
++            delayChunkUnload(worldserver, chunkX, chunkZ);
++            playerconnection.playerJoinReady = () -> {
++                // This should be loaded at this point and we should delay the unload
++                delayChunkUnload(worldserver, chunkX, chunkZ);
++                postChunkLoadJoin(entityplayer, networkmanager, playerconnection, nbttagcompound, finalS1, finalS);
++            };
++        });
++        // Reaper end
++    }
++
++    private void delayChunkUnload(WorldServer worldserver, int chunkX, int chunkZ) {
++        Chunk chunk = worldserver.getChunkProviderServer().getOrLoadChunkAt(chunkX, chunkZ);
++        if (chunk != null && chunk.scheduledForUnload != null) {
++            chunk.scheduledForUnload = null; // Delay chunk unloading
++        }
++    }
++
++    EntityPlayer getActivePlayer(UUID uuid) {
++        EntityPlayer player = this.getUUIDMap().get(uuid);
++        return player != null ? player : pendingPlayers.get(uuid);
++    }
++
++    void disconnectPendingPlayer(EntityPlayer entityplayer) {
++        if (entityplayer.networkManager != null) {
++            ChatMessage msg = new ChatMessage("multiplayer.disconnect.duplicate_login");
++            entityplayer.networkManager.sendPacket(new PacketPlayOutKickDisconnect(msg), (future) -> {
++                entityplayer.networkManager.close(msg);
++                entityplayer.networkManager = null;
++            });
++        }
++    }
++
++    private void postChunkLoadJoin(EntityPlayer entityplayer, NetworkManager networkmanager, PlayerConnection playerconnection, NBTTagCompound nbttagcompound, String s1, String s) {
++        pendingPlayers.remove(entityplayer.getUniqueID(), entityplayer);
++        if (!networkmanager.isConnected()) {
++            return;
++        }
++        entityplayer.didPlayerJoinEvent = true;
+         // CraftBukkit start - login message is handled in the event
+         // ChatMessage chatmessage;
+ 
+@@ -185,7 +236,7 @@ public abstract class PlayerList {
+         // this.sendMessage(chatmessage);
+         this.onPlayerJoin(entityplayer, joinMessage);
+         // CraftBukkit end
+-        worldserver = server.getWorldServer(entityplayer.dimension);  // CraftBukkit - Update in case join event changed it
++        WorldServer worldserver = server.getWorldServer(entityplayer.dimension);  // CraftBukkit - Update in case join event changed it
+         playerconnection.a(entityplayer.locX, entityplayer.locY, entityplayer.locZ, entityplayer.yaw, entityplayer.pitch);
+         this.b(entityplayer, worldserver);
+         if (!this.server.getResourcePack().isEmpty()) {
+@@ -346,6 +397,7 @@ public abstract class PlayerList {
+     }
+ 
+     protected void savePlayerFile(EntityPlayer entityplayer) {
++        if (!entityplayer.didPlayerJoinEvent) return; // Reaper
+         entityplayer.lastSave = MinecraftServer.currentTick; // Paper
+         this.playerFileData.save(entityplayer);
+         ServerStatisticManager serverstatisticmanager = (ServerStatisticManager) entityplayer.getStatisticManager(); // CraftBukkit
+@@ -431,7 +483,7 @@ public abstract class PlayerList {
+ 
+         PlayerQuitEvent playerQuitEvent = new PlayerQuitEvent(cserver.getPlayer(entityplayer), "\u00A7e" + entityplayer.getName() + " left the game");
+         cserver.getPluginManager().callEvent(playerQuitEvent);
+-        entityplayer.getBukkitEntity().disconnect(playerQuitEvent.getQuitMessage());
++        if (entityplayer.didPlayerJoinEvent) entityplayer.getBukkitEntity().disconnect(playerQuitEvent.getQuitMessage());
+ 
+         entityplayer.playerTick();// SPIGOT-924
+         // CraftBukkit end
+@@ -481,7 +533,13 @@ public abstract class PlayerList {
+             // this.p.remove(uuid);
+             // CraftBukkit end
+         }
+-
++        // Paper start
++        entityplayer1 = pendingPlayers.get(uuid);
++        if (entityplayer1 == entityplayer) {
++            pendingPlayers.remove(uuid);
++        }
++        entityplayer.networkManager = null;
++        // Paper end
+         // CraftBukkit start
+         //  this.sendAll(new PacketPlayOutPlayerInfo(EnumPlayerInfoAction.REMOVE_PLAYER, new EntityPlayer[] { entityplayer}));
+         PacketPlayOutPlayerInfo packet = new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.REMOVE_PLAYER, entityplayer);
+@@ -501,7 +559,7 @@ public abstract class PlayerList {
+         ChunkIOExecutor.adjustPoolSize(this.getPlayerCount()); // CraftBukkit
+         worldserver.getTracker().untrackPlayer(entityplayer); // Reaper - Attempt to reduce memory leakage
+ 
+-        return playerQuitEvent.getQuitMessage(); // CraftBukkit
++        return entityplayer.didPlayerJoinEvent ? playerQuitEvent.getQuitMessage() : null; // CraftBukkit // Paper - don't print quit if we never printed join
+     }
+ 
+     // CraftBukkit start - Whole method, SocketAddress to LoginListener, added hostname to signature, return EntityPlayer
+@@ -519,6 +577,14 @@ public abstract class PlayerList {
+             }
+         }
+ 
++        // Paper start - check pending players too
++        entityplayer = pendingPlayers.get(uuid);
++        if (entityplayer != null) {
++            this.pendingPlayers.remove(uuid);
++            disconnectPendingPlayer(entityplayer);
++        }
++        // Paper end
++
+         Iterator iterator = arraylist.iterator();
+ 
+         while (iterator.hasNext()) {
