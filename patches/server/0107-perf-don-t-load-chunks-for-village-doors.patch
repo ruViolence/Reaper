@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Thu, 14 Jul 2022 05:19:50 +0500
+Subject: [PATCH] perf: don't load chunks for village doors
+
+
+diff --git a/src/main/java/net/minecraft/server/Village.java b/src/main/java/net/minecraft/server/Village.java
+index 6536e5fb843fd6e9f28ad975fc73678fafffff47..634cc51777fbbb3256d57805da3a25dba3b12aa3 100644
+--- a/src/main/java/net/minecraft/server/Village.java
++++ b/src/main/java/net/minecraft/server/Village.java
+@@ -50,6 +50,7 @@ public class Village {
+             return;
+         }
+         // Paper end
++        if (!this.isVillageAreaLoaded()) { return; } // Reaper - Don't load chunks for village doors
+         this.g = i;
+         this.m();
+         this.l();
+@@ -222,6 +223,31 @@ public class Village {
+         }
+     }
+ 
++    // Reaper start - Don't load chunks for village doors
++    private BlockPosition[] positions = null;
++
++    private void calculateNewCheckPositions() {
++        if (this.d == null || this.d.equals(BlockPosition.ZERO)) {
++            this.positions = null;
++        } else {
++            this.positions = new BlockPosition[]{this.d.a(-this.e, 0, -this.e),
++                    this.d.a(-this.e, 0, this.e),
++                    this.d.a(this.e, 0, -this.e),
++                    this.d.a(this.e, 0, this.e),
++                    this.d};
++        }
++    }
++
++    public boolean isVillageAreaLoaded() {
++        for (int i = 0; this.positions != null && i < this.positions.length; i++) {
++            if (this.a.isLoaded(this.positions[i])) {
++                return true;
++            }
++        }
++        return false;
++    }
++    // Reaper end
++
+     public void a(VillageDoor villagedoor) {
+         this.b.add(villagedoor);
+         this.c = this.c.a((BaseBlockPosition) villagedoor.d());
+@@ -368,6 +394,7 @@ public class Village {
+ 
+             this.e = Math.max(32, (int) Math.sqrt((double) j) + 1);
+         }
++        this.calculateNewCheckPositions(); // Reaper - Don't load chunks for village doors
+     }
+ 
+     public int a(String s) {
+@@ -422,7 +449,7 @@ public class Village {
+                 this.j.put(nbttagcompound2.getString("Name"), Integer.valueOf(nbttagcompound2.getInt("S")));
+             }
+         }
+-
++        this.calculateNewCheckPositions(); // Reaper - Don't load chunks for village doors
+     }
+ 
+     public void b(NBTTagCompound nbttagcompound) {

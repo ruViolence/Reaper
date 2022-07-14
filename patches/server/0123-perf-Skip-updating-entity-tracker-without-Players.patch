@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Thu, 14 Jul 2022 06:31:14 +0500
+Subject: [PATCH] perf: skip updating entity tracker without players
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index b9d104beac9d596b62af9d2406a03ee976be8532..4e351b93b1a7e38a089c547f9774cefaf442b862 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -977,6 +977,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                     }
+                 }
+                 try { // Reaper end - Flush consolidation
++                if (this.getPlayerList().getPlayerCount() != 0) // Reaper - Skip updating entity tracker without players
+                 worldserver.getTracker().updatePlayers();
+                 // Reaper start - Flush consolidation
+                 } finally {

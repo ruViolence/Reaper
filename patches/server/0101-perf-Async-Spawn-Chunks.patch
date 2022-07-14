@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Thu, 14 Jul 2022 04:57:46 +0500
+Subject: [PATCH] perf: async spawn chunks
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/Constants.java b/src/main/java/com/github/ruviolence/reaper/Constants.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e0e7542ed6d95dc9a403d320640651998abeb6e
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/Constants.java
+@@ -0,0 +1,5 @@
++package com.github.ruviolence.reaper;
++
++public class Constants {
++    public static final Runnable NULL_RUNNABLE = () -> {};
++}
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index b52dfca0e2306546f2fe2d363922514c49335704..dc05aad6b67db3080eb7f98b7244ae9cc629be8a 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -397,7 +397,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                     }
+ 
+                     ++i;
+-                    worldserver.getChunkProviderServer().getChunkAt(blockposition.getX() + k >> 4, blockposition.getZ() + l >> 4);
++                    worldserver.getChunkProviderServer().getChunkAt(blockposition.getX() + k >> 4, blockposition.getZ() + l >> 4, com.github.ruviolence.reaper.Constants.NULL_RUNNABLE); // Reaper - Async Spawn Chunks
+                 }
+             }
+         }
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index b800048737aa316548cd968a22ed81d6a566089e..56ef78618da942b9074e4bcd2222efd4a624b62f 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -1000,7 +1000,7 @@ public final class CraftServer implements Server {
+                     }
+ 
+                     BlockPosition chunkcoordinates = internal.getSpawn();
+-                    internal.getChunkProviderServer().getChunkAt(chunkcoordinates.getX() + j >> 4, chunkcoordinates.getZ() + k >> 4);
++                    internal.getChunkProviderServer().getChunkAt(chunkcoordinates.getX() + j >> 4, chunkcoordinates.getZ() + k >> 4, com.github.ruviolence.reaper.Constants.NULL_RUNNABLE); // Reaper - Async Spawn Chunks
+                 }
+             }
+         }

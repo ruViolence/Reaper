@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Thu, 14 Jul 2022 05:26:27 +0500
+Subject: [PATCH] perf: handle bad chunks more gracefully
+
+Prior to this change the server would crash when attempting to load a
+chunk from a region with bad data.
+
+After this change the server will defer back to vanilla behavior. At
+this time, that means attempting to generate a chunk in its place
+(and occasionally just not generating anything and leaving small
+holes in the world).
+
+Should Mojang choose to alter this behavior in the future, this change
+will simply defer to whatever that new behavior is.
+
+diff --git a/src/main/java/net/minecraft/server/RegionFileCache.java b/src/main/java/net/minecraft/server/RegionFileCache.java
+index daa7e997a387e65b15858573497fdf78cb069813..ca307cfb40d49525ce1d86685b9e2a4234e580d5 100644
+--- a/src/main/java/net/minecraft/server/RegionFileCache.java
++++ b/src/main/java/net/minecraft/server/RegionFileCache.java
+@@ -165,8 +165,22 @@ public class RegionFileCache {
+     private static NBTTagCompound readOversizedChunk(RegionFile regionfile, int i, int j) throws IOException {
+         synchronized (regionfile) {
+             try (DataInputStream datainputstream = regionfile.getReadStream(i & 31, j & 31)) {
+-                NBTTagCompound oversizedData = regionfile.getOversizedData(i, j);
+-                NBTTagCompound chunk = NBTCompressedStreamTools.readNBT(datainputstream);
++                // Reaper start - Handle bad chunks more gracefully - also handle similarly with oversized data
++                NBTTagCompound oversizedData;
++
++                try {
++                    oversizedData = regionfile.getOversizedData(i, j);
++                } catch (Exception ex) {
++                    oversizedData = null;
++                }
++
++                NBTTagCompound chunk;
++                try {
++                    chunk = NBTCompressedStreamTools.readNBT(datainputstream);
++                } catch (Exception ex) {
++                    return null;
++                }
++                // Reaper end
+                 if (oversizedData == null) {
+                     return chunk;
+                 }
+@@ -244,7 +258,13 @@ public class RegionFileCache {
+             return null;
+         }
+ 
+-        return NBTCompressedStreamTools.a(datainputstream);
++        // Reaper start - Handle bad chunks more gracefully
++        try {
++            return NBTCompressedStreamTools.a(datainputstream);
++        } catch (Exception ex) {
++            return null;
++        }
++        // Reaper end
+     }
+ 
+     public static void e(File file, int i, int j, NBTTagCompound nbttagcompound) throws IOException { // Paper - remove synchronization
