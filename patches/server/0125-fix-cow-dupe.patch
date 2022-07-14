@@ -81,7 +81,6 @@ index 8bbbade37202405699e7048cdfae323dc152bb90..0a3ea3daddc39d34811e8898b6762627
  
              return true;
          } else if (itemstack.getItem() == Items.SHEARS && this.getAge() >= 0) {
--            if (this.dead) return false; // Reaper - Fix cow dupe
              // CraftBukkit start
              PlayerShearEntityEvent event = new PlayerShearEntityEvent((org.bukkit.entity.Player) entityhuman.getBukkitEntity(), this.getBukkitEntity());
 +            event.wait(250);
@@ -92,7 +91,6 @@ index 8bbbade37202405699e7048cdfae323dc152bb90..0a3ea3daddc39d34811e8898b6762627
              // CraftBukkit end
              this.die();
              // this.world.addParticle(EnumParticle.EXPLOSION_LARGE, this.locX, this.locY + (double) (this.length / 2.0F), this.locZ, 0.0D, 0.0D, 0.0D, new int[0]); // Reaper - Clientside particles
--            if (this.dead) return true; // Reaper - Fi-x cow dupe
              if (true) { // Reaper - Remove isClientSide check
                  EntityCow entitycow = new EntityCow(this.world);
  
