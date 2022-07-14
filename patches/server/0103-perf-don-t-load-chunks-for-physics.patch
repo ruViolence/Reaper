@@ -1,20 +1,22 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Softik Lord <dimap9986@gmail.com>
 Date: Thu, 14 Jul 2022 05:11:53 +0500
-Subject: [PATCH] fix-Dont-load-chunks-for-physics
+Subject: [PATCH] perf: don't load chunks for physics
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index ab3e140cdc2438d4ae73d0ccc784146fbae86bcc..6928946475380eaf0722b2652626bb3d606000b7 100644
+index ab3e140cdc2438d4ae73d0ccc784146fbae86bcc..7ab956b7f02acefe521ccbe0d735f53e6f729a60 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -677,7 +677,8 @@ public abstract class World implements IBlockAccess {
+@@ -677,7 +677,10 @@ public abstract class World implements IBlockAccess {
  
      public void b(BlockPosition blockposition, final Block block, BlockPosition blockposition1) {
          if (true) { // Reaper - Remove isClientSide check
 -            IBlockData iblockdata = this.getType(blockposition);
-+            IBlockData iblockdata = this.getTypeIfLoaded(blockposition); // Reaper Don't load chunks for physics
-+            if (iblockdata == null) return; // Reaper Don't load chunks for physics
++            // Reaper start - Don't load chunks for physics
++            IBlockData iblockdata = this.getTypeIfLoaded(blockposition);
++            if (iblockdata == null) return;
++            // Reaper end
  
              if (iblockdata.getBlock() == Blocks.dk) {
                  try {

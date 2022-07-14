@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Softik Lord <dimap9986@gmail.com>
 Date: Thu, 14 Jul 2022 05:21:08 +0500
-Subject: [PATCH] fix-Maps-shouldn-t-load-chunk
+Subject: [PATCH] fix: maps shouldn't load chunk
 
 
 diff --git a/src/main/java/net/minecraft/server/ItemWorldMap.java b/src/main/java/net/minecraft/server/ItemWorldMap.java

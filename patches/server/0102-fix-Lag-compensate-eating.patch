@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Softik Lord <dimap9986@gmail.com>
 Date: Thu, 14 Jul 2022 05:07:19 +0500
-Subject: [PATCH] fix-Lag-compensate-eating
+Subject: [PATCH] fix: lag compensate eating
 
 When the server is lagging, players will wait longer when eating.
 Change to also use a time check instead if it passes.
@@ -10,73 +10,67 @@ Original code from https://github.com/PaperMC/Paper
 Licensed under LGPL-3.0
 
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 42e3077d0ac9c24a34052b8445b64eecb06ac81d..a91f6ecaf2bbc8ed8715d902345e5de4ac6f9ed8 100644
+index 42e3077d0ac9c24a34052b8445b64eecb06ac81d..db5f7e0662875191b548e774efa7a886870a16c2 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
-@@ -106,7 +106,7 @@ public abstract class EntityLiving extends Entity {
+@@ -106,7 +106,11 @@ public abstract class EntityLiving extends Entity {
      private int bD;
      private float bE;
      protected ItemStack activeItem;
 -    protected int bp;
-+    protected int bp; protected final int getEatTimeTicks() { return this.bp; }  protected final void setEatTimeTicks(int value) { this.bp = value; }/* Concrete - OBFHELPER */
++    protected int bp; protected final int getEatTimeTicks() { return this.bp; }  protected final void setEatTimeTicks(int value) { this.bp = value; } // Reaper - OBFHELPER
++    // Reaper start - Lag compensate eating
++    protected long eatStartTime;
++    protected int totalEatTimeTicks;
++    // Reaper end
      protected int bq;
      private BlockPosition bF;
      private DamageSource bG;
-@@ -158,6 +158,9 @@ public abstract class EntityLiving extends Entity {
-         this.P = 0.6F;
-     }
- 
-+    protected long eatStartTime;
-+    protected int totalEatTimeTicks;
-+
-     protected void i() {
-         this.datawatcher.register(EntityLiving.at, Byte.valueOf((byte) 0));
-         this.datawatcher.register(EntityLiving.g, Integer.valueOf(0));
-@@ -2413,7 +2416,12 @@ public abstract class EntityLiving extends Entity {
+@@ -2413,7 +2417,12 @@ public abstract class EntityLiving extends Entity {
                      this.b(this.activeItem, 5);
                  }
  
 -                if (--this.bp == 0) { // Reaper - Remove isClientSide check
-+                /* Concrete start - lag compensate eating */
++                // Reaper start - Lag compensate eating
 +                // we add 2 to the expected time to avoid lag compensating when we don't need to
 +                boolean shouldLagCompensate = this.activeItem.getItem() instanceof ItemFood && this.eatStartTime != -1 && (System.nanoTime() - this.eatStartTime) > ((2 + this.totalEatTimeTicks) * 50 * (1000 * 1000));
-+                if ((--this.bp == 0 || shouldLagCompensate) && !this.world.isClientSide) {
-+                    this.setEatTimeTicks(0);
-+                    /* Concrete end - lag compensate eating */
++                if (--this.bp == 0 || shouldLagCompensate) {
++                    this.bp = 0;
++                    // Reaper end
                      this.v();
                  }
              } else {
-@@ -2428,7 +2436,10 @@ public abstract class EntityLiving extends Entity {
+@@ -2428,7 +2437,10 @@ public abstract class EntityLiving extends Entity {
  
          if (!itemstack.isEmpty() && !this.isHandRaised()) {
              this.activeItem = itemstack;
 -            this.bp = itemstack.m();
-+            /* Concrete start - lag compensate eating */
++            // Reaper start - Lag compensate eating
 +            this.bp = this.totalEatTimeTicks = itemstack.m();
 +            this.eatStartTime = System.nanoTime();
-+            /* Concrete end - lag compensate eating */
++            // Reaper end
              if (true) { // Reaper - Remove isClientSide check
                  int i = 1;
  
-@@ -2452,7 +2463,9 @@ public abstract class EntityLiving extends Entity {
-                 }
+@@ -2453,6 +2465,10 @@ public abstract class EntityLiving extends Entity {
              } else if (!this.isHandRaised() && !this.activeItem.isEmpty()) {
                  this.activeItem = ItemStack.a;
--                this.bp = 0;
-+                this.bp = 0; /* Concrete - diff on change */
-+                this.totalEatTimeTicks = 0; /* Concrete - lag compensate eating */
-+                this.eatStartTime = -1L; /* Concrete - lag compensate eating */
+                 this.bp = 0;
++                // Reaper start - Lag compensate eating
++                this.totalEatTimeTicks = 0;
++                this.eatStartTime = -1L;
++                // Reaper end
              }
          }
  
-@@ -2562,7 +2575,9 @@ public abstract class EntityLiving extends Entity {
-         }
+@@ -2563,6 +2579,10 @@ public abstract class EntityLiving extends Entity {
  
          this.activeItem = ItemStack.a;
--        this.bp = 0;
-+        this.bp = 0; /* Concrete - diff on change */
-+        this.totalEatTimeTicks = 0; /* Concrete - lag compensate eating */
-+        this.eatStartTime = -1L; /* Concrete - lag compensate eating */
+         this.bp = 0;
++        // Reaper start - Lag compensate eating
++        this.totalEatTimeTicks = 0;
++        this.eatStartTime = -1L;
++        // Reaper end
      }
  
      public boolean isBlocking() {
