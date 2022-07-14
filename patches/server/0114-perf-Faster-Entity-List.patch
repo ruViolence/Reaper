@@ -1,0 +1,261 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Thu, 14 Jul 2022 06:02:12 +0500
+Subject: [PATCH] perf-Faster-Entity-List
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/util/MapList/ObjectMapList.java b/src/main/java/com/destroystokyo/paper/util/MapList/ObjectMapList.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..7f31a0a2540b731cf1e15d100ec61b2c25c8b458
+--- /dev/null
++++ b/src/main/java/com/destroystokyo/paper/util/MapList/ObjectMapList.java
+@@ -0,0 +1,200 @@
++package com.destroystokyo.paper.util.MapList;
++
++import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
++import it.unimi.dsi.fastutil.objects.AbstractReferenceList;
++import it.unimi.dsi.fastutil.objects.ObjectListIterator;
++import it.unimi.dsi.fastutil.objects.ObjectSpliterator;
++import java.util.Arrays;
++import java.util.NoSuchElementException;
++import java.util.Set;
++
++/**
++ * list with O(1) remove & contains
++ * @author Spottedleaf
++ */
++public final class ObjectMapList<T> extends AbstractReferenceList<T> implements Set<T> {
++
++    protected final Int2IntOpenHashMap objectToIndex;
++
++    protected static final Object[] EMPTY_LIST = new Object[0];
++    protected T[] elements = (T[]) EMPTY_LIST;
++    protected int count;
++
++    public ObjectMapList() {
++        this(2, 0.8f);
++    }
++
++    public ObjectMapList(int expectedSize, float loadFactor) {
++        this.objectToIndex = new Int2IntOpenHashMap(expectedSize, loadFactor);
++        this.objectToIndex.defaultReturnValue(Integer.MIN_VALUE);
++    }
++
++    @Override
++    public int size() {
++        return this.count;
++    }
++
++    @Override
++    public int indexOf(Object object) {
++        return this.objectToIndex.get(object.hashCode());
++    }
++
++    @Override
++    public int lastIndexOf(Object object) {
++        return super.indexOf(object);
++    }
++
++    @Override
++    public boolean remove(final Object object) {
++        final int index = this.objectToIndex.remove(object.hashCode());
++        if (index == Integer.MIN_VALUE) {
++            return false;
++        }
++
++        // move the obj at the end to this index
++        final int endIndex = --this.count;
++        final T end = this.elements[endIndex];
++        if (index != endIndex) {
++            // not empty after this call
++            this.objectToIndex.put(end.hashCode(), index); // update index
++        }
++        this.elements[index] = end;
++        this.elements[endIndex] = null;
++        return true;
++    }
++
++    @Override
++    public boolean add(final T object) {
++        final int count = this.count;
++        final int currIndex = this.objectToIndex.putIfAbsent(object.hashCode(), count);
++
++        if (currIndex != Integer.MIN_VALUE) {
++            return false; // already in this list
++        }
++
++        T[] list = this.elements;
++        if (list.length == count) {
++            // resize required
++            list = this.elements = Arrays.copyOf(list, (int)Math.max(4L, count << 1)); // overflow results in negative
++        }
++
++        list[count] = object;
++        this.count = count + 1;
++        return true;
++    }
++
++    @Override
++    public void add(final int index, final T object) {
++        final int currIndex = this.objectToIndex.putIfAbsent(object.hashCode(), index);
++
++        if (currIndex != Integer.MIN_VALUE) {
++            return; // already in this list
++        }
++
++        int count = this.count;
++        T[] list = this.elements;
++        if (list.length == count) {
++            // resize required
++            list = this.elements = Arrays.copyOf(list, (int) Math.max(4L, count << 1)); // overflow results in negative
++        }
++
++        System.arraycopy(list, index, list, index + 1, count - index);
++        list[index] = object;
++        this.count = count + 1;
++    }
++
++    @Override
++    public T get(int index) {
++        return this.elements[index];
++    }
++
++    @Override
++    public boolean isEmpty() {
++        return this.count == 0;
++    }
++
++    public T[] getRawData() {
++        return this.elements;
++    }
++
++    @Override
++    public void clear() {
++        this.objectToIndex.clear();
++        Arrays.fill(this.elements, 0, this.count, null);
++        this.count = 0;
++    }
++
++    @Override
++    public Object[] toArray() {
++        return Arrays.copyOf(this.elements, this.count);
++    }
++
++    @Override
++    public ObjectSpliterator<T> spliterator() {
++        return super.spliterator();
++    }
++
++    @Override
++    public ObjectListIterator<T> iterator() {
++        return new Iterator(0);
++    }
++
++    private class Iterator implements ObjectListIterator<T> {
++
++        T lastRet;
++        int current;
++
++        Iterator(int index) {
++            current = index;
++        }
++
++        @Override
++        public int nextIndex() {
++            return this.current + 1;
++        }
++
++        @Override
++        public int previousIndex() {
++            return this.current - 1;
++        }
++
++        @Override
++        public boolean hasNext() {
++            return this.current < ObjectMapList.this.count;
++        }
++
++        @Override
++        public boolean hasPrevious() {
++            return this.current > 0;
++        }
++
++        @Override
++        public T next() {
++            if (this.current >= ObjectMapList.this.count) {
++                throw new NoSuchElementException();
++            }
++            return this.lastRet = ObjectMapList.this.elements[this.current++];
++        }
++
++        @Override
++        public T previous() {
++            if (this.current < 0) {
++                throw new NoSuchElementException();
++            }
++            return this.lastRet = ObjectMapList.this.elements[--this.current];
++        }
++
++        @Override
++        public void remove() {
++            final T lastRet = this.lastRet;
++
++            if (lastRet == null) {
++                throw new IllegalStateException();
++            }
++            this.lastRet = null;
++
++            ObjectMapList.this.remove(lastRet);
++            --this.current;
++        }
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 7ac6d65b325e3095575e0b42b5d978659c5b5337..be81388c498c327b313482f6f3f76c51a7687bc2 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -137,7 +137,7 @@ public class Chunk {
+         this.heightMap = new int[256];
+ 
+         for (int k = 0; k < this.entitySlices.length; ++k) {
+-            this.entitySlices[k] = new org.bukkit.craftbukkit.util.UnsafeList(); // Spigot
++            this.entitySlices[k] = new com.destroystokyo.paper.util.MapList.ObjectMapList<>(); // Reaper - UnsafeList -> ObjectMapList // Spigot
+         }
+ 
+         Arrays.fill(this.h, -999);
+diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+index 41125b029f118a9115401de26d779d2fd95edca0..01f86db9934fc5e3e6d4bb2c56ebf845fb63a59b 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+@@ -10,16 +10,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+ 
+-import java.util.ArrayList;
+-import java.util.Collections;
+-import java.util.Comparator;
+-import java.util.Iterator;
+-import java.util.List;
+-import java.util.Set;
+ import javax.annotation.Nullable;
+-
+-// CraftBukkit start
+-import java.util.LinkedList;
++import java.util.*;
+ // CraftBukkit end
+ 
+ public class PlayerChunkMap {
+diff --git a/src/main/java/net/minecraft/server/RecipeFireworks.java b/src/main/java/net/minecraft/server/RecipeFireworks.java
+index f33c7601e5a9f8690be3c5509eaf3e86286cc448..3fcac8ae282fd3af8ae0331282671d2361ba172d 100644
+--- a/src/main/java/net/minecraft/server/RecipeFireworks.java
++++ b/src/main/java/net/minecraft/server/RecipeFireworks.java
+@@ -1,8 +1,5 @@
+ package net.minecraft.server;
+ 
+-import com.google.common.collect.Lists;
+-import java.util.ArrayList;
+-
+ public class RecipeFireworks extends ShapelessRecipes implements IRecipe { // CraftBukkit - added extends
+ 
+     private ItemStack a;
