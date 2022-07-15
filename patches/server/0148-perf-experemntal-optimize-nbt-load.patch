@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Fri, 15 Jul 2022 22:34:43 +0500
+Subject: [PATCH] perf-experemntal-optimize-nbt-load
+
+
+diff --git a/src/main/java/net/minecraft/server/TileEntityChest.java b/src/main/java/net/minecraft/server/TileEntityChest.java
+index 785a6c1dfbfbdb52c8eb272f3fb6e31d337d60b9..9042b781043ccf4404fa34814b272acc88c9ca66 100644
+--- a/src/main/java/net/minecraft/server/TileEntityChest.java
++++ b/src/main/java/net/minecraft/server/TileEntityChest.java
+@@ -85,6 +85,7 @@ public class TileEntityChest extends TileEntityLootable { // Paper - Remove ITic
+     }
+ 
+     public void load(NBTTagCompound nbttagcompound) {
++        if (!isLocked()) // Reaper - Nbt Optimize Load
+         super.load(nbttagcompound);
+         this.items = NonNullList.a(this.getSize(), ItemStack.a);
+         if (!this.c(nbttagcompound)) {
+diff --git a/src/main/java/net/minecraft/server/TileEntityContainer.java b/src/main/java/net/minecraft/server/TileEntityContainer.java
+index 128f7d906d67b3fac6ac6847142a8ae984a74624..b3c687501522c4300b5f27fa8050c40f6e8365ff 100644
+--- a/src/main/java/net/minecraft/server/TileEntityContainer.java
++++ b/src/main/java/net/minecraft/server/TileEntityContainer.java
+@@ -9,7 +9,8 @@ public abstract class TileEntityContainer extends TileEntity implements ITileInv
+     }
+ 
+     public void load(NBTTagCompound nbttagcompound) {
+-        super.load(nbttagcompound);
++        if (!isLocked()) //Reaper - Optimize NBT load
++            super.load(nbttagcompound);
+         this.a = ChestLock.b(nbttagcompound);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/TileEntityShulkerBox.java b/src/main/java/net/minecraft/server/TileEntityShulkerBox.java
+index 443fa5d63d254e785f3d80c5ba6cfda833107563..60f0c0997a95a366d4e93a630c2117ed2422af69 100644
+--- a/src/main/java/net/minecraft/server/TileEntityShulkerBox.java
++++ b/src/main/java/net/minecraft/server/TileEntityShulkerBox.java
+@@ -236,6 +236,7 @@ public class TileEntityShulkerBox extends TileEntityLootable implements ITickabl
+     }
+ 
+     public void load(NBTTagCompound nbttagcompound) {
++        if (!isLocked()) // Reaper - Optimize NBT load
+         super.load(nbttagcompound);
+         this.e(nbttagcompound);
+     }
