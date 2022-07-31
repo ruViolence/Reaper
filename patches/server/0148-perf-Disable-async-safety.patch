@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Sat, 16 Jul 2022 09:31:32 +0500
+Subject: [PATCH] perf-Disable-async-safety
+
+
+diff --git a/src/main/java/net/minecraft/server/NBTTagCompound.java b/src/main/java/net/minecraft/server/NBTTagCompound.java
+index 44854e9a67536fce441ad0639f9c77ffc4bf95c1..eb6c851eb73115ed0ac139b73e1259f54db6b7cc 100644
+--- a/src/main/java/net/minecraft/server/NBTTagCompound.java
++++ b/src/main/java/net/minecraft/server/NBTTagCompound.java
+@@ -62,6 +62,7 @@ public class NBTTagCompound extends NBTBase {
+         }
+     }
+ 
++
+     public Set<String> c() {
+         return this.map.keySet();
+     }
+diff --git a/src/main/java/net/minecraft/server/TileEntityChest.java b/src/main/java/net/minecraft/server/TileEntityChest.java
+index 9042b781043ccf4404fa34814b272acc88c9ca66..7dbf736fc0685fbacfb41ff5966c7db5dd7f64cf 100644
+--- a/src/main/java/net/minecraft/server/TileEntityChest.java
++++ b/src/main/java/net/minecraft/server/TileEntityChest.java
+@@ -99,6 +99,7 @@ public class TileEntityChest extends TileEntityLootable { // Paper - Remove ITic
+     }
+ 
+     public NBTTagCompound save(NBTTagCompound nbttagcompound) {
++        if (!isLocked()) // Reaper - Nbt Optimize Load
+         super.save(nbttagcompound);
+         if (!this.d(nbttagcompound)) {
+             ContainerUtil.a(nbttagcompound, this.items);
+diff --git a/src/main/java/org/spigotmc/AsyncCatcher.java b/src/main/java/org/spigotmc/AsyncCatcher.java
+index e44c2301654b8ce8e7a1135ac739bc267048a967..22a329f4290bf8402bfe8ef5f6b5812d58308d4f 100644
+--- a/src/main/java/org/spigotmc/AsyncCatcher.java
++++ b/src/main/java/org/spigotmc/AsyncCatcher.java
+@@ -10,7 +10,7 @@ public class AsyncCatcher
+ 
+     public static void catchOp(String reason)
+     {
+-        if ( enabled && Thread.currentThread() != MinecraftServer.getServer().primaryThread )
++        if (false && enabled && Thread.currentThread() != MinecraftServer.getServer().primaryThread ) // Reaper - disable safety
+         {
+             throw new IllegalStateException( "Asynchronous " + reason + "!" );
+         }

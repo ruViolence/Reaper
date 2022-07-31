@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Fri, 15 Jul 2022 01:04:33 +0500
+Subject: [PATCH] perf-better-checking-for-useless-move-packets
+
+Pufferfish
+Copyright (C) 2022 Pufferfish Studios LLC
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+index e5291e1b7e16723a649a244895504e08cac1a2aa..6fdf5c64260577298b8b8d50d0a84eb8f2a30ce8 100644
+--- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+@@ -168,14 +168,16 @@ public class EntityTrackerEntry {
+                 // CraftBukkit end
+ 
+                     if (l1 >= -32768L && l1 < 32768L && i2 >= -32768L && i2 < 32768L && j2 >= -32768L && j2 < 32768L && this.v <= 400 && !this.x && this.y == this.tracker.onGround) {
+-                        if ((!flag1 || !flag2) && !(this.tracker instanceof EntityArrow)) {
+-                            if (flag1) {
+-                                object = new PacketPlayOutEntity.PacketPlayOutRelEntityMove(this.tracker.getId(), l1, i2, j2, this.tracker.onGround);
+-                            } else if (flag2) {
+-                                object = new PacketPlayOutEntity.PacketPlayOutEntityLook(this.tracker.getId(), (byte) j1, (byte) k1, this.tracker.onGround);
++                        if (flag1 || flag2 || this.tracker instanceof EntityArrow) { // Reaper
++                            if ((!flag1 || !flag2) && !(this.tracker instanceof EntityArrow)) {
++                                if (flag1) {
++                                    object = new PacketPlayOutEntity.PacketPlayOutRelEntityMove(this.tracker.getId(), l1, i2, j2, this.tracker.onGround);
++                                } else if (flag2) {
++                                    object = new PacketPlayOutEntity.PacketPlayOutEntityLook(this.tracker.getId(), (byte) j1, (byte) k1, this.tracker.onGround);
++                                }
++                            } else {
++                                object = new PacketPlayOutEntity.PacketPlayOutRelEntityMoveLook(this.tracker.getId(), l1, i2, j2, (byte) j1, (byte) k1, this.tracker.onGround);
+                             }
+-                        } else {
+-                            object = new PacketPlayOutEntity.PacketPlayOutRelEntityMoveLook(this.tracker.getId(), l1, i2, j2, (byte) j1, (byte) k1, this.tracker.onGround);
+                         }
+                     } else {
+                         this.y = this.tracker.onGround;

@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Fri, 15 Jul 2022 00:59:50 +0500
+Subject: [PATCH] perf-remove-iterators-from-inventory-contains
+
+Pufferfish
+Copyright (C) 2022 Pufferfish Studios LLC
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+diff --git a/src/main/java/net/minecraft/server/PlayerInventory.java b/src/main/java/net/minecraft/server/PlayerInventory.java
+index 56f8eab6f6e3b8e9eff4cc1e4f72819594298507..2f9e1ee33cffb34963d8361c63a65833996f5976 100644
+--- a/src/main/java/net/minecraft/server/PlayerInventory.java
++++ b/src/main/java/net/minecraft/server/PlayerInventory.java
+@@ -662,6 +662,8 @@ public class PlayerInventory implements IInventory {
+     }
+ 
+     public boolean h(ItemStack itemstack) {
++        // Reaper start - don't allocate iterators
++        /*
+         Iterator iterator = this.f.iterator();
+ 
+         while (iterator.hasNext()) {
+@@ -676,6 +678,18 @@ public class PlayerInventory implements IInventory {
+                 }
+             }
+         }
++        */
++        for (int i = 0; i < this.f.size(); i++) {
++            List<ItemStack> list = this.f.get(i);
++            for (int j = 0; j < list.size(); j++) {
++                ItemStack itemstack1 = list.get(j);
++
++                if (!itemstack1.isEmpty() && itemstack1.doMaterialsMatch(itemstack)) {
++                    return true;
++                }
++            }
++        }
++        // Reaper end
+ 
+         return false;
+     }
