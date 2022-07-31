@@ -5,10 +5,10 @@ Subject: [PATCH] fix: reset players airTicks on respawn
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index e22f6f447ec652be39712946cb18ba5a7578b696..66fe15493c90014b1935d08dd56239451221bf80 100644
+index eecb7dd201f89f3d6ec23230a65d1ee3411aa32c..6e72e1d6d0a36cbba32a7f07ff25439685c1d62d 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -1638,6 +1638,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -1639,6 +1639,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
  
          this.setHealth(this.getMaxHealth());
          this.fireTicks = 0;

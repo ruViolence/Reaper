@@ -61,10 +61,10 @@ index 7ebe188e5972f90ccf2b2ac86c854822a27e52fe..507edfb72cacae4803870ca62509af67
  
          public ChatModifierSerializer() {}
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index eb7c637963ed9213ed61b296145e379325384b8e..8c185175ff4851067d37ebe3f280e41457c15a35 100644
+index 030bfbede00885baa147d9e78f614f58589b1072..8a159bc264c500a8b0ebd3ca7833b19e3527904f 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -546,13 +546,13 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -547,13 +547,13 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
                      if (scoreboardteambase.getDeathMessageVisibility() == ScoreboardTeamBase.EnumNameTagVisibility.HIDE_FOR_OTHER_TEAMS) {
                          this.server.getPlayerList().a((EntityHuman) this, chatmessage);
                      } else if (scoreboardteambase.getDeathMessageVisibility() == ScoreboardTeamBase.EnumNameTagVisibility.HIDE_FOR_OWN_TEAM) {

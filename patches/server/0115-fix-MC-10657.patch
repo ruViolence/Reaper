@@ -6,10 +6,10 @@ Subject: [PATCH] fix: MC-10657
 https://bugs.mojang.com/browse/MC-10657
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 8c185175ff4851067d37ebe3f280e41457c15a35..e22f6f447ec652be39712946cb18ba5a7578b696 100644
+index 8a159bc264c500a8b0ebd3ca7833b19e3527904f..eecb7dd201f89f3d6ec23230a65d1ee3411aa32c 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -744,6 +744,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -745,6 +745,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
              this.playerConnection.sendPacket(new PacketPlayOutWorldEvent(1032, BlockPosition.ZERO, 0, false));
              this.lastSentExp = -1;
              this.lastHealthSent = -1.0F;

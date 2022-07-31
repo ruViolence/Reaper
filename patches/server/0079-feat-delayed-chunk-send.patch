@@ -113,10 +113,10 @@ index 9b7a1ce6caf7ac513d85174817fb0173a8b2ad42..008062def50ea86d67a61545aa6a4df7
 +    }
  }
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index c13eb8b015afbaaafa4306a4cfe1a9efac0bcc0c..eb7c637963ed9213ed61b296145e379325384b8e 100644
+index c13eb8b015afbaaafa4306a4cfe1a9efac0bcc0c..030bfbede00885baa147d9e78f614f58589b1072 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
-@@ -89,6 +89,59 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -89,6 +89,60 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
      public boolean queueHealthUpdatePacket = false;
      public net.minecraft.server.PacketPlayOutUpdateHealth queuedHealthUpdatePacket;
      // Paper end
@@ -170,13 +170,14 @@ index c13eb8b015afbaaafa4306a4cfe1a9efac0bcc0c..eb7c637963ed9213ed61b296145e3793
 +    }
 +
 +    public void setChunkSendLimit(int limit) {
++        if (!com.github.ruviolence.reaper.ReaperConfig.delayedChunksEnabled) return;
 +        this.chunkSendLimit = limit > 0 ? limit : 1;
 +    }
 +    // Reaper end
  
      // CraftBukkit start
      public String displayName;
-@@ -126,6 +179,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -126,6 +180,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
          this.canPickUpLoot = true;
          this.maxHealthCache = this.getMaxHealth();
          // CraftBukkit end
@@ -184,7 +185,7 @@ index c13eb8b015afbaaafa4306a4cfe1a9efac0bcc0c..eb7c637963ed9213ed61b296145e3793
      }
  
      public final BlockPosition getSpawnPoint(MinecraftServer minecraftserver, WorldServer worldserver) {
-@@ -422,6 +476,10 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+@@ -422,6 +477,10 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
                  this.oldLevel = this.expLevel;
              }
              // CraftBukkit end
