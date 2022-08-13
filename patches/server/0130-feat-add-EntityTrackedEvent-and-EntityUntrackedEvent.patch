@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sat, 13 Aug 2022 14:00:19 +0500
+Subject: [PATCH] feat: add EntityTrackedEvent and EntityUntrackedEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+index e5291e1b7e16723a649a244895504e08cac1a2aa..2556631a1e6a7ed6a1723485ab4bf7760666756e 100644
+--- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+@@ -453,12 +453,14 @@ public class EntityTrackerEntry {
+                     this.tracker.b(entityplayer);
+                     // entityplayer.d(this.tracker); // Reaper - Already removed above
+                     updatePassengers(entityplayer); // Paper
++                    if (MinecraftServer.getServer().hasEntityTrackedEvent) org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTrackedEvent(entityplayer, tracker); // Reaper - EntityTrackedEvent
+                 }
+             } else if (this.trackedPlayers.contains(entityplayer)) {
+                 this.trackedPlayers.remove(entityplayer);
+                 this.tracker.c(entityplayer);
+                 entityplayer.c(this.tracker);
+                 updatePassengers(entityplayer); // Paper
++                if (MinecraftServer.getServer().hasEntityUntrackedEvent) org.bukkit.craftbukkit.event.CraftEventFactory.callEntityUntrackedEvent(entityplayer, tracker); // Reaper - EntityUntrackedEvent
+             }
+ 
+         }
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 46cede167439e181868ba32bcf73ad6ccd42fd92..ab87db3922c5c774debe803a131960f6eab3fc8a 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -129,6 +129,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+     boolean hasEntityMoveEvent;
+     boolean hasEntityTickEvent;
+     boolean hasTileEntityTickEvent;
++    boolean hasEntityTrackedEvent;
++    boolean hasEntityUntrackedEvent;
+     // Reaper end
+ 
+     public MinecraftServer(OptionSet options, Proxy proxy, DataConverterManager dataconvertermanager, YggdrasilAuthenticationService yggdrasilauthenticationservice, MinecraftSessionService minecraftsessionservice, GameProfileRepository gameprofilerepository, UserCache usercache) {
+@@ -905,6 +907,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         hasEntityMoveEvent = com.github.ruviolence.reaper.event.entity.EntityMoveEvent.getHandlerList().getRegisteredListeners().length != 0;
+         hasEntityTickEvent = com.github.ruviolence.reaper.event.entity.EntityTickEvent.getHandlerList().getRegisteredListeners().length != 0;
+         hasTileEntityTickEvent = com.github.ruviolence.reaper.event.block.TileEntityTickEvent.getHandlerList().getRegisteredListeners().length != 0;
++        hasEntityTrackedEvent = com.github.ruviolence.reaper.event.player.EntityTrackedEvent.getHandlerList().getRegisteredListeners().length != 0;
++        hasEntityUntrackedEvent = com.github.ruviolence.reaper.event.player.EntityUntrackedEvent.getHandlerList().getRegisteredListeners().length != 0;
+         // Reaper end
+ 
+         int i;
+diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+index c04504623c38bc77ea7589f33020c33bcc112537..8d3afe3b6819e080d646b10020d852d287dc33de 100644
+--- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
++++ b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+@@ -78,6 +78,8 @@ public class CraftEventFactory {
+     private static final com.github.ruviolence.reaper.event.entity.AnyEntitySpawnEvent anyEntitySpawnEvent = new com.github.ruviolence.reaper.event.entity.AnyEntitySpawnEvent(null);
+     private static final com.github.ruviolence.reaper.event.entity.EntityTickEvent entityTickEvent = new com.github.ruviolence.reaper.event.entity.EntityTickEvent(null);
+     private static final com.github.ruviolence.reaper.event.block.TileEntityTickEvent tileEntityTickEvent = new com.github.ruviolence.reaper.event.block.TileEntityTickEvent(null);
++    private static final com.github.ruviolence.reaper.event.player.EntityTrackedEvent entityTrackedEvent = new com.github.ruviolence.reaper.event.player.EntityTrackedEvent(null);
++    private static final com.github.ruviolence.reaper.event.player.EntityUntrackedEvent entityUntrackedEvent = new com.github.ruviolence.reaper.event.player.EntityUntrackedEvent(null);
+     // Reaper end
+ 
+     // helper methods
+@@ -1230,5 +1232,21 @@ public class CraftEventFactory {
+ 
+         return !event.isCancelled();
+     }
++
++    public static void callEntityTrackedEvent(EntityHuman player, Entity entity) {
++        com.github.ruviolence.reaper.event.player.EntityTrackedEvent event = CraftEventFactory.entityTrackedEvent;
++
++        event.setData((Player) player.getBukkitEntity(), entity.getBukkitEntity());
++
++        Bukkit.getPluginManager().callEvent(event);
++    }
++
++    public static void callEntityUntrackedEvent(EntityHuman player, Entity entity) {
++        com.github.ruviolence.reaper.event.player.EntityUntrackedEvent event = CraftEventFactory.entityUntrackedEvent;
++
++        event.setData((Player) player.getBukkitEntity(), entity.getBukkitEntity());
++
++        Bukkit.getPluginManager().callEvent(event);
++    }
+     // Reaper end
+ }

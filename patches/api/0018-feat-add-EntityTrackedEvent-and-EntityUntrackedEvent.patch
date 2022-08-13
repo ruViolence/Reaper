@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sat, 13 Aug 2022 14:00:19 +0500
+Subject: [PATCH] feat: add EntityTrackedEvent and EntityUntrackedEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/player/EntityTrackedEvent.java b/src/main/java/com/github/ruviolence/reaper/event/player/EntityTrackedEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..6abdcf4900ef79dabc50f09b0f08f4944fa2a052
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/player/EntityTrackedEvent.java
+@@ -0,0 +1,34 @@
++package com.github.ruviolence.reaper.event.player;
++
++import org.bukkit.entity.Entity;
++import org.bukkit.entity.Player;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.player.PlayerEvent;
++
++public class EntityTrackedEvent extends PlayerEvent {
++    private static final HandlerList handlers = new HandlerList();
++
++    private Entity entity;
++
++    public EntityTrackedEvent(Player player) {
++        super(player);
++    }
++
++    public Entity getEntity() {
++        return entity;
++    }
++
++    public void setData(Player player, Entity entity) {
++        super.player = player;
++        this.entity = entity;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/player/EntityUntrackedEvent.java b/src/main/java/com/github/ruviolence/reaper/event/player/EntityUntrackedEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..95316e0eee3566f571a826c1ae8fb510e6071c06
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/player/EntityUntrackedEvent.java
+@@ -0,0 +1,34 @@
++package com.github.ruviolence.reaper.event.player;
++
++import org.bukkit.entity.Entity;
++import org.bukkit.entity.Player;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.player.PlayerEvent;
++
++public class EntityUntrackedEvent extends PlayerEvent {
++    private static final HandlerList handlers = new HandlerList();
++
++    private Entity entity;
++
++    public EntityUntrackedEvent(Player player) {
++        super(player);
++    }
++
++    public Entity getEntity() {
++        return entity;
++    }
++
++    public void setData(Player player, Entity entity) {
++        super.player = player;
++        this.entity = entity;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
