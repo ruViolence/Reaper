@@ -248,7 +248,7 @@ index c7b2b4bedd31e30dc0444ffbfd33aaa0cd4f2952..377b6d21fb6c2dce4645cd174a044b39
                  this.s();
              } else {
 diff --git a/src/main/java/net/minecraft/server/EntityHuman.java b/src/main/java/net/minecraft/server/EntityHuman.java
-index 599995662a2e0e6785d74374552355d2b0d2b60d..f57115a3a830430deb2c558e98b625f638fc34a4 100644
+index 599995662a2e0e6785d74374552355d2b0d2b60d..67e14a85a348720d2d29e821330600151631e1fc 100644
 --- a/src/main/java/net/minecraft/server/EntityHuman.java
 +++ b/src/main/java/net/minecraft/server/EntityHuman.java
 @@ -973,10 +973,14 @@ public abstract class EntityHuman extends EntityLiving {
@@ -301,7 +301,7 @@ index 599995662a2e0e6785d74374552355d2b0d2b60d..f57115a3a830430deb2c558e98b625f6
 -                                ((EntityLiving) entity).a(this, (float) i * 0.5F, (double) MathHelper.sin(this.yaw * 0.017453292F), (double) (-MathHelper.cos(this.yaw * 0.017453292F)));
 +                            // Reaper start - Old combat
 +                            if (com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) {
-+                                entity.f(-MathHelper.sin(this.yaw * 3.1415927f / 180.0f) * i * 0.5F, 0.1D, MathHelper.cos(this.yaw * 3.1415927f / 180.0f) * i * 0.5F);
++                                entity.f(-MathHelper.sin(this.yaw * 0.017453292F) * i * 0.5F, 0.1D, MathHelper.cos(this.yaw * 0.017453292F) * i * 0.5F);
                              } else {
 -                                entity.f((double) (-MathHelper.sin(this.yaw * 0.017453292F) * (float) i * 0.5F), 0.1D, (double) (MathHelper.cos(this.yaw * 0.017453292F) * (float) i * 0.5F));
 +                                if (entity instanceof EntityLiving) {
