@@ -6468,7 +6468,7 @@ index 035aa4a901918ab7df5466481ba844e0bb029252..105eccfa3d21d6ea486803626ed90eed
                  if (this.bx-- <= 0) {
                      this.a(false);
 diff --git a/src/main/java/net/minecraft/server/EntityWither.java b/src/main/java/net/minecraft/server/EntityWither.java
-index 9678526059621cd31a9a0dccc8ff803d80e9082a..1bdc599ee7b687113eb8bb486c2213c2875de0c0 100644
+index 9678526059621cd31a9a0dccc8ff803d80e9082a..79967dc687d770d78db36a735b91147469441798 100644
 --- a/src/main/java/net/minecraft/server/EntityWither.java
 +++ b/src/main/java/net/minecraft/server/EntityWither.java
 @@ -20,8 +20,10 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
@@ -6512,14 +6512,14 @@ index 9678526059621cd31a9a0dccc8ff803d80e9082a..1bdc599ee7b687113eb8bb486c2213c2
          boolean flag = this.dn();
  
          for (j = 0; j < 3; ++j) {
-@@ -348,6 +353,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
- 
-             this.bG.setProgress(this.getHealth() / this.getMaxHealth());
+@@ -189,6 +194,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
+                 this.world.addParticle(EnumParticle.SPELL_MOB, this.locX + this.random.nextGaussian(), this.locY + (double) (this.random.nextFloat() * 3.3F), this.locZ + this.random.nextGaussian(), 0.699999988079071D, 0.699999988079071D, 0.8999999761581421D, new int[0]);
+             }
          }
 +        */ // Reaper end
+ 
      }
  
-     public static boolean a(Block block) {
 @@ -456,7 +462,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
                  }
  

@@ -736,10 +736,10 @@ index 9781b129ff692e47b2b16331eb5fc3aca8a2660c..96c9fcacf5b3a1302099a40359724da8
              if (this.hasCustomName()) {
                  entitywitch.setCustomName(this.getCustomName());
 diff --git a/src/main/java/net/minecraft/server/EntityWither.java b/src/main/java/net/minecraft/server/EntityWither.java
-index 1bdc599ee7b687113eb8bb486c2213c2875de0c0..c1277df7fad8ae3e61c6359b61878255abdd02f1 100644
+index 79967dc687d770d78db36a735b91147469441798..934019251db1dade3317c2464035d462e79a5773 100644
 --- a/src/main/java/net/minecraft/server/EntityWither.java
 +++ b/src/main/java/net/minecraft/server/EntityWither.java
-@@ -342,7 +342,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
+@@ -343,7 +343,7 @@ public class EntityWither extends EntityMonster implements IRangedEntity {
                      }
  
                      if (flag) {
