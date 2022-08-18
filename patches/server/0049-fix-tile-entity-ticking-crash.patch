@@ -6,7 +6,7 @@ Subject: [PATCH] fix: tile entity ticking crash
 Fixes a NoSuchElementException crash when ticking tile entities, which happens due to bad plugins.
 
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index ebb64945dabe873ea478bfa4506a0033127f028b..b28f37784b31e18984258a265feafa9ba2fa3634 100644
+index 0807f1530a7fdd9fce6aac327b4646e37261ce48..519991ace6a9773f83900f3047047e5905ddf736 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -766,7 +766,15 @@ public class WorldServer extends World implements IAsyncTaskHandler {

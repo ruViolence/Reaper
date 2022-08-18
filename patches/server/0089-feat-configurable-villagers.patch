@@ -61,19 +61,19 @@ index a3aa9f82e60a4fc4e90c5a46e37b05e7e3a0b31f..8290d50e12356b88fe090c7750c5fb70
          NBTTagList nbttaglist = nbttagcompound.getList("Villages", 10);
  
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 87ab0dd388ba81772b60f2828357f3ddd675117a..f686daef4813296d56daa3d7c6fbabb022fb977d 100644
+index 8457d66e5e5a021223312e05f340a7241c827bcf..6f2191a9ae3481e1bfc4c09a00570bab052d0185 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -338,10 +338,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {
          this.manager.flush();
          timings.doChunkMap.stopTiming(); // Spigot
-         this.methodProfiler.c("village");
+         // this.methodProfiler.c("village"); // Reaper - Remove MethodProfiler
 +        if (!com.github.ruviolence.reaper.ReaperConfig.disableVillages) { // Reaper
          timings.doVillages.startTiming(); // Spigot
          this.villages.tick();
          if (paperConfig.villageSiegesEnabled) { this.siegeManager.a(); } // Paper - Allow disabling village sieges
          timings.doVillages.stopTiming(); // Spigot
 +        } // Reaper
-         this.methodProfiler.c("portalForcer");
+         // this.methodProfiler.c("portalForcer"); // Reaper - Remove MethodProfiler
          timings.doPortalForcer.startTiming(); // Spigot
          this.portalTravelAgent.a(this.getTime());

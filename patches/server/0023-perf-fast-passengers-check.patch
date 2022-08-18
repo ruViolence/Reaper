@@ -5,7 +5,7 @@ Subject: [PATCH] perf: fast passengers check
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 979dc9cc9833fb015bf5be634c8a036c53a54bfe..3090beb99285966cf5bcd7f1b4afa3fc445f0880 100644
+index 82cbcfe6e52f3c4f1b8fd3e657e7c04f8dc9cc05..492e7e2bb64e05f66799f0646ad6e7a502e11086 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -2100,7 +2100,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper

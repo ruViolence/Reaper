@@ -39,7 +39,7 @@ index aa7f0bcb606899c589d7501587dc0f07ee1ea85c..68643c2df7fc26537c80a413c27810c7
          return "TE(" + this.a + ")," + this.c + "," + this.d + "," + this.b;
      }
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 488d435d94867d91337fd4a1c2dc45abf4596298..ebb64945dabe873ea478bfa4506a0033127f028b 100644
+index 9180ddae84451e9d60c360639e89824d7662ab85..0807f1530a7fdd9fce6aac327b4646e37261ce48 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -49,8 +49,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {

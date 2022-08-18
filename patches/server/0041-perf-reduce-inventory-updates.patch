@@ -190,7 +190,7 @@ index 16a9e06438cd6f499beba7bee37fcc870913783a..7a82b1d4695ffcb67372015a8f603f53
                          // CraftBukkit end
                      }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 858ed96c0ec4c6fecd81e8ea19c2925a1021f42d..f7f419832a18f2c5c8464d872e6416d787771e88 100644
+index 37e104ebe44e8b674c47a3af99662450c8bc54db..108c16c5915ea70290056c4581f16869910093e9 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -2491,7 +2491,7 @@ public abstract class EntityLiving extends Entity {
@@ -273,7 +273,7 @@ index 012c9dd54db32b573109f5567851cd96b91699a0..a4df957aabc688a3cc414284f53b5eba
                      if (event.isCancelled()) return false;
                      i = event.getDamage();
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index b2685bce3dfa8767598f7f4e6797584d81c39cfb..8b4ee13af03964c54ba85cacd3e46a7db65efd90 100644
+index 8dedbe4c4e6198cd9659023022eab4d5335ef560..6f5f5ab508eb6026553c2719e4ce1bdd042da755 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -1062,7 +1062,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

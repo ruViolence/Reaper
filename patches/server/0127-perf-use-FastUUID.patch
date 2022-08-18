@@ -45,7 +45,7 @@ index 39b770ab27c23369385aba281d405ce73587d5a0..779efa3f770a6b1c424ea0cfc26f4e39
                  object = minecraftserver.a(uuid);
                  if (object == null) {
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index a9f9309c054779e11ef6d8683064a716eeacd504..7a9bcb7d85cf1b0db3d6b68cc023bb1bfd16580d 100644
+index ca4bf3edf41c27840e147e6abdcfe3aa8ae759be..e5a88857451e90ec7f84fa02c5577fc421223fb7 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -230,7 +230,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
@@ -146,7 +146,7 @@ index f074ac108438b63e035970e86f90dfa0e8a287f1..967f67615313a032aab148204eea3df2
          // CraftBukkit start
          if (nbttagcompound.hasKey("Bukkit.MaxDomestication")) {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index db5f7e0662875191b548e774efa7a886870a16c2..89e99dd17d310be2076b7e80e02bcae5343341a2 100644
+index 9be3f789f4cbda08721072f41b96b38cf607536e..7fa607c40cf62936ad236acc8ef478675e825d7f 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -37,7 +37,7 @@ import co.aikar.timings.MinecraftTimings; // Paper
@@ -268,10 +268,10 @@ index 921cddd2095f4cf131ac63992ae9aba5cfa215c5..cc83165acfdda7eef2f1511909e802e8
      public static final IDispenseBehavior b = new DispenseBehaviorItem() {
          protected ItemStack b(ISourceBlock isourceblock, ItemStack itemstack) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 4e351b93b1a7e38a089c547f9774cefaf442b862..46cede167439e181868ba32bcf73ad6ccd42fd92 100644
+index 33b1b35cf518f3bbec3479aeb2a10a48c58b115a..a25c2ee1c73a7d0f5ef7b56400dcc7c6f2629fe5 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -1078,7 +1078,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -1080,7 +1080,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
              */ // CraftBukkit end
  
              String s1 = "."; // PAIL?
@@ -328,7 +328,7 @@ index beed783a40a1b39f287e240744172cc28d59065e..3ab23439ed21f5c233dffa8e72419ffa
                      }
  
 diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
-index 99eb68ff6a712b166dff92c9bd4d593cb557a4e4..210f562508fc7e4674066e9db14ee094a35da865 100644
+index 9a233711473cb1af473538bda669279023f9ca2f..b9e3fc6e7375a2cdeed57345ecbcf11ac258c47c 100644
 --- a/src/main/java/net/minecraft/server/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/PlayerList.java
 @@ -1498,7 +1498,7 @@ public abstract class PlayerList {

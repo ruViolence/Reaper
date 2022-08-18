@@ -9,7 +9,7 @@ https://2b2t.miraheze.org/wiki/Nocom
 Fixes another hidden exploit that allows loading a lot of chunks by interacting with them.
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 0056a4b2011ea73c5c91a8d310b600de70a90ab1..23161a4556e9c2f47015cc1c2c5bbef1291ec3ed 100644
+index 13d72b81587b8d1269a8ef56349927bcdfd547c6..b070077f67c17d2f0b6f3cc27b5d119574adaa4a 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -923,6 +923,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

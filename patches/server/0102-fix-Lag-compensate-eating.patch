@@ -10,7 +10,7 @@ Original code from https://github.com/PaperMC/Paper
 Licensed under LGPL-3.0
 
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 42e3077d0ac9c24a34052b8445b64eecb06ac81d..db5f7e0662875191b548e774efa7a886870a16c2 100644
+index 757edfb28ac13af2a7eb2273e0ed0ffaaae7f575..9be3f789f4cbda08721072f41b96b38cf607536e 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -106,7 +106,11 @@ public abstract class EntityLiving extends Entity {

@@ -18,7 +18,7 @@ index 43ff36f6e2205cb2bcd785abe663c151a2572c22..c53cd688c58b6355c3837b461945fca8
          this.getDataWatcher().set(EntityPlayer.br, Byte.valueOf((byte) packetplayinsettings.e()));
          this.getDataWatcher().set(EntityPlayer.bs, Byte.valueOf((byte) (packetplayinsettings.getMainHand() == EnumMainHand.LEFT ? 0 : 1)));
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 910cac2740d65dc7807d7f63ead77b37850efb60..6010ffaea49e00377962b542791293db23336ae7 100644
+index 78331c8e9abe7a615fe7484d2cf371d9b96eddd1..06f8da246caf5e85cafd0dbb3b2ecb80483c09c6 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -1195,6 +1195,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

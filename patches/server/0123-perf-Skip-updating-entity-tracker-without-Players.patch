@@ -5,10 +5,10 @@ Subject: [PATCH] perf: skip updating entity tracker without players
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index b9d104beac9d596b62af9d2406a03ee976be8532..4e351b93b1a7e38a089c547f9774cefaf442b862 100644
+index fc4ea5cc2eb02d16f23848e59e4b8225cd399e11..33b1b35cf518f3bbec3479aeb2a10a48c58b115a 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -977,6 +977,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -979,6 +979,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
                      }
                  }
                  try { // Reaper end - Flush consolidation

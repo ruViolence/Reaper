@@ -5,7 +5,7 @@ Subject: [PATCH] fix: don't allow digging into unloaded chunks
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 2d279e9ac95fd7bc684a58da1ff4b37721700486..afb36ad5497af91685ba3e418007f0fcf4ee5d27 100644
+index 8930722e8ae5c0efd82c53c5865dac9ad3e09a00..7bc594293b3f2e15fc937e30ebad48ef54d63ee1 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -919,6 +919,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

@@ -31,7 +31,7 @@ index 286069746a8eab03ca6ed06c626ec40ffd12cdb7..c37e3c743d845e4bdb3dc4f384baecab
          }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index d742c837cc9a735956cef8df4bd0f715c3884dde..6c7cdc0b0f8bea04d31147bd01b07dace6ce7aff 100644
+index 4281ab1ba4da46a5a15b8609f735fd247a0c380b..35bc094758b8f1fcaa58356a0adb865b0b933afd 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -116,6 +116,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
@@ -362,7 +362,7 @@ index 6c90b11f8644f9b4f459bfb856913a4e6b89f1f0..1426acffe1af74563da5e12ba2ff7010
  
          public void c() {
 diff --git a/src/main/java/net/minecraft/server/EntityInsentient.java b/src/main/java/net/minecraft/server/EntityInsentient.java
-index 117dbf29ec1f7dfcd74126b2566dc7b992e248ff..28f5262785269be761272ba51f7e172d7016a780 100644
+index ac0fab568afee1da9c936d52510fe156ae5c2366..4faae5384f91a992b6aa2a6b7da69b7c7fe7c3b5 100644
 --- a/src/main/java/net/minecraft/server/EntityInsentient.java
 +++ b/src/main/java/net/minecraft/server/EntityInsentient.java
 @@ -751,7 +751,7 @@ public abstract class EntityInsentient extends EntityLiving {
@@ -435,7 +435,7 @@ index 28fbbfd6a57345c01b3ca0db8d7ee39d6997cb23..427512dc52d93e8a63d1eecda5ff3b8c
                      if (this.world.getGameRules().getBoolean("doFireTick") && this.world.areChunksLoaded(blockposition, 10) && this.world.getType(blockposition).getMaterial() == Material.AIR && Blocks.FIRE.canPlace(this.world, blockposition)) {
                          // CraftBukkit start - add "!isEffect"
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 190787bff1de7967b7b0d9d48b39fea67589dd81..858ed96c0ec4c6fecd81e8ea19c2925a1021f42d 100644
+index d6a85ea48f45d72b6aac78a66c89e3da44b84c89..37e104ebe44e8b674c47a3af99662450c8bc54db 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -265,7 +265,7 @@ public abstract class EntityLiving extends Entity {
@@ -902,13 +902,13 @@ index 21ec7abe89a3ab09c3aee0c469ac753a50e74e08..426ab596055884cacd6579ce225075d4
  
      private int s() {
 diff --git a/src/main/java/net/minecraft/server/NavigationAbstract.java b/src/main/java/net/minecraft/server/NavigationAbstract.java
-index 2de971ee4e381b823c19e5cf8f7b25090a407660..8354f0f2593d87924100a87b36acfa345c6310e0 100644
+index f614126c8db0d152449b7b2bf18fd57a9ebff4da..5f9460842a9f43ad536aeb2307112b71ef67d214 100644
 --- a/src/main/java/net/minecraft/server/NavigationAbstract.java
 +++ b/src/main/java/net/minecraft/server/NavigationAbstract.java
 @@ -80,7 +80,7 @@ public abstract class NavigationAbstract {
              float f = this.i();
  
-             this.b.methodProfiler.a("pathfind");
+             // this.b.methodProfiler.a("pathfind"); // Reaper - Remove MethodProfiler
 -            BlockPosition blockposition1 = new BlockPosition(this.a);
 +            BlockPosition blockposition1 = this.a.blockPos; // Reaper - Cache current block pos
              int i = (int) (f + 8.0F);
@@ -926,7 +926,7 @@ index 2de971ee4e381b823c19e5cf8f7b25090a407660..8354f0f2593d87924100a87b36acfa34
 @@ -106,7 +106,7 @@ public abstract class NavigationAbstract {
                  float f = this.i();
  
-                 this.b.methodProfiler.a("pathfind");
+                 // this.b.methodProfiler.a("pathfind"); // Reaper - Remove MethodProfiler
 -                BlockPosition blockposition1 = (new BlockPosition(this.a)).up();
 +                BlockPosition blockposition1 = (this.a.blockPos).up(); // Reaper - Cache current block pos
                  int i = (int) (f + 16.0F);
@@ -1172,7 +1172,7 @@ index 63eab603805d77489384fa1ec5da2a93c45eaa3b..a0e17cba05148860c9d539140e0dc344
          pathtype = this.a(iblockaccess, i, j, k, l, i1, j1, flag, flag1, enumset, pathtype, blockposition);
          if (enumset.contains(PathType.FENCE)) {
 diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
-index 1cb91fd011b529644c3a0312642c7d7772087491..1ffd14cdd241c590eb89fb4a35959a75424e0dde 100644
+index b665611e2143e1869daf72be95deff66b8f7818b..bf6c511f3ce8305b22f2e460e2dd1cf4106edf7a 100644
 --- a/src/main/java/net/minecraft/server/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/PlayerList.java
 @@ -125,6 +125,7 @@ public abstract class PlayerList {

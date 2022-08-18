@@ -24,7 +24,7 @@ index e5291e1b7e16723a649a244895504e08cac1a2aa..2556631a1e6a7ed6a1723485ab4bf776
  
          }
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 46cede167439e181868ba32bcf73ad6ccd42fd92..ab87db3922c5c774debe803a131960f6eab3fc8a 100644
+index a25c2ee1c73a7d0f5ef7b56400dcc7c6f2629fe5..f2034074258d01f6637c9b0757d1241f437d6c04 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -129,6 +129,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

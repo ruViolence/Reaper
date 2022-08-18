@@ -23,7 +23,7 @@ index 1ca03882983bfd2f04fa0e5300e3db56f99771b9..33447e1b5370edd4533f7d52499e00d0
          this.a = packetdataserializer.e();
          this.block = (IBlockData) Block.REGISTRY_ID.fromId(packetdataserializer.g());
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 26f881e9f3bc2ec29f19f0cc283221372d847011..b2685bce3dfa8767598f7f4e6797584d81c39cfb 100644
+index 49e4c15330b9e7618722268b194cacdab79d9393..8dedbe4c4e6198cd9659023022eab4d5335ef560 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -950,8 +950,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

@@ -7,7 +7,7 @@ Fixes a dupe:
 https://youtu.be/U_u7nYokzSU
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 23161a4556e9c2f47015cc1c2c5bbef1291ec3ed..6e88a1c1819ca7e8028ba410d9c8688100ae0784 100644
+index b070077f67c17d2f0b6f3cc27b5d119574adaa4a..18fd2a01b912c11b322f2ce02e2afe938047306e 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -345,6 +345,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

@@ -5,7 +5,7 @@ Subject: [PATCH] perf: optimize BlockPosition
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 85c76450eeaa386104cb298a3c33bec56ee3c71c..58cf2cb04fcdd243939bb24be7102d1f8a8faa74 100644
+index 2eca9cfb278ebcf04a47d47075bdfdb8ea30b5f8..6f075bc2d811d6770e66f9826babb520c6640ab5 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -931,7 +931,7 @@ public abstract class World implements IBlockAccess {

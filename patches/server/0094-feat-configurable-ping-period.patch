@@ -19,7 +19,7 @@ index 989a47410eb0a86d0b26b77e2b7d25d31ff693f8..60d1893d0569d9b1e00985c1fe57b06e
 +    }
  }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 6010ffaea49e00377962b542791293db23336ae7..6715d6c0d235be24222080f8ec5c684c4c55bf6c 100644
+index 06f8da246caf5e85cafd0dbb3b2ecb80483c09c6..331de13e0eace3dd9b8f1ff3cb92c18691bb2683 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -193,7 +193,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

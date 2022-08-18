@@ -219,7 +219,7 @@ index 6b3f13d4b14a22b9e2ba7c8ab9df6e551383fb6d..0dbf25d62e5ed2a6e88ca59565ace278
      }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 4ca4084ea4a7b28669294b3d318e7f6076deef19..a9f9309c054779e11ef6d8683064a716eeacd504 100644
+index 180d5cde8dd751cca950040dc9a9c8d8de8922fb..ca4bf3edf41c27840e147e6abdcfe3aa8ae759be 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -991,7 +991,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
@@ -360,7 +360,7 @@ index 599995662a2e0e6785d74374552355d2b0d2b60d..67e14a85a348720d2d29e82133060015
      }
  
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 32c9907be51619ce1e3d0f91d6836929e9f62e57..42e3077d0ac9c24a34052b8445b64eecb06ac81d 100644
+index ad2aa3ab4249ddca9c7812c8a395fe50653da3e4..757edfb28ac13af2a7eb2273e0ed0ffaaae7f575 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -1208,7 +1208,7 @@ public abstract class EntityLiving extends Entity {

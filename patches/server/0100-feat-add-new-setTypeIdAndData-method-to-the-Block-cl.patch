@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add new "setTypeIdAndData" method to the Block class
 
 
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 88cd8bd316b3fbd667b63a4cdd607b5b91849e96..7ac6d65b325e3095575e0b42b5d978659c5b5337 100644
+index 03946f01b4952292938e35793cedbd9f3d3d945d..2380bc00c512acbbfbc46f412c3153b187021579 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -500,8 +500,12 @@ public class Chunk {
@@ -54,7 +54,7 @@ index 88cd8bd316b3fbd667b63a4cdd607b5b91849e96..7ac6d65b325e3095575e0b42b5d97865
                      block.onPlace(this.world, blockposition, iblockdata);
                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 0df4136a684cb686f09412524d9cb3d257834b72..ab3e140cdc2438d4ae73d0ccc784146fbae86bcc 100644
+index 29c121d9daf88e803489a062855a94fe985395b8..3a5b9abae482ae4e236a95c4c3f68068b3527fbf 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -363,7 +363,10 @@ public abstract class World implements IBlockAccess {
@@ -84,7 +84,7 @@ index 0df4136a684cb686f09412524d9cb3d257834b72..ab3e140cdc2438d4ae73d0ccc784146f
              } else {
 +                if (updateLight) // Reaper
                  if (iblockdata.c() != iblockdata1.c() || iblockdata.d() != iblockdata1.d()) {
-                     this.methodProfiler.a("checkLight");
+                     // this.methodProfiler.a("checkLight"); // Reaper - Remove MethodProfiler
                      // chunk.runOrQueueLightUpdate(() -> this.w(blockposition)); // Reaper - Remove Paper lighting queue // Paper - Queue light update
 diff --git a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
 index cc77e85cdcc8f6f61e771337f231f13ee90dfcbf..700e917fef9bebe294442c08d50888723bb20bf0 100644

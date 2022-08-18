@@ -5,7 +5,7 @@ Subject: [PATCH] perf: optimize player lookup
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 98a7ff62ece0d6e059b773b87b3ac3e7249e1f5b..05f0d935b621df0f1ba7485317685bb86c535fa6 100644
+index 30dbd4017c4fcbe8639d4792f14b6bf8cce8a1e1..da77bbabccef8f9f66a1d9d0a9decaaa2b862aee 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -75,6 +75,7 @@ public abstract class World implements IBlockAccess {
@@ -40,7 +40,7 @@ index 98a7ff62ece0d6e059b773b87b3ac3e7249e1f5b..05f0d935b621df0f1ba7485317685bb8
              this.everyoneSleeping();
          }
  
-@@ -3038,6 +3042,11 @@ public abstract class World implements IBlockAccess {
+@@ -3040,6 +3044,11 @@ public abstract class World implements IBlockAccess {
  
      @Nullable
      public EntityHuman a(String s) {
@@ -52,7 +52,7 @@ index 98a7ff62ece0d6e059b773b87b3ac3e7249e1f5b..05f0d935b621df0f1ba7485317685bb8
          for (int i = 0; i < this.players.size(); ++i) {
              EntityHuman entityhuman = (EntityHuman) this.players.get(i);
  
-@@ -3051,6 +3060,12 @@ public abstract class World implements IBlockAccess {
+@@ -3053,6 +3062,12 @@ public abstract class World implements IBlockAccess {
  
      @Nullable
      public EntityHuman b(UUID uuid) {

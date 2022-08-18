@@ -6,7 +6,7 @@ Subject: [PATCH] perf: optimize physics update loop
 Significantly increases the performance of the block physics. But slightly changes the order of updates. StackOverflowException is completely fixed.
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 58cf2cb04fcdd243939bb24be7102d1f8a8faa74..98a7ff62ece0d6e059b773b87b3ac3e7249e1f5b 100644
+index 6f075bc2d811d6770e66f9826babb520c6640ab5..30dbd4017c4fcbe8639d4792f14b6bf8cce8a1e1 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -148,6 +148,11 @@ public abstract class World implements IBlockAccess {

@@ -52,7 +52,7 @@ index 3a8c0361d1da7f92056ca73a75e17abe89eb9038..3d7ade6629db45e94a4a389df57a658f
 +    }
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index a72f333c9e8c1b6fa31cf7370fd0e572fd28193a..88cd8bd316b3fbd667b63a4cdd607b5b91849e96 100644
+index 87e48475f33a3ad21f0bdc6cf983b6f2411b19a0..03946f01b4952292938e35793cedbd9f3d3d945d 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -70,7 +70,8 @@ public class Chunk {
@@ -145,7 +145,7 @@ index 5ada3fb0ccec92e8c6d090e2e3dd8f27b4695db0..111c421fd7c343719001b6b7c50093a0
              this.chunkLoader.saveChunk(this.world, chunk, unloaded); // Spigot
          } catch (IOException ioexception) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index c69c5fb12db34118e628f8bf0cae81910e11bafb..051b2ec99fa8304b4c64348d115c01cf69be5ab0 100644
+index 7ac7282f31935dc0e7b67eb363461f9902e63040..255985279f7d31f3560bbca1b1f7bbc46b9f7474 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -486,6 +486,10 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
@@ -160,7 +160,7 @@ index c69c5fb12db34118e628f8bf0cae81910e11bafb..051b2ec99fa8304b4c64348d115c01cf
          if (this.server != null) {
              this.server.disablePlugins();
 @@ -841,7 +845,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
-         this.methodProfiler.b();
+         // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
  
          org.spigotmc.WatchdogThread.tick(); // Spigot
 -        PaperLightingQueue.processQueue(i); // Paper // Reaper - Inline
@@ -502,16 +502,16 @@ index 0000000000000000000000000000000000000000..b0e42f62243b127817dd5b9cbe089268
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index fd806a37b77c98a6db4f31070ec1d2eee677c18b..0df4136a684cb686f09412524d9cb3d257834b72 100644
+index 85a67cc32776a8ab569b148f290874be9e29ee00..29c121d9daf88e803489a062855a94fe985395b8 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -414,7 +414,8 @@ public abstract class World implements IBlockAccess {
              } else {
                  if (iblockdata.c() != iblockdata1.c() || iblockdata.d() != iblockdata1.d()) {
-                     this.methodProfiler.a("checkLight");
+                     // this.methodProfiler.a("checkLight"); // Reaper - Remove MethodProfiler
 -                    chunk.runOrQueueLightUpdate(() -> this.w(blockposition)); // Paper - Queue light update
 +                    // chunk.runOrQueueLightUpdate(() -> this.w(blockposition)); // Reaper - Remove Paper lighting queue // Paper - Queue light update
 +                    chunk.runOrQueueLightUpdate(blockposition.getX(), blockposition.getY(), blockposition.getZ(), 0); // Reaper
-                     this.methodProfiler.b();
+                     // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
                  }
  

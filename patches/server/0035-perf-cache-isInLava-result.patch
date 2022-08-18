@@ -5,7 +5,7 @@ Subject: [PATCH] perf: cache isInLava result
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 3090beb99285966cf5bcd7f1b4afa3fc445f0880..d742c837cc9a735956cef8df4bd0f715c3884dde 100644
+index 492e7e2bb64e05f66799f0646ad6e7a502e11086..4281ab1ba4da46a5a15b8609f735fd247a0c380b 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -195,6 +195,10 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper

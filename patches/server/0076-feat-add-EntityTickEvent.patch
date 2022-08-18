@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add EntityTickEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 66a087ec41a3d0cdfa682dc12b8cdacef181dfad..ae4c221ae05938323a519d5316d1f0f2c2950b84 100644
+index 9859d939d6e499cd4b40058767ad9a714601e07a..b8b754d362bf9e2c84117a8353cd6e9bfeda565f 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -126,6 +126,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
@@ -25,7 +25,7 @@ index 66a087ec41a3d0cdfa682dc12b8cdacef181dfad..ae4c221ae05938323a519d5316d1f0f2
  
          int i;
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 7bccdebea8c971c790687f0ece6f4b94162ce0ff..b174b014a366b5fc429a0a0d4eda0ddbfb893b86 100644
+index 070488d870ea9dbb85c4093693e2b8139537d615..69ceb76bd9b198d4aeafea134608cb04e3efab23 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1609,6 +1609,7 @@ public abstract class World implements IBlockAccess {
@@ -38,7 +38,7 @@ index 7bccdebea8c971c790687f0ece6f4b94162ce0ff..b174b014a366b5fc429a0a0d4eda0ddb
              // Paper end
 @@ -1627,6 +1628,7 @@ public abstract class World implements IBlockAccess {
  
-             this.methodProfiler.a("tick");
+             // this.methodProfiler.a("tick"); // Reaper - Remove MethodProfiler
              if (!entity.dead && !(entity instanceof EntityPlayer)) {
 +                if (!hasEntityTickEvent || CraftEventFactory.callEntityTickEvent(entity, this)) // Reaper - Add EntityTickEvent
                  try {

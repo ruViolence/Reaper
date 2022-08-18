@@ -5,7 +5,7 @@ Subject: [PATCH] fix: NaN pos on entity data save
 
 
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 6c7cdc0b0f8bea04d31147bd01b07dace6ce7aff..3a86396457d310f4084dce633d84daa3fb12c52b 100644
+index 35bc094758b8f1fcaa58356a0adb865b0b933afd..8061a7c12aa32e6dc9bdd697983925cfd93eee96 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -1565,7 +1565,15 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper

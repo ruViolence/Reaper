@@ -2069,9 +2069,36 @@ index e77336aed8038631e6c2a137f433518461bd992f..e0a3122fb64b80a62c0ad565e2cb9114
          private EnumLogVariant(int i, String s, MaterialMapColor materialmapcolor) {
              this(i, s, s, materialmapcolor);
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 5eeb7279faf91fa7174c92d312d521b299894ed8..f5a44ab46e902bd93aea8070ee7d70f7f9bedbb1 100644
+index 5eeb7279faf91fa7174c92d312d521b299894ed8..15aa87c1f7d73bab8f1ec4c4a0a3a4ceb642b364 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -273,7 +273,7 @@ public class Chunk {
+     }
+ 
+     private void h(boolean flag) {
+-        this.world.methodProfiler.a("recheckGaps");
++        // this.world.methodProfiler.a("recheckGaps"); // Reaper - Remove MethodProfiler
+         if (this.areNeighborsLoaded(1)) { // Paper
+             for (int i = 0; i < 16; ++i) {
+                 for (int j = 0; j < 16; ++j) {
+@@ -300,7 +300,7 @@ public class Chunk {
+                         }
+ 
+                         if (flag) {
+-                            this.world.methodProfiler.b();
++                            // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                             return;
+                         }
+                     }
+@@ -310,7 +310,7 @@ public class Chunk {
+             this.m = false;
+         }
+ 
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     private void b(int i, int j, int k) {
 @@ -454,6 +454,7 @@ public class Chunk {
          return getBlockData(i, j, k);
      }
@@ -3127,7 +3154,7 @@ index 02240e7991804763ee9ca3f49ee2f63a162ff65d..cd29ad7a7b50cac39fec66c1c6c1d3dc
              }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 74bbba0110094f2fef624ec66288f63124f49dbf..8f860f77aebb16ec914ca61ce5c82abcabbbf077 100644
+index 74bbba0110094f2fef624ec66288f63124f49dbf..dbfbdba2e792ea435a008b77e2484d41cce99a42 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -298,7 +298,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
@@ -3148,15 +3175,33 @@ index 74bbba0110094f2fef624ec66288f63124f49dbf..8f860f77aebb16ec914ca61ce5c82abc
              this.setFlag(6, this.aW());
          }
  
-@@ -359,7 +359,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+@@ -359,8 +359,8 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
      // CraftBukkit start
      public void postTick() {
          // No clean way to break out of ticking once the entity has been copied to a new world, so instead we move the portalling later in the tick cycle
 -        if (!this.world.isClientSide && this.world instanceof WorldServer) {
+-            this.world.methodProfiler.a("portal");
 +        if (this.world instanceof WorldServer) { // Reaper - Remove isClientSide check
-             this.world.methodProfiler.a("portal");
++            // this.world.methodProfiler.a("portal"); // Reaper - Remove MethodProfiler
              if (this.ak) {
                  MinecraftServer minecraftserver = this.world.getMinecraftServer();
+ 
+@@ -396,13 +396,13 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+             }
+ 
+             this.I();
+-            this.world.methodProfiler.b();
++            // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+     }
+     // CraftBukkit end
+ 
+     public void Y() {
+-        this.world.methodProfiler.a("entityBaseTick");
++        // this.world.methodProfiler.a("entityBaseTick"); // Reaper - Remove MethodProfiler
+         if (this.isPassenger() && this.bJ().dead) {
+             this.stopRiding();
+         }
 @@ -462,7 +462,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
  
          this.as();
@@ -3166,7 +3211,7 @@ index 74bbba0110094f2fef624ec66288f63124f49dbf..8f860f77aebb16ec914ca61ce5c82abc
              this.extinguish();
          } else if (this.fireTicks > 0) {
              if (this.fireProof) {
-@@ -494,7 +494,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+@@ -494,12 +494,12 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
          this.checkAndDoHeightDamage();
          // Paper end
  
@@ -3174,6 +3219,41 @@ index 74bbba0110094f2fef624ec66288f63124f49dbf..8f860f77aebb16ec914ca61ce5c82abc
 +        if (true) { // Reaper - Remove isClientSide check
              this.setFlag(0, this.fireTicks > 0);
          }
+ 
+         this.justCreated = false;
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     // Paper start - Configurable top of nether void damage
+@@ -648,7 +648,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+                 }
+             }
+ 
+-            this.world.methodProfiler.a("move");
++            // this.world.methodProfiler.a("move"); // Reaper - Remove MethodProfiler
+             double d4 = this.locX;
+             double d5 = this.locY;
+             double d6 = this.locZ;
+@@ -841,8 +841,8 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+                 }
+             }
+ 
+-            this.world.methodProfiler.b();
+-            this.world.methodProfiler.a("rest");
++            // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++            // this.world.methodProfiler.a("rest"); // Reaper - Remove MethodProfiler
+             this.recalcPosition();
+             this.positionChanged = d7 != d0 || d9 != d2;
+             this.B = d1 != d8; // CraftBukkit - decompile error
+@@ -977,7 +977,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+                 this.fireTicks = -this.getMaxFireTicks();
+             }
+ 
+-            this.world.methodProfiler.b();
++            // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+     }
  
 @@ -1170,7 +1170,17 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
      }
@@ -3301,15 +3381,53 @@ index 74bbba0110094f2fef624ec66288f63124f49dbf..8f860f77aebb16ec914ca61ce5c82abc
              this.setFlag(6, this.glowing);
          }
  
-@@ -2406,7 +2420,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+@@ -2406,8 +2420,8 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
  
      @Nullable
      public Entity b(int i) {
 -        if (!this.world.isClientSide && !this.dead) {
+-            this.world.methodProfiler.a("changeDimension");
 +        if (!this.dead) { // Reaper - Remove isClientSide check
-             this.world.methodProfiler.a("changeDimension");
++            // this.world.methodProfiler.a("changeDimension"); // Reaper - Remove MethodProfiler
              MinecraftServer minecraftserver = this.C_();
              // CraftBukkit start - Move logic into new function "teleportTo(Location,boolean)"
+             // int j = this.dimension;
+@@ -2454,7 +2468,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+ 
+             // Need to make sure the profiler state is reset afterwards (but we still want to time the call)
+             Entity entity = this.teleportTo(exit, true);
+-            this.world.methodProfiler.b();
++            // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+             return entity;
+         }
+         return null;
+@@ -2477,7 +2491,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+ 
+             this.world.removeEntity(this); // Paper - Fully remove entity, can't have dupes in the UUID map
+             this.dead = false;
+-            this.world.methodProfiler.a("reposition");
++            // this.world.methodProfiler.a("reposition"); // Reaper - Remove MethodProfiler
+             /* CraftBukkit start - Handled in calculateTarget
+             BlockPosition blockposition;
+ 
+@@ -2513,7 +2527,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+             worldserver1.getMinecraftServer().getPlayerList().repositionEntity(this, exit, portal);
+             // worldserver.entityJoinedWorld(this, false); // Handled in repositionEntity
+             // CraftBukkit end
+-            this.world.methodProfiler.c("reloading");
++            // this.world.methodProfiler.c("reloading"); // Reaper - Remove MethodProfiler
+             Entity entity = EntityTypes.a(this.getClass(), (World) worldserver1);
+ 
+             if (entity != null) {
+@@ -2545,7 +2559,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+             }
+ 
+             this.dead = true;
+-            this.world.methodProfiler.b();
++            // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+             worldserver.m();
+             worldserver1.m();
+             // this.world.methodProfiler.b(); // CraftBukkit: Moved up to keep balanced
 @@ -2785,7 +2799,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
      }
  
@@ -4699,7 +4817,7 @@ index cc0787c968fc00bbf41b7699bd515172bbb0bfe6..4376d57c5fb051711e77d88b698d0360
  
              for (int k = 0; k < j; ++k) {
 diff --git a/src/main/java/net/minecraft/server/EntityInsentient.java b/src/main/java/net/minecraft/server/EntityInsentient.java
-index d6a1933ad723c5e73142d96f1080063e25407759..d2bbcbee581a717152ef119d7fc2f117414fe85d 100644
+index d6a1933ad723c5e73142d96f1080063e25407759..c2c601ffeabe8fe6c65b539e607bd977470f41d3 100644
 --- a/src/main/java/net/minecraft/server/EntityInsentient.java
 +++ b/src/main/java/net/minecraft/server/EntityInsentient.java
 @@ -55,8 +55,11 @@ public abstract class EntityInsentient extends EntityLiving {
@@ -4725,6 +4843,22 @@ index d6a1933ad723c5e73142d96f1080063e25407759..d2bbcbee581a717152ef119d7fc2f117
              this.r();
          }
  
+@@ -185,13 +188,13 @@ public abstract class EntityInsentient extends EntityLiving {
+ 
+     public void Y() {
+         super.Y();
+-        this.world.methodProfiler.a("mobBaseTick");
++        // this.world.methodProfiler.a("mobBaseTick"); // Reaper - Remove MethodProfiler
+         if (this.isAlive() && this.random.nextInt(1000) < this.a_++) {
+             this.p();
+             this.D();
+         }
+ 
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     protected void c(DamageSource damagesource) {
 @@ -228,7 +231,7 @@ public abstract class EntityInsentient extends EntityLiving {
      }
  
@@ -4743,15 +4877,92 @@ index d6a1933ad723c5e73142d96f1080063e25407759..d2bbcbee581a717152ef119d7fc2f117
              this.cZ();
              if (this.ticksLived % 5 == 0) {
                  boolean flag = !(this.bE() instanceof EntityInsentient);
-@@ -507,7 +510,7 @@ public abstract class EntityInsentient extends EntityLiving {
+@@ -506,8 +509,8 @@ public abstract class EntityInsentient extends EntityLiving {
+ 
      public void n() {
          super.n();
-         this.world.methodProfiler.a("looting");
+-        this.world.methodProfiler.a("looting");
 -        if (!this.world.isClientSide && this.cX() && !this.aU && this.world.getGameRules().getBoolean("mobGriefing")) {
++        // this.world.methodProfiler.a("looting"); // Reaper - Remove MethodProfiler
 +        if (this.cX() && !this.aU && this.world.getGameRules().getBoolean("mobGriefing")) { // Reaper - Remove isClientSide check
              List list = this.world.a(EntityItem.class, this.getBoundingBox().grow(1.0D, 0.0D, 1.0D));
              Iterator iterator = list.iterator();
  
+@@ -526,7 +529,7 @@ public abstract class EntityInsentient extends EntityLiving {
+             }
+         }
+ 
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     protected void a(EntityItem entityitem) {
+@@ -654,9 +657,9 @@ public abstract class EntityInsentient extends EntityLiving {
+ 
+     protected final void doTick() {
+         ++this.ticksFarFromPlayer;
+-        this.world.methodProfiler.a("checkDespawn");
++        // this.world.methodProfiler.a("checkDespawn"); // Reaper - Remove MethodProfiler
+         this.L();
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         // Spigot Start
+         if ( this.fromMobSpawner )
+         {
+@@ -669,21 +672,21 @@ public abstract class EntityInsentient extends EntityLiving {
+             return;
+         }
+         // Spigot End
+-        this.world.methodProfiler.a("sensing");
++        // this.world.methodProfiler.a("sensing"); // Reaper - Remove MethodProfiler
+         this.bw.a();
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("targetSelector");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("targetSelector"); // Reaper - Remove MethodProfiler
+         this.targetSelector.a();
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("goalSelector");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("goalSelector"); // Reaper - Remove MethodProfiler
+         this.goalSelector.a();
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("navigation");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("navigation"); // Reaper - Remove MethodProfiler
+         this.navigation.d();
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("mob tick");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("mob tick"); // Reaper - Remove MethodProfiler
+         this.M();
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         if (this.isPassenger() && this.bJ() instanceof EntityInsentient) {
+             EntityInsentient entityinsentient = (EntityInsentient) this.bJ();
+ 
+@@ -691,15 +694,15 @@ public abstract class EntityInsentient extends EntityLiving {
+             entityinsentient.getControllerMove().a(this.getControllerMove());
+         }
+ 
+-        this.world.methodProfiler.a("controls");
+-        this.world.methodProfiler.a("move");
++        // this.world.methodProfiler.a("controls"); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("move"); // Reaper - Remove MethodProfiler
+         this.moveController.a();
+-        this.world.methodProfiler.c("look");
++        // this.world.methodProfiler.c("look"); // Reaper - Remove MethodProfiler
+         this.lookController.a();
+-        this.world.methodProfiler.c("jump");
++        // this.world.methodProfiler.c("jump"); // Reaper - Remove MethodProfiler
+         this.g.b();
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     protected void M() {}
 @@ -810,7 +813,7 @@ public abstract class EntityInsentient extends EntityLiving {
      }
  
@@ -5005,7 +5216,7 @@ index acb3408d574ee33f82372ff0b4fbd49fc9defb29..28fbbfd6a57345c01b3ca0db8d7ee39d
              } else if (!this.d) {
                  double d0 = 3.0D;
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 82c3a84edd7a9408f99873ef8ea1693674786791..858d0cf1715e6db84ac96c76c97b59bd82ed9341 100644
+index 82c3a84edd7a9408f99873ef8ea1693674786791..ac11f50fb2e996f674d07fe068f76dc9560fbb0d 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -66,8 +66,10 @@ public abstract class EntityLiving extends Entity {
@@ -5040,6 +5251,15 @@ index 82c3a84edd7a9408f99873ef8ea1693674786791..858d0cf1715e6db84ac96c76c97b59bd
              float f = (float) MathHelper.f(this.fallDistance - 3.0F);
  
              if (iblockdata.getMaterial() != Material.AIR) {
+@@ -205,7 +207,7 @@ public abstract class EntityLiving extends Entity {
+     public void Y() {
+         this.aC = this.aD;
+         super.Y();
+-        this.world.methodProfiler.a("livingEntityBaseTick");
++        // this.world.methodProfiler.a("livingEntityBaseTick"); // Reaper - Remove MethodProfiler
+         boolean flag = this instanceof EntityHuman;
+ 
+         if (this.isAlive()) {
 @@ -224,7 +226,7 @@ public abstract class EntityLiving extends Entity {
              }
          }
@@ -5081,7 +5301,15 @@ index 82c3a84edd7a9408f99873ef8ea1693674786791..858d0cf1715e6db84ac96c76c97b59bd
                  BlockPosition blockposition = new BlockPosition(this);
  
                  if (!Objects.equal(this.bF, blockposition)) {
-@@ -318,7 +322,7 @@ public abstract class EntityLiving extends Entity {
+@@ -311,14 +315,14 @@ public abstract class EntityLiving extends Entity {
+         this.aQ = this.aP;
+         this.lastYaw = this.yaw;
+         this.lastPitch = this.pitch;
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     // CraftBukkit start
      public int getExpReward() {
          int exp = this.getExpValue(this.killer);
  
@@ -5357,6 +5585,78 @@ index 82c3a84edd7a9408f99873ef8ea1693674786791..858d0cf1715e6db84ac96c76c97b59bd
              int j = aenumitemslot.length;
  
              for (int k = 0; k < j; ++k) {
+@@ -2053,10 +2075,10 @@ public abstract class EntityLiving extends Entity {
+         }
+ 
+         this.aX += (f3 - this.aX) * 0.3F;
+-        this.world.methodProfiler.a("headTurn");
++        // this.world.methodProfiler.a("headTurn"); // Reaper - Remove MethodProfiler
+         f2 = this.g(f1, f2);
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("rangeChecks");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("rangeChecks"); // Reaper - Remove MethodProfiler
+ 
+         while (this.yaw - this.lastYaw < -180.0F) {
+             this.lastYaw -= 360.0F;
+@@ -2090,7 +2112,7 @@ public abstract class EntityLiving extends Entity {
+             this.aQ += 360.0F;
+         }
+ 
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         this.aY += f2;
+         if (this.cP()) {
+             ++this.bq;
+@@ -2160,20 +2182,20 @@ public abstract class EntityLiving extends Entity {
+             this.motZ = 0.0D;
+         }
+ 
+-        this.world.methodProfiler.a("ai");
++        // this.world.methodProfiler.a("ai"); // Reaper - Remove MethodProfiler
+         if (this.isFrozen()) {
+             this.bd = false;
+             this.be = 0.0F;
+             this.bg = 0.0F;
+             this.bh = 0.0F;
+         } else if (this.cC()) {
+-            this.world.methodProfiler.a("newAi");
++            // this.world.methodProfiler.a("newAi"); // Reaper - Remove MethodProfiler
+             this.doTick();
+-            this.world.methodProfiler.b();
++            // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+ 
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("jump");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("jump"); // Reaper - Remove MethodProfiler
+         if (this.bd) {
+             if (this.isInWater()) {
+                 this.cv();
+@@ -2187,17 +2209,17 @@ public abstract class EntityLiving extends Entity {
+             this.bD = 0;
+         }
+ 
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("travel");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("travel"); // Reaper - Remove MethodProfiler
+         this.be *= 0.98F;
+         this.bg *= 0.98F;
+         this.bh *= 0.9F;
+         this.r();
+         this.a(this.be, this.bf, this.bg);
+-        this.world.methodProfiler.b();
+-        this.world.methodProfiler.a("push");
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.world.methodProfiler.a("push"); // Reaper - Remove MethodProfiler
+         this.cB();
+-        this.world.methodProfiler.b();
++        // this.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     private void r() {
 @@ -2208,7 +2230,7 @@ public abstract class EntityLiving extends Entity {
  
              if (itemstack.getItem() == Items.cS && ItemElytra.d(itemstack)) {
@@ -5981,6 +6281,23 @@ index fb56a290178de9329febfa76bf6f8433c5ea878c..2ab94c3c00b055531263cff5fefe32a5
          this.bD = 40;
      }
  
+diff --git a/src/main/java/net/minecraft/server/EntitySenses.java b/src/main/java/net/minecraft/server/EntitySenses.java
+index 141a1ef8d171366300d438bf43f4030daaea60f2..7e6e0bf663bd849b70b5695d1e97e326323a526d 100644
+--- a/src/main/java/net/minecraft/server/EntitySenses.java
++++ b/src/main/java/net/minecraft/server/EntitySenses.java
+@@ -24,10 +24,10 @@ public class EntitySenses {
+         } else if (this.c.contains(entity)) {
+             return false;
+         } else {
+-            this.a.world.methodProfiler.a("canSee");
++            // this.a.world.methodProfiler.a("canSee"); // Reaper - Remove MethodProfiler
+             boolean flag = this.a.hasLineOfSight(entity);
+ 
+-            this.a.world.methodProfiler.b();
++            // this.a.world.methodProfiler.b(); // Reaper - Remove MethodProfiler
+             if (flag) {
+                 this.b.add(entity);
+             } else {
 diff --git a/src/main/java/net/minecraft/server/EntitySheep.java b/src/main/java/net/minecraft/server/EntitySheep.java
 index dd2ecc0230b19f30a24c06a9e90046c22940ab70..94486bee4f4afdd38044c6ca6e304b53702bd3db 100644
 --- a/src/main/java/net/minecraft/server/EntitySheep.java
@@ -7733,7 +8050,7 @@ index 480e2ca972bc9dedc6d77c7f2a2621e01c51f21c..3023ec12bbae5bcc32ecadce0f66d4ba
      }
  }
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..9e3d3228a02600118a4805feb6530ef9cceff578 100644
+index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..65c47bb901bec0c982e853954d94351682f74d68 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -88,7 +88,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
@@ -7763,7 +8080,7 @@ index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..9e3d3228a02600118a4805feb6530ef9
              } catch (Exception exception) {
                  MinecraftServer.LOGGER.error("Couldn\'t load server icon", exception);
              } finally {
-@@ -768,8 +768,10 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -768,11 +768,13 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
          ++this.ticks;
          if (this.T) {
              this.T = false;
@@ -7773,9 +8090,49 @@ index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..9e3d3228a02600118a4805feb6530ef9
 +            */ // Reaper end
          }
  
-         this.methodProfiler.a("root");
-@@ -834,7 +836,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
-         this.methodProfiler.b();
+-        this.methodProfiler.a("root");
++        // this.methodProfiler.a("root"); // Reaper - Remove MethodProfiler
+         this.D();
+         if (i - this.Z >= 5000000000L) {
+             this.Z = i;
+@@ -788,7 +790,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+             this.q.b().a(agameprofile);
+         }
+ 
+-            this.methodProfiler.a("save");
++            // this.methodProfiler.a("save"); // Reaper - Remove MethodProfiler
+ 
+         serverAutoSave = (autosavePeriod > 0 && this.ticks % autosavePeriod == 0); // Paper
+         int playerSaveInterval = com.destroystokyo.paper.PaperConfig.playerAutoSaveRate;
+@@ -810,16 +812,16 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+             server.playerCommandState = false;
+             // this.saveChunks(true);
+             // Spigot End
+-            this.methodProfiler.b();
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         //} // Paper - Incremental Auto Saving
+ 
+-        this.methodProfiler.a("tallying");
++        // this.methodProfiler.a("tallying"); // Reaper - Remove MethodProfiler
+         // Spigot start
+         long tickNanos;
+         this.h[this.ticks % 100] = tickNanos = System.nanoTime() - i;
+         // Spigot end
+-        this.methodProfiler.b();
+-        this.methodProfiler.a("snooper");
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.methodProfiler.a("snooper"); // Reaper - Remove MethodProfiler
+         /* // Reaper start - Remove snooper
+         if (getSnooperEnabled() && !this.m.d() && this.ticks > 100) {  // Spigot
+             this.m.a();
+@@ -830,11 +832,11 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         }
+         */ // Reaper end
+ 
+-        this.methodProfiler.b();
+-        this.methodProfiler.b();
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
  
          org.spigotmc.WatchdogThread.tick(); // Spigot
 -        PaperLightingQueue.processQueue(startTime); // Paper
@@ -7783,7 +8140,94 @@ index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..9e3d3228a02600118a4805feb6530ef9
          this.slackActivityAccountant.tickEnded(tickNanos); // Spigot
          co.aikar.timings.TimingsManager.FULL_SERVER_TICK.stopTiming(); // Paper
      }
-@@ -1167,7 +1169,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -844,7 +846,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         this.server.getScheduler().mainThreadHeartbeat(this.ticks); // CraftBukkit
+         MinecraftTimings.bukkitSchedulerTimer.stopTiming(); // Paper
+         MinecraftTimings.minecraftSchedulerTimer.startTiming(); // Paper
+-        this.methodProfiler.a("jobs");
++        // this.methodProfiler.a("jobs"); // Reaper - Remove MethodProfiler
+         Queue queue = this.j;
+ 
+         // Spigot start
+@@ -856,7 +858,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         // Spigot end
+         MinecraftTimings.minecraftSchedulerTimer.stopTiming(); // Paper
+ 
+-        this.methodProfiler.c("levels");
++        // this.methodProfiler.c("levels"); // Reaper - Remove MethodProfiler
+ 
+         // CraftBukkit start
+         // Run tasks that are waiting on processing
+@@ -889,9 +891,11 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                 WorldServer worldserver = this.worlds.get(i);
+                 TileEntityHopper.skipHopperEvents = worldserver.paperConfig.disableHopperMoveEvents || org.bukkit.event.inventory.InventoryMoveItemEvent.getHandlerList().getRegisteredListeners().length == 0;
+ 
++                /* // Reaper start - Remove MethodProfiler
+                 this.methodProfiler.a(() -> {
+                     return worldserver.getWorldData().getName();
+                 });
++                */ // Reaper end
+                 /* Drop global time updates
+                 if (this.ticks % 20 == 0) {
+                     this.methodProfiler.a("timeSync");
+@@ -900,7 +904,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                 }
+                 // CraftBukkit end */
+ 
+-                this.methodProfiler.a("tick");
++                // this.methodProfiler.a("tick"); // Reaper - Remove MethodProfiler
+ 
+                 CrashReport crashreport;
+ 
+@@ -936,30 +940,30 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                     throw new ReportedException(crashreport);
+                 }
+ 
+-                this.methodProfiler.b();
+-                this.methodProfiler.a("tracker");
++                // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++                // this.methodProfiler.a("tracker"); // Reaper - Remove MethodProfiler
+                 worldserver.getTracker().updatePlayers();
+-                this.methodProfiler.b();
+-                this.methodProfiler.b();
++                // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++                // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                 worldserver.explosionDensityCache.clear(); // Paper - Optimize explosions
+             // } // CraftBukkit
+ 
+             // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
+         }
+ 
+-        this.methodProfiler.c("connection");
++        // this.methodProfiler.c("connection"); // Reaper - Remove MethodProfiler
+         MinecraftTimings.connectionTimer.startTiming(); // Spigot
+         this.an().c();
+         MinecraftTimings.connectionTimer.stopTiming(); // Spigot
+-        this.methodProfiler.c("players");
++        // this.methodProfiler.c("players"); // Reaper - Remove MethodProfiler
+         MinecraftTimings.playerListTimer.startTiming(); // Spigot
+         this.v.tick();
+         MinecraftTimings.playerListTimer.stopTiming(); // Spigot
+-        this.methodProfiler.c("commandFunctions");
++        // this.methodProfiler.c("commandFunctions"); // Reaper - Remove MethodProfiler
+         MinecraftTimings.commandFunctionsTimer.startTiming(); // Spigot
+         this.aL().e();
+         MinecraftTimings.commandFunctionsTimer.stopTiming(); // Spigot
+-        this.methodProfiler.c("tickables");
++        // this.methodProfiler.c("tickables"); // Reaper - Remove MethodProfiler
+ 
+         MinecraftTimings.tickablesTimer.startTiming(); // Spigot
+         for (i = 0; i < this.o.size(); ++i) {
+@@ -967,7 +971,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         }
+         MinecraftTimings.tickablesTimer.stopTiming(); // Spigot
+ 
+-        this.methodProfiler.b();
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     public boolean getAllowNether() {
+@@ -1167,7 +1171,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
      public CrashReport b(CrashReport crashreport) {
          crashreport.g().a("Profiler Position", new CrashReportCallable() {
              public String a() throws Exception {
@@ -7792,7 +8236,7 @@ index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..9e3d3228a02600118a4805feb6530ef9
              }
  
              public Object call() throws Exception {
-@@ -1272,15 +1274,15 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -1272,15 +1276,15 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
      }
  
      public String Q() {
@@ -7811,7 +8255,7 @@ index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..9e3d3228a02600118a4805feb6530ef9
      }
  
      public String S() {
-@@ -1308,7 +1310,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -1308,7 +1312,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
                  if (worldserver.getWorldData().isHardcore()) {
                      worldserver.getWorldData().setDifficulty(EnumDifficulty.HARD);
                      worldserver.setSpawnFlags(true, true);
@@ -7927,9 +8371,41 @@ index 8f3b93dc1b269fd07b8bda1e45020722d3411c94..beed783a40a1b39f287e240744172cc2
  
                  if (s.toLowerCase(Locale.ROOT).endsWith(".dat")) {
 diff --git a/src/main/java/net/minecraft/server/NavigationAbstract.java b/src/main/java/net/minecraft/server/NavigationAbstract.java
-index 935b2e81e5fe67bf03cd006630370599ca0114aa..2de971ee4e381b823c19e5cf8f7b25090a407660 100644
+index 935b2e81e5fe67bf03cd006630370599ca0114aa..f614126c8db0d152449b7b2bf18fd57a9ebff4da 100644
 --- a/src/main/java/net/minecraft/server/NavigationAbstract.java
 +++ b/src/main/java/net/minecraft/server/NavigationAbstract.java
+@@ -79,13 +79,13 @@ public abstract class NavigationAbstract {
+             this.q = blockposition;
+             float f = this.i();
+ 
+-            this.b.methodProfiler.a("pathfind");
++            // this.b.methodProfiler.a("pathfind"); // Reaper - Remove MethodProfiler
+             BlockPosition blockposition1 = new BlockPosition(this.a);
+             int i = (int) (f + 8.0F);
+             ChunkCache chunkcache = new ChunkCache(this.b, blockposition1.a(-i, -i, -i), blockposition1.a(i, i, i), 0);
+             PathEntity pathentity = this.r.a(chunkcache, this.a, this.q, f);
+ 
+-            this.b.methodProfiler.b();
++            // this.b.methodProfiler.b(); // Reaper - Remove MethodProfiler
+             return pathentity;
+         }
+     }
+@@ -105,13 +105,13 @@ public abstract class NavigationAbstract {
+                 this.q = blockposition;
+                 float f = this.i();
+ 
+-                this.b.methodProfiler.a("pathfind");
++                // this.b.methodProfiler.a("pathfind"); // Reaper - Remove MethodProfiler
+                 BlockPosition blockposition1 = (new BlockPosition(this.a)).up();
+                 int i = (int) (f + 16.0F);
+                 ChunkCache chunkcache = new ChunkCache(this.b, blockposition1.a(-i, -i, -i), blockposition1.a(i, i, i), 0);
+                 PathEntity pathentity = this.r.a(chunkcache, this.a, entity, f);
+ 
+-                this.b.methodProfiler.b();
++                // this.b.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                 return pathentity;
+             }
+         }
 @@ -228,7 +228,7 @@ public abstract class NavigationAbstract {
          int i1 = k;
  
@@ -8050,6 +8526,40 @@ index fd5544f433d3340170f6b0b62afb6a1a0ede7f0b..8ad9e49a4c43955cb87b67aad95c51f7
          if (list.isEmpty()) {
              return false;
          } else {
+diff --git a/src/main/java/net/minecraft/server/PathfinderGoalSelector.java b/src/main/java/net/minecraft/server/PathfinderGoalSelector.java
+index c15961602ce6bf2817ca9c6144c1dd9b31794175..2c2b08756bedbb08302cb12b382e2967e260b34a 100644
+--- a/src/main/java/net/minecraft/server/PathfinderGoalSelector.java
++++ b/src/main/java/net/minecraft/server/PathfinderGoalSelector.java
+@@ -50,7 +50,7 @@ public class PathfinderGoalSelector {
+     }
+ 
+     public void a() {
+-        this.d.a("goalSetup");
++        // this.d.a("goalSetup"); // Reaper - Remove MethodProfiler
+         Iterator iterator;
+         PathfinderGoalSelector.PathfinderGoalSelectorItem pathfindergoalselector_pathfindergoalselectoritem;
+ 
+@@ -84,9 +84,9 @@ public class PathfinderGoalSelector {
+             }
+         }
+ 
+-        this.d.b();
++        // this.d.b(); // Reaper - Remove MethodProfiler
+         if (!this.c.isEmpty()) {
+-            this.d.a("goalTick");
++            // this.d.a("goalTick"); // Reaper - Remove MethodProfiler
+             iterator = this.c.iterator();
+ 
+             while (iterator.hasNext()) {
+@@ -94,7 +94,7 @@ public class PathfinderGoalSelector {
+                 pathfindergoalselector_pathfindergoalselectoritem.a.e();
+             }
+ 
+-            this.d.b();
++            // this.d.b(); // Reaper - Remove MethodProfiler
+         }
+ 
+     }
 diff --git a/src/main/java/net/minecraft/server/PathfinderGoalTargetNearestPlayer.java b/src/main/java/net/minecraft/server/PathfinderGoalTargetNearestPlayer.java
 index 63afc4372b3b223efab8272f0bf9dbea94e0aff1..e462dd4f39fd0566474bb549c6892cd10f7f3f42 100644
 --- a/src/main/java/net/minecraft/server/PathfinderGoalTargetNearestPlayer.java
@@ -8130,7 +8640,7 @@ index 99652ae3ed9fffe9a2a8310465b948d504b0595f..83c4411ffc42625656d05eace3e3c680
                      this.c(pair.x, pair.z).a(entityplayer);
                  }
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 59d5263295ec57981fb8a9cbab34a00bce904f70..26f881e9f3bc2ec29f19f0cc283221372d847011 100644
+index 59d5263295ec57981fb8a9cbab34a00bce904f70..49e4c15330b9e7618722268b194cacdab79d9393 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -153,7 +153,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
@@ -8142,6 +8652,24 @@ index 59d5263295ec57981fb8a9cbab34a00bce904f70..26f881e9f3bc2ec29f19f0cc28322137
              this.C = 0;
          }
  
+@@ -181,7 +181,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+             this.E = 0;
+         }
+ 
+-        this.minecraftServer.methodProfiler.a("keepAlive");
++        // this.minecraftServer.methodProfiler.a("keepAlive"); // Reaper - Remove MethodProfiler
+         // Paper Start - give clients a longer time to respond to pings as per pre 1.12.2 timings
+         // This should effectively place the keepalive handling back to "as it was" before 1.12.2
+         long currentTime = this.getCurrentMillis();
+@@ -202,7 +202,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+         }
+         // Paper end
+ 
+-        this.minecraftServer.methodProfiler.b();
++        // this.minecraftServer.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         // CraftBukkit start
+         for (int spam; (spam = this.chatThrottle) > 0 && !chatSpamField.compareAndSet(this, spam, spam - 1); ) ;
+         if (tabSpamLimiter.get() > 0) tabSpamLimiter.getAndDecrement(); // Paper - split to seperate variable
 @@ -350,7 +350,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
                  }
                  // Paper end
@@ -8353,7 +8881,7 @@ index 84f59b7501b111a3af551f3bcdf2d80fc35f89b1..9cb13774783704251e82d05b6d921cc1
                  } else if (j >= 100 && j < this.armor.size() + 100) {
                      this.armor.set(j - 100, itemstack);
 diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
-index 80e9c9200c2afc3005c6a8bc5f5140eab71f4a40..1cb91fd011b529644c3a0312642c7d7772087491 100644
+index 80e9c9200c2afc3005c6a8bc5f5140eab71f4a40..b665611e2143e1869daf72be95deff66b8f7818b 100644
 --- a/src/main/java/net/minecraft/server/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/PlayerList.java
 @@ -67,8 +67,10 @@ public abstract class PlayerList {
@@ -8378,6 +8906,66 @@ index 80e9c9200c2afc3005c6a8bc5f5140eab71f4a40..1cb91fd011b529644c3a0312642c7d77
          this.b(entityplayer, i);
      }
  
+@@ -885,7 +889,7 @@ public abstract class PlayerList {
+         float f = entity.yaw;
+         */
+ 
+-        worldserver.methodProfiler.a("moving");
++        // worldserver.methodProfiler.a("moving"); // Reaper - Remove MethodProfiler
+         if (worldserver1.dimension == -1) {
+             d0 = MathHelper.a(d0 / d2, worldserver1.getWorldBorder().b()+ 16.0D, worldserver1.getWorldBorder().d() - 16.0D);
+             d1 = MathHelper.a(d1 / d2, worldserver1.getWorldBorder().c() + 16.0D, worldserver1.getWorldBorder().e() - 16.0D);
+@@ -926,9 +930,9 @@ public abstract class PlayerList {
+             */
+         }
+ 
+-        worldserver.methodProfiler.b();
++        // worldserver.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         if (i != 1) {
+-            worldserver.methodProfiler.a("placing");
++            // worldserver.methodProfiler.a("placing"); // Reaper - Remove MethodProfiler
+             d0 = (double) MathHelper.clamp((int) d0, -29999872, 29999872);
+             d1 = (double) MathHelper.clamp((int) d1, -29999872, 29999872);
+             /*
+@@ -940,7 +944,7 @@ public abstract class PlayerList {
+             }
+             */
+ 
+-            worldserver.methodProfiler.b();
++            // worldserver.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+ 
+         // entity.spawnIn(worldserver1);
+@@ -960,7 +964,7 @@ public abstract class PlayerList {
+         float f = entity.yaw;
+         */
+ 
+-        worldserver.methodProfiler.a("moving");
++        // worldserver.methodProfiler.a("moving"); // Reaper - Remove MethodProfiler
+         entity.setPositionRotation(exit.getX(), exit.getY(), exit.getZ(), exit.getYaw(), exit.getPitch());
+         if (entity.isAlive()) {
+             worldserver.entityJoinedWorld(entity, false);
+@@ -1001,9 +1005,9 @@ public abstract class PlayerList {
+         }
+         */
+ 
+-        worldserver.methodProfiler.b();
++        // worldserver.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         if (i != 1) {
+-            worldserver.methodProfiler.a("placing");
++            // worldserver.methodProfiler.a("placing"); // Reaper - Remove MethodProfiler
+             /*
+             d0 = (double) MathHelper.clamp((int) d0, -29999872, 29999872);
+             d1 = (double) MathHelper.clamp((int) d1, -29999872, 29999872);
+@@ -1023,7 +1027,7 @@ public abstract class PlayerList {
+                 worldserver1.entityJoinedWorld(entity, false);
+             }
+ 
+-            worldserver.methodProfiler.b();
++            // worldserver.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+ 
+         entity.spawnIn(worldserver1);
 @@ -1060,7 +1064,7 @@ public abstract class PlayerList {
      public void sendAll(Packet packet, EntityHuman entityhuman) {
          for (int i = 0; i < this.players.size(); ++i) {
@@ -9037,7 +9625,7 @@ index 6a750c25eb8f5cefef68358135134d5831c71081..8d75289cd76d8a101d9b8a1bee93ad4b
  
          //if (this.e.containsKey(uuid)) { // Paper
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec56ee3c71c 100644
+index 39c259cba65c5734e5c7e907c52600589a11cfb2..2eca9cfb278ebcf04a47d47075bdfdb8ea30b5f8 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -102,7 +102,7 @@ public abstract class World implements IBlockAccess {
@@ -9072,6 +9660,18 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
  
              // CraftBukkit start - capture blockstates
              BlockState blockstate = null;
+@@ -407,9 +407,9 @@ public abstract class World implements IBlockAccess {
+                 return false;
+             } else {
+                 if (iblockdata.c() != iblockdata1.c() || iblockdata.d() != iblockdata1.d()) {
+-                    this.methodProfiler.a("checkLight");
++                    // this.methodProfiler.a("checkLight"); // Reaper - Remove MethodProfiler
+                     chunk.runOrQueueLightUpdate(() -> this.w(blockposition)); // Paper - Queue light update
+-                    this.methodProfiler.b();
++                    // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                 }
+ 
+                 /*
 @@ -441,16 +441,16 @@ public abstract class World implements IBlockAccess {
  
      // CraftBukkit start - Split off from above in order to directly send client and physic updates
@@ -9150,6 +9750,17 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                  return chunk.w();
              }
          } else {
+@@ -1473,8 +1478,8 @@ public abstract class World implements IBlockAccess {
+     public void b(BlockPosition blockposition, Block block, int i, int j) {}
+ 
+     public void tickEntities() {
+-        this.methodProfiler.a("entities");
+-        this.methodProfiler.a("global");
++        // this.methodProfiler.a("entities"); // Reaper - Remove MethodProfiler
++        // this.methodProfiler.a("global"); // Reaper - Remove MethodProfiler
+ 
+         int i;
+         Entity entity;
 @@ -1494,7 +1499,7 @@ public abstract class World implements IBlockAccess {
                  CrashReport crashreport = CrashReport.a(throwable, "Ticking entity");
                  CrashReportSystemDetails crashreportsystemdetails = crashreport.a("Entity being ticked");
@@ -9159,6 +9770,24 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                      crashreportsystemdetails.a("Entity", (Object) "~~NULL~~");
                  } else {
                      entity.appendEntityCrashDetails(crashreportsystemdetails);
+@@ -1508,7 +1513,7 @@ public abstract class World implements IBlockAccess {
+             }
+         }
+ 
+-        this.methodProfiler.c("remove");
++        // this.methodProfiler.c("remove"); // Reaper - Remove MethodProfiler
+         timings.entityRemoval.startTiming(); // Paper
+         this.entityList.removeAll(this.f);
+ 
+@@ -1534,7 +1539,7 @@ public abstract class World implements IBlockAccess {
+         this.f.clear();
+         this.l();
+         timings.entityRemoval.stopTiming(); // Paper
+-        this.methodProfiler.c("regular");
++        // this.methodProfiler.c("regular"); // Reaper - Remove MethodProfiler
+ 
+         CrashReportSystemDetails crashreportsystemdetails1;
+         CrashReport crashreport1;
 @@ -1549,7 +1554,7 @@ public abstract class World implements IBlockAccess {
          //if (tickPosition < 0) tickPosition = 0;
          for (tickPosition = 0; tickPosition < entityList.size(); tickPosition++) {
@@ -9168,6 +9797,41 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
              entity = (Entity) this.entityList.get(this.tickPosition);
              // CraftBukkit end
              Entity entity1 = entity.bJ();
+@@ -1562,7 +1567,7 @@ public abstract class World implements IBlockAccess {
+                 entity.stopRiding();
+             }
+ 
+-            this.methodProfiler.a("tick");
++            // this.methodProfiler.a("tick"); // Reaper - Remove MethodProfiler
+             if (!entity.dead && !(entity instanceof EntityPlayer)) {
+                 try {
+                     entity.tickTimer.startTiming(); // Paper
+@@ -1581,8 +1586,8 @@ public abstract class World implements IBlockAccess {
+                 }
+             }
+ 
+-            this.methodProfiler.b();
+-            this.methodProfiler.a("remove");
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++            // this.methodProfiler.a("remove"); // Reaper - Remove MethodProfiler
+             if (entity.dead) {
+                 // Paper start
+                 /*
+@@ -1602,12 +1607,12 @@ public abstract class World implements IBlockAccess {
+                 this.c(entity);
+             }
+ 
+-            this.methodProfiler.b();
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+         guardEntityList = false; // Spigot
+ 
+         timings.entityTick.stopTiming(); // Spigot
+-        this.methodProfiler.c("blockEntities");
++        // this.methodProfiler.c("blockEntities"); // Reaper - Remove MethodProfiler
+         timings.tileEntityTick.startTiming(); // Spigot
+         if (!this.tileEntityListUnload.isEmpty()) {
+             // Paper start - Use alternate implementation with faster contains
 @@ -1624,7 +1629,7 @@ public abstract class World implements IBlockAccess {
          // Iterator iterator = this.tileEntityListTick.iterator();
          int tilesThisCycle = 0;
@@ -9177,7 +9841,43 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
              TileEntity tileentity = (TileEntity) this.tileEntityListTick.get(tileTickPosition);
              // Spigot start
              if (tileentity == null) {
-@@ -1733,7 +1738,7 @@ public abstract class World implements IBlockAccess {
+@@ -1646,12 +1651,14 @@ public abstract class World implements IBlockAccess {
+                 if (shouldTick && this.P.a(blockposition)) {
+                     // Paper end
+                     try {
++                        /* // Reaper start - Remove MethodProfiler
+                         this.methodProfiler.a(() -> {
+                             return String.valueOf(TileEntity.a(tileentity.getClass()));
+                         });
++                        */ // Reaper end
+                         tileentity.tickTimer.startTiming(); // Spigot
+                         ((ITickable) tileentity).e();
+-                        this.methodProfiler.b();
++                        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                     } catch (Throwable throwable2) {
+                         // Paper start - Prevent tile entity and entity crashes
+                         String msg = "TileEntity threw exception at " + tileentity.world.getWorld().getName() + ":" + tileentity.position.getX() + "," + tileentity.position.getY() + "," + tileentity.position.getZ();
+@@ -1687,7 +1694,7 @@ public abstract class World implements IBlockAccess {
+         timings.tileEntityTick.stopTiming(); // Spigot
+         timings.tileEntityPending.startTiming(); // Spigot
+         this.O = false;
+-        this.methodProfiler.c("pendingBlockEntities");
++        // this.methodProfiler.c("pendingBlockEntities"); // Reaper - Remove MethodProfiler
+         if (!this.b.isEmpty()) {
+             for (int i1 = 0; i1 < this.b.size(); ++i1) {
+                 TileEntity tileentity1 = (TileEntity) this.b.get(i1);
+@@ -1720,8 +1727,8 @@ public abstract class World implements IBlockAccess {
+ 
+         timings.tileEntityPending.stopTiming(); // Spigot
+         co.aikar.timings.TimingHistory.tileEntityTicks += this.tileEntityListTick.size(); // Paper
+-        this.methodProfiler.b();
+-        this.methodProfiler.b();
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
+ 
+     protected void l() {}
+@@ -1733,7 +1740,7 @@ public abstract class World implements IBlockAccess {
              this.tileEntityListTick.add(tileentity);
          }
  
@@ -9186,7 +9886,25 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
              BlockPosition blockposition = tileentity.getPosition();
              IBlockData iblockdata = this.getType(blockposition);
  
-@@ -2068,12 +2073,18 @@ public abstract class World implements IBlockAccess {
+@@ -1794,7 +1801,7 @@ public abstract class World implements IBlockAccess {
+             }
+         }
+ 
+-        this.methodProfiler.a("chunkCheck");
++        // this.methodProfiler.a("chunkCheck"); // Reaper - Remove MethodProfiler
+         if (Double.isNaN(entity.locX) || Double.isInfinite(entity.locX)) {
+             entity.locX = entity.M;
+         }
+@@ -1831,7 +1838,7 @@ public abstract class World implements IBlockAccess {
+             }
+         }
+ 
+-        this.methodProfiler.b();
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         if (flag && entity.aa) {
+             Iterator iterator = entity.bF().iterator();
+ 
+@@ -2068,12 +2075,18 @@ public abstract class World implements IBlockAccess {
          double d0 = 1.0D / ((axisalignedbb.d - axisalignedbb.a) * 2.0D + 1.0D);
          double d1 = 1.0D / ((axisalignedbb.e - axisalignedbb.b) * 2.0D + 1.0D);
          double d2 = 1.0D / ((axisalignedbb.f - axisalignedbb.c) * 2.0D + 1.0D);
@@ -9205,7 +9923,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
  
              for (float f = 0.0F; f <= 1.0F; f = (float) ((double) f + d0)) {
                  for (float f1 = 0.0F; f1 <= 1.0F; f1 = (float) ((double) f1 + d1)) {
-@@ -2115,9 +2126,10 @@ public abstract class World implements IBlockAccess {
+@@ -2115,9 +2128,10 @@ public abstract class World implements IBlockAccess {
              return null;
          } else {
              // CraftBukkit start
@@ -9219,7 +9937,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
              // CraftBukkit end
  
              TileEntity tileentity = null;
-@@ -2260,7 +2272,7 @@ public abstract class World implements IBlockAccess {
+@@ -2260,7 +2274,7 @@ public abstract class World implements IBlockAccess {
  
      protected void t() {
          if (this.worldProvider.m()) {
@@ -9228,7 +9946,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                  boolean flag = this.getGameRules().getBoolean("doWeatherCycle");
  
                  if (flag) {
-@@ -2407,7 +2419,7 @@ public abstract class World implements IBlockAccess {
+@@ -2407,7 +2421,7 @@ public abstract class World implements IBlockAccess {
          boolean flag = false;
  
          if (this.worldProvider.m()) {
@@ -9237,7 +9955,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
          }
  
          flag |= this.c(EnumSkyBlock.BLOCK, blockposition);
-@@ -2438,7 +2450,7 @@ public abstract class World implements IBlockAccess {
+@@ -2438,7 +2452,7 @@ public abstract class World implements IBlockAccess {
                  BlockPosition.PooledBlockPosition blockposition_pooledblockposition = BlockPosition.PooledBlockPosition.s();
  
                  try {
@@ -9246,7 +9964,16 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                      int k = aenumdirection.length;
  
                      for (int l = 0; l < k; ++l) {
-@@ -2513,7 +2525,7 @@ public abstract class World implements IBlockAccess {
+@@ -2476,7 +2490,7 @@ public abstract class World implements IBlockAccess {
+             int i = 0;
+             int j = 0;
+ 
+-            this.methodProfiler.a("getBrightness");
++            // this.methodProfiler.a("getBrightness"); // Reaper - Remove MethodProfiler
+             int k = this.getBrightness(enumskyblock, blockposition);
+             int l = this.a(blockposition, enumskyblock);
+             int i1 = blockposition.getX();
+@@ -2513,7 +2527,7 @@ public abstract class World implements IBlockAccess {
                              k3 = MathHelper.a(k2 - k1);
                              if (i3 + j3 + k3 < 17) {
                                  BlockPosition.PooledBlockPosition blockposition_pooledblockposition = BlockPosition.PooledBlockPosition.s();
@@ -9255,7 +9982,27 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                                  int i4 = aenumdirection.length;
  
                                  for (int j4 = 0; j4 < i4; ++j4) {
-@@ -2621,8 +2633,11 @@ public abstract class World implements IBlockAccess {
+@@ -2540,8 +2554,8 @@ public abstract class World implements IBlockAccess {
+                 i = 0;
+             }
+ 
+-            this.methodProfiler.b();
+-            this.methodProfiler.a("checkedPosition < toCheckCount");
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++            // this.methodProfiler.a("checkedPosition < toCheckCount"); // Reaper - Remove MethodProfiler
+ 
+             while (i < j) {
+                 l1 = this.J[i++];
+@@ -2589,7 +2603,7 @@ public abstract class World implements IBlockAccess {
+                 }
+             }
+ 
+-            this.methodProfiler.b();
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+             return true;
+         }
+     }
+@@ -2621,8 +2635,11 @@ public abstract class World implements IBlockAccess {
  
          for (int i1 = i; i1 <= j; ++i1) {
              for (int j1 = k; j1 <= l; ++j1) {
@@ -9269,7 +10016,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                  }
              }
          }
-@@ -2674,8 +2689,11 @@ public abstract class World implements IBlockAccess {
+@@ -2674,8 +2691,11 @@ public abstract class World implements IBlockAccess {
  
          for (int i1 = i; i1 < j; ++i1) {
              for (int j1 = k; j1 < l; ++j1) {
@@ -9283,7 +10030,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                  }
              }
          }
-@@ -2819,7 +2837,7 @@ public abstract class World implements IBlockAccess {
+@@ -2819,7 +2839,7 @@ public abstract class World implements IBlockAccess {
                              return i;
                          } else {
                              i = Math.max(i, this.getBlockPower(blockposition.east(), EnumDirection.EAST));
@@ -9292,7 +10039,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
                          }
                      }
                  }
-@@ -2843,7 +2861,7 @@ public abstract class World implements IBlockAccess {
+@@ -2843,7 +2863,7 @@ public abstract class World implements IBlockAccess {
  
      public int z(BlockPosition blockposition) {
          int i = 0;
@@ -9301,7 +10048,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
          int j = aenumdirection.length;
  
          for (int k = 0; k < j; ++k) {
-@@ -3063,7 +3081,7 @@ public abstract class World implements IBlockAccess {
+@@ -3063,7 +3083,7 @@ public abstract class World implements IBlockAccess {
      // Calls the method that checks to see if players are sleeping
      // Called by CraftPlayer.setPermanentSleeping()
      public void checkSleepStatus() {
@@ -9310,7 +10057,7 @@ index 39c259cba65c5734e5c7e907c52600589a11cfb2..85c76450eeaa386104cb298a3c33bec5
              this.everyoneSleeping();
          }
      }
-@@ -3282,13 +3300,16 @@ public abstract class World implements IBlockAccess {
+@@ -3282,13 +3302,16 @@ public abstract class World implements IBlockAccess {
  
      public boolean shouldStayLoaded(int i,  int j) { return e(i, j); } // Paper - OBFHELPER
      public boolean e(int i, int j) {
@@ -9590,7 +10337,7 @@ index 35d8d1a6e77ce070b4b1c85e8fdb0edca768dcf7..902dc7f8c326b87d5912b5f98100af2a
  
      public boolean canSpawn(int i, int j) {
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index e545e9764a4aa117896ca1b3e55d2613642d7244..488d435d94867d91337fd4a1c2dc45abf4596298 100644
+index e545e9764a4aa117896ca1b3e55d2613642d7244..9180ddae84451e9d60c360639e89824d7662ab85 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -233,10 +233,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -9606,8 +10353,12 @@ index e545e9764a4aa117896ca1b3e55d2613642d7244..488d435d94867d91337fd4a1c2dc45ab
          } else if (type == Blocks.BED) {
              if (!(result instanceof TileEntityBed)) {
                  result = fixTileEntity(pos, type, result);
-@@ -297,7 +299,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
-         this.methodProfiler.a("mobSpawner");
+@@ -294,10 +296,10 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+             this.f();
+         }
+ 
+-        this.methodProfiler.a("mobSpawner");
++        // this.methodProfiler.a("mobSpawner"); // Reaper - Remove MethodProfiler
          // CraftBukkit start - Only call spawner if we have players online and the world allows for mobs or animals
          long time = this.worldData.getTime();
 -        if (this.getGameRules().getBoolean("doMobSpawning") && this.worldData.getType() != WorldType.DEBUG_ALL_BLOCK_STATES && (this.allowMonsters || this.allowAnimals) && (this instanceof WorldServer && this.players.size() > 0)) {
@@ -9615,6 +10366,50 @@ index e545e9764a4aa117896ca1b3e55d2613642d7244..488d435d94867d91337fd4a1c2dc45ab
              timings.mobSpawn.startTiming(); // Spigot
              this.spawnerCreature.a(this, this.allowMonsters && (this.ticksPerMonsterSpawns != 0 && time % this.ticksPerMonsterSpawns == 0L), this.allowAnimals && (this.ticksPerAnimalSpawns != 0 && time % this.ticksPerAnimalSpawns == 0L), this.worldData.getTime() % 400L == 0L);
              timings.mobSpawn.stopTiming(); // Spigot
+@@ -305,7 +307,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+         }
+ 
+         timings.doChunkUnload.startTiming(); // Spigot
+-        this.methodProfiler.c("chunkSource");
++        // this.methodProfiler.c("chunkSource"); // Reaper - Remove MethodProfiler
+         this.chunkProvider.unloadChunks();
+         int j = this.a(1.0F);
+ 
+@@ -319,28 +321,28 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+         }
+ 
+         timings.doChunkUnload.stopTiming(); // Spigot
+-        this.methodProfiler.c("tickPending");
++        // this.methodProfiler.c("tickPending"); // Reaper - Remove MethodProfiler
+         timings.scheduledBlocks.startTiming(); // Paper
+         this.a(false);
+         timings.scheduledBlocks.stopTiming(); // Paper
+-        this.methodProfiler.c("tickBlocks");
++        // this.methodProfiler.c("tickBlocks"); // Reaper - Remove MethodProfiler
+         timings.chunkTicks.startTiming(); // Paper
+         this.j();
+         timings.chunkTicks.stopTiming(); // Paper
+-        this.methodProfiler.c("chunkMap");
++        // this.methodProfiler.c("chunkMap"); // Reaper - Remove MethodProfiler
+         timings.doChunkMap.startTiming(); // Spigot
+         this.manager.flush();
+         timings.doChunkMap.stopTiming(); // Spigot
+-        this.methodProfiler.c("village");
++        // this.methodProfiler.c("village"); // Reaper - Remove MethodProfiler
+         timings.doVillages.startTiming(); // Spigot
+         this.villages.tick();
+         if (paperConfig.villageSiegesEnabled) { this.siegeManager.a(); } // Paper - Allow disabling village sieges
+         timings.doVillages.stopTiming(); // Spigot
+-        this.methodProfiler.c("portalForcer");
++        // this.methodProfiler.c("portalForcer"); // Reaper - Remove MethodProfiler
+         timings.doPortalForcer.startTiming(); // Spigot
+         this.portalTravelAgent.a(this.getTime());
+         timings.doPortalForcer.stopTiming(); // Spigot
+-        this.methodProfiler.b();
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         timings.doSounds.startTiming(); // Spigot
+         this.aq();
+         timings.doSounds.stopTiming(); // Spigot
 @@ -422,7 +424,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
      }
  
@@ -9624,7 +10419,22 @@ index e545e9764a4aa117896ca1b3e55d2613642d7244..488d435d94867d91337fd4a1c2dc45ab
              Iterator iterator = this.players.iterator();
  
              // CraftBukkit - This allows us to assume that some people are in bed but not really, allowing time to pass in spite of AFKers
-@@ -471,7 +473,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+@@ -455,7 +457,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+     }
+ 
+     protected void i() {
+-        this.methodProfiler.a("playerCheckLight");
++        // this.methodProfiler.a("playerCheckLight"); // Reaper - Remove MethodProfiler
+         if (spigotConfig.randomLightUpdates && !this.players.isEmpty()) { // Spigot
+             int i = this.random.nextInt(this.players.size());
+             EntityHuman entityhuman = (EntityHuman) this.players.get(i);
+@@ -466,12 +468,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+             this.w(new BlockPosition(j, k, l));
+         }
+ 
+-        this.methodProfiler.b();
++        // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+     }
  
      protected void j() {
          this.i();
@@ -9633,6 +10443,66 @@ index e545e9764a4aa117896ca1b3e55d2613642d7244..488d435d94867d91337fd4a1c2dc45ab
              Iterator iterator = this.manager.b();
  
              while (iterator.hasNext()) {
+@@ -483,20 +485,20 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+             boolean flag = this.isRaining();
+             boolean flag1 = this.X();
+ 
+-            this.methodProfiler.a("pollingChunks");
++            // this.methodProfiler.a("pollingChunks"); // Reaper - Remove MethodProfiler
+ 
+-            for (Iterator iterator1 = this.manager.b(); iterator1.hasNext(); this.methodProfiler.b()) {
+-                this.methodProfiler.a("getChunk");
++            for (Iterator iterator1 = this.manager.b(); iterator1.hasNext(); /*this.methodProfiler.b()*/) { // Reaper - Remove MethodProfiler
++                // this.methodProfiler.a("getChunk"); // Reaper - Remove MethodProfiler
+                 Chunk chunk = (Chunk) iterator1.next();
+                 int j = chunk.locX * 16;
+                 int k = chunk.locZ * 16;
+ 
+-                this.methodProfiler.c("checkNextLight");
++                // this.methodProfiler.c("checkNextLight"); // Reaper - Remove MethodProfiler
+                 chunk.n();
+-                this.methodProfiler.c("tickChunk");
++                // this.methodProfiler.c("tickChunk"); // Reaper - Remove MethodProfiler
+                 chunk.b(false);
+                 if ( !chunk.areNeighborsLoaded( 1 ) ) continue; // Spigot
+-                this.methodProfiler.c("thunder");
++                // this.methodProfiler.c("thunder"); // Reaper - Remove MethodProfiler
+                 int l;
+                 BlockPosition blockposition;
+ 
+@@ -522,7 +524,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                     }
+                 }
+ 
+-                this.methodProfiler.c("iceandsnow");
++                // this.methodProfiler.c("iceandsnow"); // Reaper - Remove MethodProfiler
+                 if (!this.paperConfig.disableIceAndSnow && this.random.nextInt(16) == 0) { // Paper - Disable ice and snow
+                     this.l = this.l * 3 + 1013904223;
+                     l = this.l >> 2;
+@@ -560,12 +562,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                                 IBlockData iblockdata = chunksection.getType(i2, k2, j2);
+                                 Block block = iblockdata.getBlock();
+ 
+-                                this.methodProfiler.a("randomTick");
++                                // this.methodProfiler.a("randomTick"); // Reaper - Remove MethodProfiler
+                                 if (block.isTicking()) {
+                                     block.a((World) this, new BlockPosition(i2 + j, k2 + chunksection.getYPosition(), j2 + k), iblockdata, this.random);
+                                 }
+ 
+-                                this.methodProfiler.b();
++                                // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                             }
+                         }
+                     }
+@@ -573,7 +575,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 timings.chunkTicksBlocks.stopTiming(); // Paper
+             }
+ 
+-            this.methodProfiler.b();
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+     }
+ 
 @@ -675,7 +677,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
                  return;
              }
@@ -9642,6 +10512,44 @@ index e545e9764a4aa117896ca1b3e55d2613642d7244..488d435d94867d91337fd4a1c2dc45ab
          }
  
          this.worldProvider.s();
+@@ -685,7 +687,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+ 
+     protected void l() {
+         super.l();
+-        this.methodProfiler.c("players");
++        // this.methodProfiler.c("players"); // Reaper - Remove MethodProfiler
+ 
+         for (int i = 0; i < this.players.size(); ++i) {
+             Entity entity = (Entity) this.players.get(i);
+@@ -699,7 +701,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 entity.stopRiding();
+             }
+ 
+-            this.methodProfiler.a("tick");
++            // this.methodProfiler.a("tick"); // Reaper - Remove MethodProfiler
+             if (!entity.dead) {
+                 try {
+                     this.h(entity);
+@@ -712,8 +714,8 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 }
+             }
+ 
+-            this.methodProfiler.b();
+-            this.methodProfiler.a("remove");
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++            // this.methodProfiler.a("remove"); // Reaper - Remove MethodProfiler
+             if (entity.dead) {
+                 int j = entity.ab;
+                 int k = entity.ad;
+@@ -726,7 +728,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 this.c(entity);
+             }
+ 
+-            this.methodProfiler.b();
++            // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+         }
+ 
+     }
 @@ -736,7 +738,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
      }
  
@@ -9651,6 +10559,35 @@ index e545e9764a4aa117896ca1b3e55d2613642d7244..488d435d94867d91337fd4a1c2dc45ab
              return false;
          } else {
              int i = this.nextTickList.size();
+@@ -754,7 +756,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                     // CraftBukkit end
+                 }
+ 
+-                this.methodProfiler.a("cleaning");
++                // this.methodProfiler.a("cleaning"); // Reaper - Remove MethodProfiler
+ 
+                 timings.scheduledBlocksCleanup.startTiming(); // Paper
+                 NextTickListEntry nextticklistentry;
+@@ -772,8 +774,8 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 }
+                 timings.scheduledBlocksCleanup.stopTiming(); // Paper
+ 
+-                this.methodProfiler.b();
+-                this.methodProfiler.a("ticking");
++                // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
++                // this.methodProfiler.a("ticking"); // Reaper - Remove MethodProfiler
+                 Iterator iterator = this.W.iterator();
+                 timings.scheduledBlocksTicking.startTiming(); // Paper
+ 
+@@ -806,7 +808,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 }
+                 timings.scheduledBlocksTicking.stopTiming(); // Paper
+ 
+-                this.methodProfiler.b();
++                // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                 this.W.clear();
+                 return !this.nextTickList.isEmpty();
+             }
 @@ -945,7 +947,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
          if (!this.worldData.v()) {
              try {

@@ -30,13 +30,13 @@ With this change I could get all 200 on at 0ms ping.
 So in general this patch should reduce Netty I/O thread load.
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 73d76ff31453582614043198395372b283799ef1..b52dfca0e2306546f2fe2d363922514c49335704 100644
+index dec5ba92d5bbc73b342845b6af8d8fac1c8c7349..1cee383deb981e97e92ded1656fd0b663e00e4ba 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
-@@ -957,7 +957,26 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -959,7 +959,26 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
  
-                 this.methodProfiler.b();
-                 this.methodProfiler.a("tracker");
+                 // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                 // this.methodProfiler.a("tracker"); // Reaper - Remove MethodProfiler
 +                // Reaper start - Flush consolidation
 +                List<net.minecraft.server.PlayerConnection> disabledFlushes = new java.util.ArrayList<>(worldserver.players.size());
 +                for (EntityHuman entityHuman : worldserver.players) {
@@ -57,6 +57,6 @@ index 73d76ff31453582614043198395372b283799ef1..b52dfca0e2306546f2fe2d363922514c
 +                    }
 +                }
 +                // Reaper end - Flush consolidation
-                 this.methodProfiler.b();
-                 this.methodProfiler.b();
+                 // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
+                 // this.methodProfiler.b(); // Reaper - Remove MethodProfiler
                  worldserver.explosionDensityCache.clear(); // Paper - Optimize explosions

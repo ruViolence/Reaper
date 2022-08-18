@@ -38,7 +38,7 @@ index 4eebd9fae940dd6bc51f8cfd30ab7b5cba5ce201..fc5ce2ff6c86c3021e0f08edf3d9c5ac
      }
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 34fd3f3ca024645f2fb8b0fff5895bf08ee4748b..a72f333c9e8c1b6fa31cf7370fd0e572fd28193a 100644
+index 4b7b02b7796dc0107868cd5dc5f32869a494cf64..87e48475f33a3ad21f0bdc6cf983b6f2411b19a0 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -1230,7 +1230,9 @@ public class Chunk {
@@ -84,10 +84,10 @@ index 34fd3f3ca024645f2fb8b0fff5895bf08ee4748b..a72f333c9e8c1b6fa31cf7370fd0e572
          }
      }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index c5c1b2444509920b0553202959d1430fd759621e..fd806a37b77c98a6db4f31070ec1d2eee677c18b 100644
+index cab88fa55e3790fe427d75cba05e8fa06aef4c8b..85a67cc32776a8ab569b148f290874be9e29ee00 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
-@@ -2355,6 +2355,7 @@ public abstract class World implements IBlockAccess {
+@@ -2357,6 +2357,7 @@ public abstract class World implements IBlockAccess {
      protected void t() {
          if (this.worldProvider.m()) {
              if (true) { // Reaper - Remove isClientSide check
@@ -95,7 +95,7 @@ index c5c1b2444509920b0553202959d1430fd759621e..fd806a37b77c98a6db4f31070ec1d2ee
                  boolean flag = this.getGameRules().getBoolean("doWeatherCycle");
  
                  if (flag) {
-@@ -2424,6 +2425,7 @@ public abstract class World implements IBlockAccess {
+@@ -2426,6 +2427,7 @@ public abstract class World implements IBlockAccess {
                      }
                  }
                  // CraftBukkit end
@@ -104,7 +104,7 @@ index c5c1b2444509920b0553202959d1430fd759621e..fd806a37b77c98a6db4f31070ec1d2ee
          }
      }
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index b28f37784b31e18984258a265feafa9ba2fa3634..87ab0dd388ba81772b60f2828357f3ddd675117a 100644
+index 519991ace6a9773f83900f3047047e5905ddf736..8457d66e5e5a021223312e05f340a7241c827bcf 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -508,6 +508,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -122,7 +122,7 @@ index b28f37784b31e18984258a265feafa9ba2fa3634..87ab0dd388ba81772b60f2828357f3dd
 +                    timings.chunkTicksThunder.stopTiming(); // Reaper
                  }
  
-                 this.methodProfiler.c("iceandsnow");
+                 // this.methodProfiler.c("iceandsnow"); // Reaper - Remove MethodProfiler
                  if (!this.paperConfig.disableIceAndSnow && this.random.nextInt(16) == 0) { // Paper - Disable ice and snow
 +                    timings.chunkTicksIceAndSnow.startTiming(); // Reaper
                      this.l = this.l * 3 + 1013904223;

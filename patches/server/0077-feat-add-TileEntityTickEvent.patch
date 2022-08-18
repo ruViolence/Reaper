@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add TileEntityTickEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index ae4c221ae05938323a519d5316d1f0f2c2950b84..c69c5fb12db34118e628f8bf0cae81910e11bafb 100644
+index b8b754d362bf9e2c84117a8353cd6e9bfeda565f..7ac7282f31935dc0e7b67eb363461f9902e63040 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -127,6 +127,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
@@ -25,7 +25,7 @@ index ae4c221ae05938323a519d5316d1f0f2c2950b84..c69c5fb12db34118e628f8bf0cae8191
  
          int i;
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index b174b014a366b5fc429a0a0d4eda0ddbfb893b86..c5c1b2444509920b0553202959d1430fd759621e 100644
+index 69ceb76bd9b198d4aeafea134608cb04e3efab23..cab88fa55e3790fe427d75cba05e8fa06aef4c8b 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1706,6 +1706,7 @@ public abstract class World implements IBlockAccess {
@@ -42,8 +42,8 @@ index b174b014a366b5fc429a0a0d4eda0ddbfb893b86..c5c1b2444509920b0553202959d1430f
                      // Paper end
 +                    if (!hasTileEntityTickEvent || CraftEventFactory.callTileEntityTickEvent(tileentity)) // Reaper - Add TileEntityTickEvent
                      try {
+                         /* // Reaper start - Remove MethodProfiler
                          this.methodProfiler.a(() -> {
-                             return String.valueOf(TileEntity.a(tileentity.getClass()));
 diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
 index 97331a2179aaba64c232992e14ae8ddbb3fff14c..c04504623c38bc77ea7589f33020c33bcc112537 100644
 --- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java

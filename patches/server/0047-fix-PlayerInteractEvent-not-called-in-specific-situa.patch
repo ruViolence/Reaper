@@ -5,7 +5,7 @@ Subject: [PATCH] fix: PlayerInteractEvent not called in specific situations
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 8b4ee13af03964c54ba85cacd3e46a7db65efd90..0056a4b2011ea73c5c91a8d310b600de70a90ab1 100644
+index 6f5f5ab508eb6026553c2719e4ce1bdd042da755..13d72b81587b8d1269a8ef56349927bcdfd547c6 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -1052,8 +1052,10 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

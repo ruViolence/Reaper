@@ -6,7 +6,7 @@ Subject: [PATCH] fix: do not accept invalid client settings
 Credits to Paper: https://github.com/PaperMC/Paper/blob/e3997543203bc1d86b58b6f1e751b0593228ca7b/patches/server/0906-Do-not-accept-invalid-client-settings.patch
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 51c84bf549e5e3432725b705ddbf5669f2a9873d..910cac2740d65dc7807d7f63ead77b37850efb60 100644
+index d9252b2223ff6942d0991555f6fc261da850df91..78331c8e9abe7a615fe7484d2cf371d9b96eddd1 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -2372,6 +2372,13 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

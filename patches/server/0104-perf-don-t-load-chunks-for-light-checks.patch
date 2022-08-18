@@ -5,7 +5,7 @@ Subject: [PATCH] perf: don't load chunks for light checks
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 7ab956b7f02acefe521ccbe0d735f53e6f729a60..f5c5a0bece9d723e67519c178f19a0f8f2ad45e3 100644
+index b5a4f020de60e9826c146f1e590aaeb792dbc247..3a20967dea557b617b3801a7ac8254d40e6cd835 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -747,7 +747,13 @@ public abstract class World implements IBlockAccess {

@@ -66,7 +66,7 @@ index 080f4942473b824f3fb7fad50aa2db988a82d818..56c7639889f359281969ffc9e841ce60
  
                  a(world, blockposition, itemstack);
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index f5a44ab46e902bd93aea8070ee7d70f7f9bedbb1..34fd3f3ca024645f2fb8b0fff5895bf08ee4748b 100644
+index 15aa87c1f7d73bab8f1ec4c4a0a3a4ceb642b364..4b7b02b7796dc0107868cd5dc5f32869a494cf64 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -872,7 +872,19 @@ public class Chunk {
@@ -149,7 +149,7 @@ index c74d00b14b2362c82da3a3def9204dac75afbacf..9d3f2c6c2e8e29d290b5594948e87359
                  nbttagcompound.setShort("id", (short) Enchantment.getId(enchantment));
                  nbttagcompound.setShort("lvl", (short) i);
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 8f860f77aebb16ec914ca61ce5c82abcabbbf077..979dc9cc9833fb015bf5be634c8a036c53a54bfe 100644
+index dbfbdba2e792ea435a008b77e2484d41cce99a42..82cbcfe6e52f3c4f1b8fd3e657e7c04f8dc9cc05 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -2742,17 +2742,20 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
@@ -268,7 +268,7 @@ index 9a46680932ed05826d5f16bee51c32315fbdd913..9e1ea5ff044e6e888aa74b9a1f86ce99
                      nbttagcompound1.setByte("Slot", (byte) i);
                      itemstack.save(nbttagcompound1);
 diff --git a/src/main/java/net/minecraft/server/EntityInsentient.java b/src/main/java/net/minecraft/server/EntityInsentient.java
-index d2bbcbee581a717152ef119d7fc2f117414fe85d..117dbf29ec1f7dfcd74126b2566dc7b992e248ff 100644
+index c2c601ffeabe8fe6c65b539e607bd977470f41d3..ac0fab568afee1da9c936d52510fe156ae5c2366 100644
 --- a/src/main/java/net/minecraft/server/EntityInsentient.java
 +++ b/src/main/java/net/minecraft/server/EntityInsentient.java
 @@ -309,7 +309,7 @@ public abstract class EntityInsentient extends EntityLiving {
@@ -378,7 +378,7 @@ index d075706a3d7db9b05d3515a60e31fec8d7688af1..189d8b400485c6d12fbc171a37f2566c
              nbttagcompound.setFloat("ItemDropChance", this.e);
          }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 858d0cf1715e6db84ac96c76c97b59bd82ed9341..190787bff1de7967b7b0d9d48b39fea67589dd81 100644
+index ac11f50fb2e996f674d07fe068f76dc9560fbb0d..d6a85ea48f45d72b6aac78a66c89e3da44b84c89 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -488,7 +488,7 @@ public abstract class EntityLiving extends Entity {

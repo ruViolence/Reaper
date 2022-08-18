@@ -5,7 +5,7 @@ Subject: [PATCH] fix: prevent vehicle move while awaiting teleport confirm
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index afb36ad5497af91685ba3e418007f0fcf4ee5d27..b0ba0d16e41619b0e3dc8a604948c5ed512da517 100644
+index 7bc594293b3f2e15fc937e30ebad48ef54d63ee1..ed7352cb23bcbfefb4b25627d8a8f0145e17079c 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
 @@ -302,6 +302,16 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {

@@ -5,7 +5,7 @@ Subject: [PATCH] fix: do not reattach RootVehicle that too far
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
-index 1ffd14cdd241c590eb89fb4a35959a75424e0dde..eb3f6df703416c0a9c26b68eb841c3ae8f835d99 100644
+index bf6c511f3ce8305b22f2e460e2dd1cf4106edf7a..9cb528a391068ee2fe16c216fa66a1cfb0361768 100644
 --- a/src/main/java/net/minecraft/server/PlayerList.java
 +++ b/src/main/java/net/minecraft/server/PlayerList.java
 @@ -209,6 +209,7 @@ public abstract class PlayerList {
