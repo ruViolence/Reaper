@@ -6,10 +6,10 @@ Subject: [PATCH] feat: entity tracker check Y
 Helps to hide minecarts in mineshafts and reduce the server load
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 60d1893d0569d9b1e00985c1fe57b06e37ce766f..9e329f67b32a4940790b0e02238fe078212f7ee5 100644
+index 96e7e260fcb8eef041bb7ae423eb5fc16d321f2f..a421c6d59e77cda090a7533fb3fcfd2d2e4c0b85 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -255,4 +255,9 @@ public class ReaperConfig {
+@@ -259,4 +259,9 @@ public class ReaperConfig {
      private static void pingPeriod() {
          pingPeriod = MathHelper.clamp(getInt("ping-period", 15), 1, 30) * 1000L;
      }

@@ -6,10 +6,10 @@ Subject: [PATCH] feat: round player ping
 Helps to hide the real ping from cheat clients.
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 1e8fa48ebdffc90f9b9142051962cca68e68f503..989a47410eb0a86d0b26b77e2b7d25d31ff693f8 100644
+index bb329976e75f6fbd67193a2effa10425a6a9009c..d20b015d97beae5fd7ada5988b317e1b76fc87a1 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -245,4 +245,9 @@ public class ReaperConfig {
+@@ -249,4 +249,9 @@ public class ReaperConfig {
      private static void relativeArrowMotion() {
          relativeArrowMotion = getBoolean("relative-arrow-motion", true);
      }

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: ruViolence <78062896+ruViolence@users.noreply.github.com>
 Date: Fri, 3 Jun 2022 05:13:57 +0500
-Subject: [PATCH] perf: enhanced lighting queue
+Subject: [PATCH] perf: lighting throttling
 
 Removed the Paper lighting queue and replaced it with our own implementation. The difference is that if there is a lag during the light update, we add a delay before the next light update in that chunk. This completely saves us from any kind of light lag machine.
 
@@ -24,7 +24,7 @@ index d10b64229aa5a42e345633130f504682282fe028..fd764891ad62de69b404da891f5077e6
      public boolean disableEndCredits;
      private void disableEndCredits() {
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 3a8c0361d1da7f92056ca73a75e17abe89eb9038..3d7ade6629db45e94a4a389df57a658f78b8b487 100644
+index 3a8c0361d1da7f92056ca73a75e17abe89eb9038..5927203b8f6fbfbebe8dd98bab7704e18f8a5151 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 @@ -5,6 +5,7 @@ import net.minecraft.server.DispenserRegistry;
@@ -35,24 +35,28 @@ index 3a8c0361d1da7f92056ca73a75e17abe89eb9038..3d7ade6629db45e94a4a389df57a658f
  import org.bukkit.Bukkit;
  import org.bukkit.command.Command;
  import org.bukkit.configuration.InvalidConfigurationException;
-@@ -213,4 +214,15 @@ public class ReaperConfig {
+@@ -213,4 +214,19 @@ public class ReaperConfig {
          oldCombatHideAttributes = getBoolean("old-combat.hide-item-attributes", false);
          oldCombatRandom = oldCombatEnabled ? new Random() : null;
      }
 +
 +    public static boolean queueLightUpdates;
-+    public static int lightLagSkip;
++    public static int lightThrottlingDelay;
++    public static boolean lightThrottlingRedelaying;
++    public static boolean lightThrottlingAllowBlockRelight;
 +    private static void lightLagSkip() {
 +        boolean oldQLU = queueLightUpdates;
-+        lightLagSkip = MathHelper.clamp(getInt("light-lag-skip", 5 * 20), 0, 60 * 20);
-+        queueLightUpdates = lightLagSkip > 0;
++        lightThrottlingDelay = MathHelper.clamp(getInt("light-throttling.delay", 5 * 20), 0, 60 * 20);
++        queueLightUpdates = lightThrottlingDelay > 0;
++        lightThrottlingRedelaying = getBoolean("light-throttling.redelaying", false);
++        lightThrottlingAllowBlockRelight = getBoolean("light-throttling.allow-block-relight", true);
 +        if (oldQLU && !queueLightUpdates) {
 +            ReaperLightingQueue.processQueueAnyway();
 +        }
 +    }
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 87e48475f33a3ad21f0bdc6cf983b6f2411b19a0..03946f01b4952292938e35793cedbd9f3d3d945d 100644
+index 87e48475f33a3ad21f0bdc6cf983b6f2411b19a0..8133d9f5232d4cca6e80b1768bcc49d6dc6ae8b4 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -70,7 +70,8 @@ public class Chunk {
@@ -93,7 +97,7 @@ index 87e48475f33a3ad21f0bdc6cf983b6f2411b19a0..03946f01b4952292938e35793cedbd9f
                  }
  
                  TileEntity tileentity;
-@@ -1565,14 +1566,38 @@ public class Chunk {
+@@ -1565,14 +1566,39 @@ public class Chunk {
  
      // Paper start
      public void runOrQueueLightUpdate(Runnable runnable) {
@@ -111,7 +115,8 @@ index 87e48475f33a3ad21f0bdc6cf983b6f2411b19a0..03946f01b4952292938e35793cedbd9f
  
 +    // Reaper start
 +    public void runOrQueueLightUpdate(int x, int y, int z, int type) {
-+        if (com.github.ruviolence.reaper.ReaperConfig.queueLightUpdates) {
++        if (com.github.ruviolence.reaper.ReaperConfig.queueLightUpdates
++                && (type != 0 || !com.github.ruviolence.reaper.ReaperConfig.lightThrottlingAllowBlockRelight)) {
 +            lightingQueue.schedule(x, y, z, type);
 +        } else {
 +            runLightTaskByType(x, y, z, type);
@@ -274,10 +279,10 @@ index f1c013116fc05b7abe7184eae01b715c02c7a058..00000000000000000000000000000000
 -}
 diff --git a/src/main/java/net/minecraft/server/ReaperLightingQueue.java b/src/main/java/net/minecraft/server/ReaperLightingQueue.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..b0e42f62243b127817dd5b9cbe089268ace7be3f
+index 0000000000000000000000000000000000000000..6471bdfb81cd9439982343d9c1bf86e9aeea575a
 --- /dev/null
 +++ b/src/main/java/net/minecraft/server/ReaperLightingQueue.java
-@@ -0,0 +1,223 @@
+@@ -0,0 +1,222 @@
 +package net.minecraft.server;
 +
 +import co.aikar.timings.Timing;
@@ -338,7 +343,7 @@ index 0000000000000000000000000000000000000000..b0e42f62243b127817dd5b9cbe089268
 +                super.addLast(task);
 +            }
 +
-+            if (isDelayed()) {
++            if (ReaperConfig.lightThrottlingRedelaying && isDelayed()) {
 +                setDelay();
 +            }
 +        }
@@ -360,7 +365,6 @@ index 0000000000000000000000000000000000000000..b0e42f62243b127817dd5b9cbe089268
 +         *
 +         * @param startTime   If start Time is 0, we will not limit execution time
 +         * @param maxTickTime Maximum time to spend processing lighting updates
-+         *
 +         * @return true to abort processing furthur lighting updates
 +         */
 +        boolean processQueue(long startTime, long maxTickTime) {
@@ -406,7 +410,7 @@ index 0000000000000000000000000000000000000000..b0e42f62243b127817dd5b9cbe089268
 +        }
 +
 +        private void setDelay() {
-+            int skipDelay = ReaperConfig.lightLagSkip;
++            int skipDelay = ReaperConfig.lightThrottlingDelay;
 +            if (skipDelay > 0) {
 +                nextAllowedTick = MinecraftServer.getServer().aq() + skipDelay;
 +            }

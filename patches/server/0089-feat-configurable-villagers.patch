@@ -5,10 +5,10 @@ Subject: [PATCH] feat: configurable villagers
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 3d7ade6629db45e94a4a389df57a658f78b8b487..5f5a42c8d316efcd381e143ed959f4dfe37b2f76 100644
+index 5927203b8f6fbfbebe8dd98bab7704e18f8a5151..e52706e9a1846306c361fc858ddb94a61374ac03 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -225,4 +225,9 @@ public class ReaperConfig {
+@@ -229,4 +229,9 @@ public class ReaperConfig {
              ReaperLightingQueue.processQueueAnyway();
          }
      }

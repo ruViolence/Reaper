@@ -6,10 +6,10 @@ Subject: [PATCH] feat: configurable time update period
 Allows breaking client-side tickrate meters and also slightly reduce the network load.
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index f39d29c4ab91e631c84c77b9ace19b6055c38f26..a01f536667e2d5b77cb188bf7551ad884be8bc8f 100644
+index 63bb74b13b6a19edc31352c627d2fe4592cb96f2..069e69fd5197b627170ef0f8eaff8d1b415c4644 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -235,4 +235,9 @@ public class ReaperConfig {
+@@ -239,4 +239,9 @@ public class ReaperConfig {
      private static void alternativeChatComponentParser() {
          alternativeChatComponentParser = getBoolean("alternative-chat-component-parser", false);
      }

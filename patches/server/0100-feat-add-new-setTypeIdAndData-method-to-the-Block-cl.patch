@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add new "setTypeIdAndData" method to the Block class
 
 
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 03946f01b4952292938e35793cedbd9f3d3d945d..2380bc00c512acbbfbc46f412c3153b187021579 100644
+index 8133d9f5232d4cca6e80b1768bcc49d6dc6ae8b4..9a4cba104bf58cc9cd780c6ac3f63a5898eebbd0 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -500,8 +500,12 @@ public class Chunk {

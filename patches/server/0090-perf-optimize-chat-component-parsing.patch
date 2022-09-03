@@ -8,10 +8,10 @@ Reduced lags in other parts of the server by using a more optimized alternative 
 Added a new config option that enables alternative component parsing at all cases (currently does not support URL links parsing).
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 5f5a42c8d316efcd381e143ed959f4dfe37b2f76..f39d29c4ab91e631c84c77b9ace19b6055c38f26 100644
+index e52706e9a1846306c361fc858ddb94a61374ac03..63bb74b13b6a19edc31352c627d2fe4592cb96f2 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -230,4 +230,9 @@ public class ReaperConfig {
+@@ -234,4 +234,9 @@ public class ReaperConfig {
      private static void disableVillages() {
          disableVillages = getBoolean("disable-villages", false);
      }
