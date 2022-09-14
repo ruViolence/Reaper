@@ -190,7 +190,7 @@ index 16a9e06438cd6f499beba7bee37fcc870913783a..7a82b1d4695ffcb67372015a8f603f53
                          // CraftBukkit end
                      }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 37e104ebe44e8b674c47a3af99662450c8bc54db..108c16c5915ea70290056c4581f16869910093e9 100644
+index b9886c68045c783c7ced0874411f0363a32232eb..3daf3d05fdd319bf7c798ec8e826c3eeb371affa 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -2491,7 +2491,7 @@ public abstract class EntityLiving extends Entity {

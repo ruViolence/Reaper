@@ -26,7 +26,7 @@ index 8061a7c12aa32e6dc9bdd697983925cfd93eee96..7d647b202d022bc575ad86394993702f
                  if (j == 1 && i == 1) {
                      BlockPosition blockposition1 = worldserver1.q(worldserver1.getSpawn());
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 108c16c5915ea70290056c4581f16869910093e9..ad2aa3ab4249ddca9c7812c8a395fe50653da3e4 100644
+index 3daf3d05fdd319bf7c798ec8e826c3eeb371affa..10857ed16dc5d1d526ae7248edcd3f76393836c9 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -1125,6 +1125,7 @@ public abstract class EntityLiving extends Entity {

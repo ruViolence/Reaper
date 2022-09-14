@@ -435,7 +435,7 @@ index 28fbbfd6a57345c01b3ca0db8d7ee39d6997cb23..427512dc52d93e8a63d1eecda5ff3b8c
                      if (this.world.getGameRules().getBoolean("doFireTick") && this.world.areChunksLoaded(blockposition, 10) && this.world.getType(blockposition).getMaterial() == Material.AIR && Blocks.FIRE.canPlace(this.world, blockposition)) {
                          // CraftBukkit start - add "!isEffect"
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index d6a85ea48f45d72b6aac78a66c89e3da44b84c89..37e104ebe44e8b674c47a3af99662450c8bc54db 100644
+index de0ae73fad05172778c8d7eb7ca59e6e77b229e5..b9886c68045c783c7ced0874411f0363a32232eb 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -265,7 +265,7 @@ public abstract class EntityLiving extends Entity {
@@ -456,7 +456,7 @@ index d6a85ea48f45d72b6aac78a66c89e3da44b84c89..37e104ebe44e8b674c47a3af99662450
 -        BlockPosition blockposition = new BlockPosition(this);
 +        BlockPosition blockposition = this.blockPos; // Reaper - Cache current block pos
          World world = this.world;
-         Random random = this.getRandom();
+         // Random random = this.getRandom(); // Reaper - Optimize
          boolean flag1;
 diff --git a/src/main/java/net/minecraft/server/EntityMinecartAbstract.java b/src/main/java/net/minecraft/server/EntityMinecartAbstract.java
 index 68d010bd981252bee7ddb7706bb27602821fc4cc..0eadde0968e12bd5e2535363a0b412cf4a57f04e 100644

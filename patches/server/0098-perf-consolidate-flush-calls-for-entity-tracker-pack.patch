@@ -30,7 +30,7 @@ With this change I could get all 200 on at 0ms ping.
 So in general this patch should reduce Netty I/O thread load.
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index dec5ba92d5bbc73b342845b6af8d8fac1c8c7349..1cee383deb981e97e92ded1656fd0b663e00e4ba 100644
+index 1d088d166adfb41acf611288b49d16e1d924b475..04ce30a82ee7f655b23f9620fd19e912ca879c1f 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -959,7 +959,26 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

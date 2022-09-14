@@ -5,7 +5,7 @@ Subject: [PATCH] perf: reduce entity tracker updates
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 47dfef574cc151183e6852aa1dfc1d44d682c277..ab1be0ef87ab5f1c26d5cccf84792b4394a04c1d 100644
+index b15cd5874eed58e80781f8d1341b975d414750c2..79d0f7e64be4f8232996c31234a81ff8ebefadec 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -1370,7 +1370,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {

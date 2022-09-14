@@ -6,7 +6,7 @@ Subject: [PATCH] perf: further improve server tick loop
 Credits to Paper
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 97d62d3c52c50e8ef57c2378a77c718216b6492e..fc4ea5cc2eb02d16f23848e59e4b8225cd399e11 100644
+index 2f9f7ee109a6fd50ad6ef221e09bfe9980ea1699..d25561b1bd43c5e9f4eb567a3fd573af4818621e 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -588,39 +588,47 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

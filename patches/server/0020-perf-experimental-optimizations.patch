@@ -378,7 +378,7 @@ index d075706a3d7db9b05d3515a60e31fec8d7688af1..189d8b400485c6d12fbc171a37f2566c
              nbttagcompound.setFloat("ItemDropChance", this.e);
          }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index ac11f50fb2e996f674d07fe068f76dc9560fbb0d..d6a85ea48f45d72b6aac78a66c89e3da44b84c89 100644
+index 41f625fba18c422278904b31c6474183be6b3b61..de0ae73fad05172778c8d7eb7ca59e6e77b229e5 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -488,7 +488,7 @@ public abstract class EntityLiving extends Entity {
@@ -404,7 +404,7 @@ index d2a72f28e3b22cd6af63005f6f85e9c927c7b59f..3df146f3b2d6d27663747251e4507f6f
  
      }
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 67ff382f2a6fedbba37097ee331994c8669c82a0..47dfef574cc151183e6852aa1dfc1d44d682c277 100644
+index aca6e78e19d9848e567fdfd7fd8e67e68b89ddac..b15cd5874eed58e80781f8d1341b975d414750c2 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -190,7 +190,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {

@@ -146,7 +146,7 @@ index f074ac108438b63e035970e86f90dfa0e8a287f1..967f67615313a032aab148204eea3df2
          // CraftBukkit start
          if (nbttagcompound.hasKey("Bukkit.MaxDomestication")) {
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 9be3f789f4cbda08721072f41b96b38cf607536e..7fa607c40cf62936ad236acc8ef478675e825d7f 100644
+index 5537a74783bdf6ae4f251874a8773dc6bc18d29a..d13d42c30bfdf00cd597ffb55575b8a6e8b87b77 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -37,7 +37,7 @@ import co.aikar.timings.MinecraftTimings; // Paper
@@ -268,7 +268,7 @@ index 921cddd2095f4cf131ac63992ae9aba5cfa215c5..cc83165acfdda7eef2f1511909e802e8
      public static final IDispenseBehavior b = new DispenseBehaviorItem() {
          protected ItemStack b(ISourceBlock isourceblock, ItemStack itemstack) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 33b1b35cf518f3bbec3479aeb2a10a48c58b115a..a25c2ee1c73a7d0f5ef7b56400dcc7c6f2629fe5 100644
+index 7e41a619e2edf3bac0a305e047ba6f2f04ce8f05..95a967bd285479f55c6e686fa7b22dcae68ce499 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -1080,7 +1080,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

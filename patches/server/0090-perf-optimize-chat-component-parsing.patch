@@ -61,7 +61,7 @@ index 7ebe188e5972f90ccf2b2ac86c854822a27e52fe..507edfb72cacae4803870ca62509af67
  
          public ChatModifierSerializer() {}
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 030bfbede00885baa147d9e78f614f58589b1072..8a159bc264c500a8b0ebd3ca7833b19e3527904f 100644
+index 58a574db5bd5f725d6e473befde5de5877693e70..4ee9112ad09d738f19fc45d09bc0e6266d3ede71 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -547,13 +547,13 @@ public class EntityPlayer extends EntityHuman implements ICrafting {

@@ -6,7 +6,7 @@ Subject: [PATCH] fix: MC-10657
 https://bugs.mojang.com/browse/MC-10657
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 8a159bc264c500a8b0ebd3ca7833b19e3527904f..eecb7dd201f89f3d6ec23230a65d1ee3411aa32c 100644
+index 4ee9112ad09d738f19fc45d09bc0e6266d3ede71..8820b593a060fc47aa8bee3ba4e057b99ed2624a 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -745,6 +745,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {

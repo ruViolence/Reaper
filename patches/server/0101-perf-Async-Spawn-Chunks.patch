@@ -16,7 +16,7 @@ index 0000000000000000000000000000000000000000..8e0e7542ed6d95dc9a403d3206406519
 +    public static final Runnable NULL_RUNNABLE = () -> {};
 +}
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 1cee383deb981e97e92ded1656fd0b663e00e4ba..97d62d3c52c50e8ef57c2378a77c718216b6492e 100644
+index 04ce30a82ee7f655b23f9620fd19e912ca879c1f..2f9f7ee109a6fd50ad6ef221e09bfe9980ea1699 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -397,7 +397,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

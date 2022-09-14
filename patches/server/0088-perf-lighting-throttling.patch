@@ -150,7 +150,7 @@ index 5ada3fb0ccec92e8c6d090e2e3dd8f27b4695db0..111c421fd7c343719001b6b7c50093a0
              this.chunkLoader.saveChunk(this.world, chunk, unloaded); // Spigot
          } catch (IOException ioexception) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 7ac7282f31935dc0e7b67eb363461f9902e63040..255985279f7d31f3560bbca1b1f7bbc46b9f7474 100644
+index c5446704642d26341d512a52510fd8cda17e270d..0e7223f59c6fe2201daaf52f4358c60cfc9ff5f0 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -486,6 +486,10 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

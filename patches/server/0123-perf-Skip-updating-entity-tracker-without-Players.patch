@@ -5,7 +5,7 @@ Subject: [PATCH] perf: skip updating entity tracker without players
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index fc4ea5cc2eb02d16f23848e59e4b8225cd399e11..33b1b35cf518f3bbec3479aeb2a10a48c58b115a 100644
+index d25561b1bd43c5e9f4eb567a3fd573af4818621e..7e41a619e2edf3bac0a305e047ba6f2f04ce8f05 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -979,6 +979,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

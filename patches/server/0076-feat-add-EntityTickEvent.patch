@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add EntityTickEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 9859d939d6e499cd4b40058767ad9a714601e07a..b8b754d362bf9e2c84117a8353cd6e9bfeda565f 100644
+index e6ebdcda82b96cb5f80829de1f309540d0fc4e50..72b23385bc5ec9bf730217e0e591eb82435425a5 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -126,6 +126,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

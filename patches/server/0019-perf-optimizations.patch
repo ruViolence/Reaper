@@ -5216,7 +5216,7 @@ index acb3408d574ee33f82372ff0b4fbd49fc9defb29..28fbbfd6a57345c01b3ca0db8d7ee39d
              } else if (!this.d) {
                  double d0 = 3.0D;
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index 82c3a84edd7a9408f99873ef8ea1693674786791..ac11f50fb2e996f674d07fe068f76dc9560fbb0d 100644
+index 82c3a84edd7a9408f99873ef8ea1693674786791..41f625fba18c422278904b31c6474183be6b3b61 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
 @@ -66,8 +66,10 @@ public abstract class EntityLiving extends Entity {
@@ -5754,6 +5754,15 @@ index 82c3a84edd7a9408f99873ef8ea1693674786791..ac11f50fb2e996f674d07fe068f76dc9
              this.datawatcher.set(EntityLiving.at, Byte.valueOf((byte) 0));
          }
  
+@@ -2553,7 +2577,7 @@ public abstract class EntityLiving extends Entity {
+         boolean flag = false;
+         BlockPosition blockposition = new BlockPosition(this);
+         World world = this.world;
+-        Random random = this.getRandom();
++        // Random random = this.getRandom(); // Reaper - Optimize
+         boolean flag1;
+ 
+         if (world.isLoaded(blockposition)) {
 @@ -2593,6 +2617,7 @@ public abstract class EntityLiving extends Entity {
          } else {
              flag1 = true;
@@ -6160,7 +6169,7 @@ index fcf99e668fab90369986fc5419242f2bc31174b5..78bca905c1b82b8654d81cd2082c20a6
  
              // Paper start
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index cb2c459ae02898a11732c8b96682f2015bd3b3a9..67ff382f2a6fedbba37097ee331994c8669c82a0 100644
+index cb2c459ae02898a11732c8b96682f2015bd3b3a9..aca6e78e19d9848e567fdfd7fd8e67e68b89ddac 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -221,7 +221,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
@@ -6181,6 +6190,15 @@ index cb2c459ae02898a11732c8b96682f2015bd3b3a9..67ff382f2a6fedbba37097ee331994c8
              this.closeInventory(org.bukkit.event.inventory.InventoryCloseEvent.Reason.CANT_USE); // Paper
              this.activeContainer = this.defaultContainer;
          }
+@@ -298,7 +298,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         while (!this.removeQueue.isEmpty()) {
+             int i = Math.min(this.removeQueue.size(), Integer.MAX_VALUE);
+             int[] aint = new int[i];
+-            Iterator iterator = this.removeQueue.iterator();
++            // Iterator iterator = this.removeQueue.iterator(); // Reaper - Optimize
+             int j = 0;
+ 
+             // Paper start
 @@ -974,7 +974,10 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
          this.playerConnection.sendPacket(new PacketPlayOutWindowItems(container.windowId, nonnulllist));
          this.playerConnection.sendPacket(new PacketPlayOutSetSlot(-1, -1, this.inventory.getCarried()));
@@ -8050,7 +8068,7 @@ index 480e2ca972bc9dedc6d77c7f2a2621e01c51f21c..3023ec12bbae5bcc32ecadce0f66d4ba
      }
  }
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..65c47bb901bec0c982e853954d94351682f74d68 100644
+index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..041b2f66982187c34f4de6cca7fde5851c800a75 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -88,7 +88,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
@@ -8158,7 +8176,14 @@ index 1e8b3ac0bc7293ed0b6bfa258ead8c44aa4e5521..65c47bb901bec0c982e853954d943516
  
          // CraftBukkit start
          // Run tasks that are waiting on processing
-@@ -889,9 +891,11 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+@@ -883,15 +885,17 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         int i;
+ 
+         for (i = 0; i < this.worlds.size(); ++i) { // CraftBukkit
+-            long j = System.nanoTime();
++            // long j = System.nanoTime(); // Reaper - Optimize
+ 
+             // if (i == 0 || this.getAllowNether()) {
                  WorldServer worldserver = this.worlds.get(i);
                  TileEntityHopper.skipHopperEvents = worldserver.paperConfig.disableHopperMoveEvents || org.bukkit.event.inventory.InventoryMoveItemEvent.getHandlerList().getRegisteredListeners().length == 0;
  

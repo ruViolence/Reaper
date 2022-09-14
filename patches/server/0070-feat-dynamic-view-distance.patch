@@ -6,7 +6,7 @@ Subject: [PATCH] feat: dynamic view distance
 Sets the player's view distance based on their client settings.
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index c53cd688c58b6355c3837b461945fca80792e12f..c13eb8b015afbaaafa4306a4cfe1a9efac0bcc0c 100644
+index 6ac026c2486eef738c374b6d4f96a0a79a40b0b8..76f4c63835496dbeaf00b62e521d660dfef77f74 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -76,8 +76,14 @@ public class EntityPlayer extends EntityHuman implements ICrafting {

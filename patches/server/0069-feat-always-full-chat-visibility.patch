@@ -5,7 +5,7 @@ Subject: [PATCH] feat: always full chat visibility
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 43ff36f6e2205cb2bcd785abe663c151a2572c22..c53cd688c58b6355c3837b461945fca80792e12f 100644
+index e86017a635b4b7c095c883ec6bdfa0061bf1eb89..6ac026c2486eef738c374b6d4f96a0a79a40b0b8 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -1320,7 +1320,7 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
