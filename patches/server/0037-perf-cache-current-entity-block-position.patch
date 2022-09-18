@@ -1184,7 +1184,7 @@ index b665611e2143e1869daf72be95deff66b8f7818b..bf6c511f3ce8305b22f2e460e2dd1cf4
  
          entityplayer.spawnIn(this.server.getWorldServer(entityplayer.dimension));
 diff --git a/src/main/java/net/minecraft/server/SpawnerCreature.java b/src/main/java/net/minecraft/server/SpawnerCreature.java
-index afabca370253e71b69a518523f0de7c663ce0f84..dcd1b4c9048d591346251f900d37e3d4fdbecb70 100644
+index adfdecbc2048c50b28784214f5d97e2a6ea77696..a754bf88bba0b552190a34338750f585cdb09a45 100644
 --- a/src/main/java/net/minecraft/server/SpawnerCreature.java
 +++ b/src/main/java/net/minecraft/server/SpawnerCreature.java
 @@ -224,7 +224,7 @@ public final class SpawnerCreature {
