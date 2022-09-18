@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 15 Sep 2022 18:12:14 +0500
+Subject: [PATCH] feat: add WorldTickStartEvent, WorldTickEndEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index ef03fe8b0d76a21dd48f38fe3b907496662b827a..35bbe5f7ca427aec537654c355f81f7260fe4b59 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -917,6 +917,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         hasTileEntityTickEvent = com.github.ruviolence.reaper.event.block.TileEntityTickEvent.getHandlerList().getRegisteredListeners().length != 0;
+         hasEntityTrackedEvent = com.github.ruviolence.reaper.event.player.EntityTrackedEvent.getHandlerList().getRegisteredListeners().length != 0;
+         hasEntityUntrackedEvent = com.github.ruviolence.reaper.event.player.EntityUntrackedEvent.getHandlerList().getRegisteredListeners().length != 0;
++        boolean hasWorldTickStartEvent = com.github.ruviolence.reaper.event.server.WorldTickStartEvent.getHandlerList().getRegisteredListeners().length != 0;
++        boolean hasWorldTickEndEvent = com.github.ruviolence.reaper.event.server.WorldTickEndEvent.getHandlerList().getRegisteredListeners().length != 0;
+         // Reaper end
+ 
+         int i;
+@@ -942,6 +944,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                 // CraftBukkit end */
+ 
+                 // this.methodProfiler.a("tick"); // Reaper - Remove MethodProfiler
++                long startTime = hasWorldTickEndEvent ? System.nanoTime() : 0; // Reaper - WorldTickEndEvent
++                if (hasWorldTickStartEvent) org.bukkit.craftbukkit.event.CraftEventFactory.callWorldTickStartEvent(worldserver, MinecraftServer.currentTick); // Reaper - WorldTickStartEvent
+ 
+                 CrashReport crashreport;
+ 
+@@ -1005,6 +1009,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                 worldserver.explosionDensityCache.clear(); // Paper - Optimize explosions
+             // } // CraftBukkit
+ 
++            if (hasWorldTickEndEvent) org.bukkit.craftbukkit.event.CraftEventFactory.callWorldTickEndEvent(worldserver, MinecraftServer.currentTick, ((double) (System.nanoTime() - startTime) / 1000000D)); // Reaper - WorldTickEndEvent
+             // this.i[i][this.ticks % 100] = System.nanoTime() - j; // CraftBukkit
+         }
+ 
+diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+index f26ea55b4acaa87087b8f39ba7d0dce31f284813..9201f67cba452cdd7345bf5af2557b52f984e03c 100644
+--- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
++++ b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+@@ -82,6 +82,8 @@ public class CraftEventFactory {
+     private static final com.github.ruviolence.reaper.event.player.EntityUntrackedEvent entityUntrackedEvent = new com.github.ruviolence.reaper.event.player.EntityUntrackedEvent(null);
+     private static final com.github.ruviolence.reaper.event.server.ServerTickStartEvent serverTickStartEvent = new com.github.ruviolence.reaper.event.server.ServerTickStartEvent();
+     private static final com.github.ruviolence.reaper.event.server.ServerTickEndEvent serverTickEndEvent = new com.github.ruviolence.reaper.event.server.ServerTickEndEvent();
++    private static final com.github.ruviolence.reaper.event.server.WorldTickStartEvent worldTickStartEvent = new com.github.ruviolence.reaper.event.server.WorldTickStartEvent();
++    private static final com.github.ruviolence.reaper.event.server.WorldTickEndEvent worldTickEndEvent = new com.github.ruviolence.reaper.event.server.WorldTickEndEvent();
+     // Reaper end
+ 
+     // helper methods
+@@ -1266,5 +1268,21 @@ public class CraftEventFactory {
+ 
+         Bukkit.getPluginManager().callEvent(event);
+     }
++
++    public static void callWorldTickStartEvent(WorldServer world, int tickNumber) {
++        com.github.ruviolence.reaper.event.server.WorldTickStartEvent event = CraftEventFactory.worldTickStartEvent;
++
++        event.setData(world.getWorld(), tickNumber);
++
++        Bukkit.getPluginManager().callEvent(event);
++    }
++
++    public static void callWorldTickEndEvent(WorldServer world, int tickNumber, double tickDuration) {
++        com.github.ruviolence.reaper.event.server.WorldTickEndEvent event = CraftEventFactory.worldTickEndEvent;
++
++        event.setData(world.getWorld(), tickNumber, tickDuration);
++
++        Bukkit.getPluginManager().callEvent(event);
++    }
+     // Reaper end
+ }

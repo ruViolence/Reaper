@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 15 Sep 2022 14:47:48 +0500
+Subject: [PATCH] feat: add ServerTickStartEvent, ServerTickEndEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index b952d8eb117369095d66dc9ba0d13b9ff3c4c8bc..ef03fe8b0d76a21dd48f38fe3b907496662b827a 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -685,7 +685,15 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+                     }
+                     lastTick = curTime;
+ 
++                    if (com.github.ruviolence.reaper.event.server.ServerTickStartEvent.getHandlerList().getRegisteredListeners().length != 0) org.bukkit.craftbukkit.event.CraftEventFactory.callServerTickStartEvent(this.ticks); // Reaper - ServerTickStartEvent
+                     this.C();
++                    // Reaper start - ServerTickEndEvent
++                    if (com.github.ruviolence.reaper.event.server.ServerTickEndEvent.getHandlerList().getRegisteredListeners().length != 0) {
++                        long endTime = System.nanoTime();
++                        long remaining = (TICK_TIME - (endTime - lastTick)) - catchupTime;
++                        org.bukkit.craftbukkit.event.CraftEventFactory.callServerTickEndEvent(this.ticks, ((double) (endTime - lastTick) / 1000000D), remaining);
++                    }
++                    // Reaper end
+                     this.Q = true;
+                 }
+                 // Spigot end
+diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+index 8d3afe3b6819e080d646b10020d852d287dc33de..f26ea55b4acaa87087b8f39ba7d0dce31f284813 100644
+--- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
++++ b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+@@ -80,6 +80,8 @@ public class CraftEventFactory {
+     private static final com.github.ruviolence.reaper.event.block.TileEntityTickEvent tileEntityTickEvent = new com.github.ruviolence.reaper.event.block.TileEntityTickEvent(null);
+     private static final com.github.ruviolence.reaper.event.player.EntityTrackedEvent entityTrackedEvent = new com.github.ruviolence.reaper.event.player.EntityTrackedEvent(null);
+     private static final com.github.ruviolence.reaper.event.player.EntityUntrackedEvent entityUntrackedEvent = new com.github.ruviolence.reaper.event.player.EntityUntrackedEvent(null);
++    private static final com.github.ruviolence.reaper.event.server.ServerTickStartEvent serverTickStartEvent = new com.github.ruviolence.reaper.event.server.ServerTickStartEvent();
++    private static final com.github.ruviolence.reaper.event.server.ServerTickEndEvent serverTickEndEvent = new com.github.ruviolence.reaper.event.server.ServerTickEndEvent();
+     // Reaper end
+ 
+     // helper methods
+@@ -1248,5 +1250,21 @@ public class CraftEventFactory {
+ 
+         Bukkit.getPluginManager().callEvent(event);
+     }
++
++    public static void callServerTickStartEvent(int tickNumber) {
++        com.github.ruviolence.reaper.event.server.ServerTickStartEvent event = CraftEventFactory.serverTickStartEvent;
++
++        event.setData(tickNumber);
++
++        Bukkit.getPluginManager().callEvent(event);
++    }
++
++    public static void callServerTickEndEvent(int tickNumber, double tickDuration, long timeEnd) {
++        com.github.ruviolence.reaper.event.server.ServerTickEndEvent event = CraftEventFactory.serverTickEndEvent;
++
++        event.setData(tickNumber, tickDuration, timeEnd);
++
++        Bukkit.getPluginManager().callEvent(event);
++    }
+     // Reaper end
+ }

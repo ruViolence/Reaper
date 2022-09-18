@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 15 Sep 2022 14:47:48 +0500
+Subject: [PATCH] feat: add ServerTickStartEvent, ServerTickEndEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/server/ServerTickEndEvent.java b/src/main/java/com/github/ruviolence/reaper/event/server/ServerTickEndEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a774542406df7f21e4b1c5c6c2598852b51cfd3
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/server/ServerTickEndEvent.java
+@@ -0,0 +1,43 @@
++package com.github.ruviolence.reaper.event.server;
++
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.server.ServerEvent;
++
++public class ServerTickEndEvent extends ServerEvent {
++    private static final HandlerList handlers = new HandlerList();
++
++    private int tickNumber;
++    private double tickDuration;
++    private long timeEnd;
++
++    public ServerTickEndEvent() {
++        super(false);
++    }
++
++    public int getTickNumber() {
++        return tickNumber;
++    }
++
++    public double getTickDuration() {
++        return tickDuration;
++    }
++
++    public long getTimeRemaining() {
++        return timeEnd - System.nanoTime();
++    }
++
++    public void setData(int tickNumber, double tickDuration, long timeEnd) {
++        this.tickNumber = tickNumber;
++        this.tickDuration = tickDuration;
++        this.timeEnd = System.nanoTime() + timeEnd;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/server/ServerTickStartEvent.java b/src/main/java/com/github/ruviolence/reaper/event/server/ServerTickStartEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..622a271b30433df549cbc3d0f8ed30b3f969fa05
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/server/ServerTickStartEvent.java
+@@ -0,0 +1,31 @@
++package com.github.ruviolence.reaper.event.server;
++
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.server.ServerEvent;
++
++public class ServerTickStartEvent extends ServerEvent {
++    private static final HandlerList handlers = new HandlerList();
++
++    private int tickNumber;
++
++    public ServerTickStartEvent() {
++        super(false);
++    }
++
++    public int getTickNumber() {
++        return tickNumber;
++    }
++
++    public void setData(int tickNumber) {
++        this.tickNumber = tickNumber;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}

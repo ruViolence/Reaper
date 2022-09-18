@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 15 Sep 2022 18:12:14 +0500
+Subject: [PATCH] feat: add WorldTickStartEvent, WorldTickEndEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/server/WorldTickEndEvent.java b/src/main/java/com/github/ruviolence/reaper/event/server/WorldTickEndEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..b029776223d6fa17f478bd87cd4deaee773e3997
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/server/WorldTickEndEvent.java
+@@ -0,0 +1,44 @@
++package com.github.ruviolence.reaper.event.server;
++
++import org.bukkit.World;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.server.ServerEvent;
++
++public class WorldTickEndEvent extends ServerEvent {
++    private static final HandlerList handlers = new HandlerList();
++
++    private World world;
++    private int tickNumber;
++    private double tickDuration;
++
++    public WorldTickEndEvent() {
++        super(false);
++    }
++
++    public World getWorld() {
++        return world;
++    }
++
++    public int getTickNumber() {
++        return tickNumber;
++    }
++
++    public double getTickDuration() {
++        return tickDuration;
++    }
++
++    public void setData(World world, int tickNumber, double tickDuration) {
++        this.world = world;
++        this.tickNumber = tickNumber;
++        this.tickDuration = tickDuration;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/server/WorldTickStartEvent.java b/src/main/java/com/github/ruviolence/reaper/event/server/WorldTickStartEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..e1057697fd40e8ca33755adb333348fd584ab448
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/server/WorldTickStartEvent.java
+@@ -0,0 +1,38 @@
++package com.github.ruviolence.reaper.event.server;
++
++import org.bukkit.World;
++import org.bukkit.event.HandlerList;
++import org.bukkit.event.server.ServerEvent;
++
++public class WorldTickStartEvent extends ServerEvent {
++    private static final HandlerList handlers = new HandlerList();
++
++    private World world;
++    private int tickNumber;
++
++    public WorldTickStartEvent() {
++        super(false);
++    }
++
++    public World getWorld() {
++        return world;
++    }
++
++    public int getTickNumber() {
++        return tickNumber;
++    }
++
++    public void setData(World world, int tickNumber) {
++        this.world = world;
++        this.tickNumber = tickNumber;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++}
