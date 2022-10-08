@@ -6,10 +6,10 @@ Subject: [PATCH] feat: configurable relative arrow motion
 It will help to disable the superbow hack: https://youtu.be/zsJKxT1vOZs?t=165
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 069e69fd5197b627170ef0f8eaff8d1b415c4644..bb329976e75f6fbd67193a2effa10425a6a9009c 100644
+index fd3138e7076d7c00950ebbe50e65d2b533bbbf15..0d8e94d70d4150c8fd43d587e301666cf8296b84 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -244,4 +244,9 @@ public class ReaperConfig {
+@@ -249,4 +249,9 @@ public class ReaperConfig {
      private static void timeUpdatePeriod() {
          timeUpdatePeriod = getInt("time-update-period", 20);
      }

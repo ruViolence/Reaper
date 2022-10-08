@@ -6,10 +6,10 @@ Subject: [PATCH] feat: entity tracker check Y
 Helps to hide minecarts in mineshafts and reduce the server load
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 96e7e260fcb8eef041bb7ae423eb5fc16d321f2f..a421c6d59e77cda090a7533fb3fcfd2d2e4c0b85 100644
+index 31e46554ef0c33785c17acb43a1a157ff72d8583..93242e3c96bb130958b5e19388593b3cef2d3984 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -259,4 +259,9 @@ public class ReaperConfig {
+@@ -264,4 +264,9 @@ public class ReaperConfig {
      private static void pingPeriod() {
          pingPeriod = MathHelper.clamp(getInt("ping-period", 15), 1, 30) * 1000L;
      }
@@ -20,12 +20,12 @@ index 96e7e260fcb8eef041bb7ae423eb5fc16d321f2f..a421c6d59e77cda090a7533fb3fcfd2d
 +    }
  }
 diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
-index 7bcac8e5a0a40275313b11ec0bad359857887819..e286b56ce2d942b0dbc970317fb80cb652bb1b06 100644
+index 8f3fd88f52494bd4e949f209735dae20ca032957..efdee67c973fbe12abaace1902eaa710d5a5c15a 100644
 --- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 +++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 @@ -511,6 +511,13 @@ public class EntityTrackerEntry {
          // Reaper end
-         int i = Math.min(this.e, entityplayer.getFurthestViewableBlock()); // Reaper - Dynamic view distance
+         int i = Math.min(this.e, com.github.ruviolence.reaper.ReaperConfig.dynamicViewDistance ? entityplayer.getFurthestViewableBlock() : this.f); // Reaper - Dynamic view distance
  
 +        // Reaper start
 +        if (com.github.ruviolence.reaper.ReaperConfig.entityTrackerCheckY) {

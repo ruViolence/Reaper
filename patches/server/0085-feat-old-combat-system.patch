@@ -54,7 +54,7 @@ index 0000000000000000000000000000000000000000..d73ef7652b67c97987ea973b129b771d
 +    }
 +}
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 6a79123dc9e8e495da6948cf85f8a4460db9e294..3a8c0361d1da7f92056ca73a75e17abe89eb9038 100644
+index 0738b4d7907d850c520cc89f35ba0e74515ca5de..d02e86391bc0b2321b4d3fa040efa7224976f60e 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 @@ -18,6 +18,7 @@ import java.lang.reflect.Modifier;
@@ -65,7 +65,7 @@ index 6a79123dc9e8e495da6948cf85f8a4460db9e294..3a8c0361d1da7f92056ca73a75e17abe
  import java.util.logging.Level;
  
  public class ReaperConfig {
-@@ -181,4 +182,35 @@ public class ReaperConfig {
+@@ -186,4 +187,35 @@ public class ReaperConfig {
      private static void stepSounds() {
          stepSounds = getBoolean("step-sounds", true);
      }

@@ -5,12 +5,12 @@ Subject: [PATCH] feat: configurable portal travel cache
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 726b89f392de6351484e56a3799ffc588ab176a4..9b7a1ce6caf7ac513d85174817fb0173a8b2ad42 100644
+index 3b1e41110390cf1579f4161facf7fa040dc834bc..2451fd9be55fd143150e67682167ec4e2cdae4e0 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -123,4 +123,11 @@ public class ReaperConfig {
-         config.addDefault(path, def);
-         return config.getString(path, config.getString(path));
+@@ -128,4 +128,11 @@ public class ReaperConfig {
+     private static void dynamicViewDistance() {
+         dynamicViewDistance = getBoolean("dynamic-view-distance", true);
      }
 +
 +    public static int portalTravelCacheLife;

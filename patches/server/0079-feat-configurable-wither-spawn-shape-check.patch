@@ -5,10 +5,10 @@ Subject: [PATCH] feat: configurable wither spawn shape check
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 008062def50ea86d67a61545aa6a4df73f966dda..928b8e80983dc2c6debb35b8d91e9c06ebe378b2 100644
+index 92637c77c1cf9e2f4647b4fb4a0d53bc6ca87909..c93566b38e3b2b2f217e65bc8912160e19f0a0fe 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -157,4 +157,9 @@ public class ReaperConfig {
+@@ -162,4 +162,9 @@ public class ReaperConfig {
              player.initDelayedChunksList();
          }
      }

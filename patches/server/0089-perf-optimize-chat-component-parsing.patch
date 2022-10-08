@@ -8,10 +8,10 @@ Reduced lags in other parts of the server by using a more optimized alternative 
 Added a new config option that enables alternative component parsing at all cases (currently does not support URL links parsing).
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index e52706e9a1846306c361fc858ddb94a61374ac03..63bb74b13b6a19edc31352c627d2fe4592cb96f2 100644
+index c061c98b809c6f99f00a2db0cb10a2d9aeee8548..a2ee722f5c23bcc9907edbf38659be1607f71d88 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -234,4 +234,9 @@ public class ReaperConfig {
+@@ -239,4 +239,9 @@ public class ReaperConfig {
      private static void disableVillages() {
          disableVillages = getBoolean("disable-villages", false);
      }
@@ -61,7 +61,7 @@ index 7ebe188e5972f90ccf2b2ac86c854822a27e52fe..507edfb72cacae4803870ca62509af67
  
          public ChatModifierSerializer() {}
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 58a574db5bd5f725d6e473befde5de5877693e70..4ee9112ad09d738f19fc45d09bc0e6266d3ede71 100644
+index 4be43502ba35fe8b45ac4a69f55691b510917de3..9fd71607d1031493ba90c23253955a52e65dff70 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -547,13 +547,13 @@ public class EntityPlayer extends EntityHuman implements ICrafting {

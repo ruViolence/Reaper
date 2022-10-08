@@ -5,10 +5,10 @@ Subject: [PATCH] perf: configurable asynchronous JsonList saving
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index a421c6d59e77cda090a7533fb3fcfd2d2e4c0b85..c26630fdc2316638dcac03de253c40bf7b9ba5a3 100644
+index 93242e3c96bb130958b5e19388593b3cef2d3984..52ffaf61a741f17cf7481cc2bbc45577293cf2d2 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -264,4 +264,9 @@ public class ReaperConfig {
+@@ -269,4 +269,9 @@ public class ReaperConfig {
      private static void entityTrackerCheckY() {
          entityTrackerCheckY = getBoolean("entity-tracker-check-y", false);
      }

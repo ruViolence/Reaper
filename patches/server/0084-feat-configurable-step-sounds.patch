@@ -5,10 +5,10 @@ Subject: [PATCH] feat: configurable step sounds
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 503ffa11262ba042586c56f0bed461d12669020b..6a79123dc9e8e495da6948cf85f8a4460db9e294 100644
+index d906587c1a68a65f5308a948f009a05ec270b299..0738b4d7907d850c520cc89f35ba0e74515ca5de 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -176,4 +176,9 @@ public class ReaperConfig {
+@@ -181,4 +181,9 @@ public class ReaperConfig {
      private static void paperCustomFlowSpeed() {
          paperCustomFlowSpeed = getBoolean("paper-custom-flow-speed", true);
      }

@@ -5,7 +5,7 @@ Subject: [PATCH] fix: teleport invisibility
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
-index e286b56ce2d942b0dbc970317fb80cb652bb1b06..e5291e1b7e16723a649a244895504e08cac1a2aa 100644
+index efdee67c973fbe12abaace1902eaa710d5a5c15a..a75732bd1ce691e968ab5398a18b2638fd43be89 100644
 --- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 +++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 @@ -182,7 +182,7 @@ public class EntityTrackerEntry {

@@ -70,7 +70,7 @@ index 66099259d578cc6addd0342eba19ab2dac275bf9..7b40040a4222ec6a2eeeb7c94040efaf
 +    }
  }
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 9b7a1ce6caf7ac513d85174817fb0173a8b2ad42..008062def50ea86d67a61545aa6a4df73f966dda 100644
+index 2451fd9be55fd143150e67682167ec4e2cdae4e0..92637c77c1cf9e2f4647b4fb4a0d53bc6ca87909 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 @@ -1,6 +1,9 @@
@@ -83,7 +83,7 @@ index 9b7a1ce6caf7ac513d85174817fb0173a8b2ad42..008062def50ea86d67a61545aa6a4df7
  import net.minecraft.server.MinecraftServer;
  import org.bukkit.Bukkit;
  import org.bukkit.command.Command;
-@@ -130,4 +133,28 @@ public class ReaperConfig {
+@@ -135,4 +138,28 @@ public class ReaperConfig {
          portalTravelCacheLife = 20 * getInt("portal-travel.cache-life", 15);
          portalTravelInstantExpire = getBoolean("portal-travel.instant-expire", false);
      }
@@ -113,7 +113,7 @@ index 9b7a1ce6caf7ac513d85174817fb0173a8b2ad42..008062def50ea86d67a61545aa6a4df7
 +    }
  }
 diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
-index 76f4c63835496dbeaf00b62e521d660dfef77f74..58a574db5bd5f725d6e473befde5de5877693e70 100644
+index 96814759247c24370a4ce890c784e6fa7cc05006..4be43502ba35fe8b45ac4a69f55691b510917de3 100644
 --- a/src/main/java/net/minecraft/server/EntityPlayer.java
 +++ b/src/main/java/net/minecraft/server/EntityPlayer.java
 @@ -89,6 +89,60 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
@@ -197,12 +197,12 @@ index 76f4c63835496dbeaf00b62e521d660dfef77f74..58a574db5bd5f725d6e473befde5de58
              CrashReport crashreport = CrashReport.a(throwable, "Ticking player");
              CrashReportSystemDetails crashreportsystemdetails = crashreport.a("Player being ticked");
 diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
-index 79036b71eb37a29282e05ef6fbabc4aaecb5d7d0..7bcac8e5a0a40275313b11ec0bad359857887819 100644
+index 01c29a59d77c205bb31a5c90242eabc2f6b27303..8f3fd88f52494bd4e949f209735dae20ca032957 100644
 --- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 +++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 @@ -511,7 +511,8 @@ public class EntityTrackerEntry {
          // Reaper end
-         int i = Math.min(this.e, entityplayer.getFurthestViewableBlock()); // Reaper - Dynamic view distance
+         int i = Math.min(this.e, com.github.ruviolence.reaper.ReaperConfig.dynamicViewDistance ? entityplayer.getFurthestViewableBlock() : this.f); // Reaper - Dynamic view distance
  
 -        return d0 >= (double) (-i) && d0 <= (double) i && d1 >= (double) (-i) && d1 <= (double) i && this.tracker.a(entityplayer);
 +        return d0 >= (double) (-i) && d0 <= (double) i && d1 >= (double) (-i) && d1 <= (double) i && this.tracker.a(entityplayer)
@@ -240,7 +240,7 @@ index e8d7d710774e80d1316ac207e3b5ab388e16670b..54fd5f22e564ef3093e74a0b62fe1072
          if (this.c.contains(entityplayer)) {
              // CraftBukkit start - If we haven't loaded yet don't load the chunk just so we can clean it up
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 5fc140b2f6356d1c84c4421b59f3bd534f554f7e..423ffc955dcd175b789e7191e48abda956717c85 100644
+index 3157d9c15d5a4598f8a4cdcc03ad2dda4350b9ac..4c2ac3081d7f1770b46ea436f73a4c44506a7bbf 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
 @@ -245,7 +245,7 @@ public class PlayerChunkMap {

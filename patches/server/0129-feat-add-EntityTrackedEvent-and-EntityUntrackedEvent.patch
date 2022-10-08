@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add EntityTrackedEvent and EntityUntrackedEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
-index e5291e1b7e16723a649a244895504e08cac1a2aa..2556631a1e6a7ed6a1723485ab4bf7760666756e 100644
+index a75732bd1ce691e968ab5398a18b2638fd43be89..02f3e1b80abba4e7ddff97d28e180d21bf8158bf 100644
 --- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 +++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
 @@ -453,12 +453,14 @@ public class EntityTrackerEntry {

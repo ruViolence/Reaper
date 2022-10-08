@@ -5,10 +5,10 @@ Subject: [PATCH] feat: configurable halloween mob feature
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 3b89f2db92d81825f98d3a21def6957419eaa6e5..831d48c2e6b689b3a4f512cbd6860a54729a35df 100644
+index ef2b7bc818ec5fbd0b901a93695f0aa39a22fe54..ebc8f7c97aabe9073dfbdfd6c5fb975bf0902cd3 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -166,4 +166,9 @@ public class ReaperConfig {
+@@ -171,4 +171,9 @@ public class ReaperConfig {
          shapeCheckEndPortal = getBoolean("shape-check.end-portal", true);
          shapeCheckNetherPortal = getBoolean("shape-check.nether-portal", true);
      }

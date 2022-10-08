@@ -5,10 +5,10 @@ Subject: [PATCH] feat: configurable end portal shape check
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 928b8e80983dc2c6debb35b8d91e9c06ebe378b2..45923d60c2609f70ac125938a23868c1837a5a9e 100644
+index c93566b38e3b2b2f217e65bc8912160e19f0a0fe..96a46a7eb51afa3461f619777a94e2350142f130 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -159,7 +159,9 @@ public class ReaperConfig {
+@@ -164,7 +164,9 @@ public class ReaperConfig {
      }
  
      public static boolean shapeCheckWither;

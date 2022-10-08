@@ -5,7 +5,7 @@ Subject: [PATCH] perf: use FastUtil in PlayerChunkMap
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
-index 423ffc955dcd175b789e7191e48abda956717c85..341f4f78b25edb204e1af41ed6984bb9c34ecbb8 100644
+index 4c2ac3081d7f1770b46ea436f73a4c44506a7bbf..d03f782c0333ad3bcbcae8f82f0fac7a1d2a5489 100644
 --- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
 +++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
 @@ -41,7 +41,7 @@ public class PlayerChunkMap {

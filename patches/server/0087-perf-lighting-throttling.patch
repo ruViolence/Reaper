@@ -24,7 +24,7 @@ index d10b64229aa5a42e345633130f504682282fe028..fd764891ad62de69b404da891f5077e6
      public boolean disableEndCredits;
      private void disableEndCredits() {
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 3a8c0361d1da7f92056ca73a75e17abe89eb9038..5927203b8f6fbfbebe8dd98bab7704e18f8a5151 100644
+index d02e86391bc0b2321b4d3fa040efa7224976f60e..a59d750229e63810e2efce175d087de392cacfe8 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 @@ -5,6 +5,7 @@ import net.minecraft.server.DispenserRegistry;
@@ -35,7 +35,7 @@ index 3a8c0361d1da7f92056ca73a75e17abe89eb9038..5927203b8f6fbfbebe8dd98bab7704e1
  import org.bukkit.Bukkit;
  import org.bukkit.command.Command;
  import org.bukkit.configuration.InvalidConfigurationException;
-@@ -213,4 +214,19 @@ public class ReaperConfig {
+@@ -218,4 +219,19 @@ public class ReaperConfig {
          oldCombatHideAttributes = getBoolean("old-combat.hide-item-attributes", false);
          oldCombatRandom = oldCombatEnabled ? new Random() : null;
      }

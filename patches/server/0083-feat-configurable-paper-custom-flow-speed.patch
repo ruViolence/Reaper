@@ -6,10 +6,10 @@ Subject: [PATCH] feat: configurable paper custom flow speed
 Creates an unnecessary load, even when most people don't need custom flow speed
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index 831d48c2e6b689b3a4f512cbd6860a54729a35df..503ffa11262ba042586c56f0bed461d12669020b 100644
+index ebc8f7c97aabe9073dfbdfd6c5fb975bf0902cd3..d906587c1a68a65f5308a948f009a05ec270b299 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -171,4 +171,9 @@ public class ReaperConfig {
+@@ -176,4 +176,9 @@ public class ReaperConfig {
      private static void halloweenMobFeature() {
          halloweenMobFeature = getBoolean("halloween-mob-feature", true);
      }

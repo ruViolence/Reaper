@@ -5,10 +5,10 @@ Subject: [PATCH] feat: configurable ping period
 
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-index d20b015d97beae5fd7ada5988b317e1b76fc87a1..96e7e260fcb8eef041bb7ae423eb5fc16d321f2f 100644
+index 02a4c00bb4de0f989a1fc4a920925c5d9c8213f3..31e46554ef0c33785c17acb43a1a157ff72d8583 100644
 --- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
 +++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
-@@ -254,4 +254,9 @@ public class ReaperConfig {
+@@ -259,4 +259,9 @@ public class ReaperConfig {
      private static void roundPlayerPing() {
          roundPlayerPing = getBoolean("round-player-ping", false);
      }
