@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Fri, 15 Jul 2022 02:35:58 +0500
+Subject: [PATCH] perf-small-paper-optimize
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 3602e4079c3c53cd9eebbce968bb54089ad78dea..e034c56b7c18905a821d98c12cfcaa145bce4d77 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -2217,7 +2217,7 @@ public abstract class World implements IBlockAccess {
+         }
+     }
+ 
+-    public Map<BlockPosition, TileEntity> capturedTileEntities = Maps.newHashMap();
++    public Map<BlockPosition, TileEntity> capturedTileEntities = Maps.newLinkedHashMap(); // Paper
+     @Nullable
+     public TileEntity getTileEntity(BlockPosition blockposition) {
+         if (blockposition.isInvalidYLocation()) { // Paper
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index afe3e23a0567a8c229fef78f27fa3c61f21795bf..90229526b42a14f22896da066b0b8e3b14161e7e 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -810,6 +810,35 @@ public final class CraftServer implements Server {
+         enablePlugins(PluginLoadOrder.POSTWORLD);
+     }
+ 
++    // Paper start
++    public void waitForAsyncTasksShutdown() {
++        int pollCount = 0;
++
++        // Wait for at most 5 seconds for plugins to close their threads
++        while (pollCount < 10*5 && getScheduler().getActiveWorkers().size() > 0) {
++            try {
++                Thread.sleep(100);
++            } catch (InterruptedException e) {}
++            pollCount++;
++        }
++
++        List<BukkitWorker> overdueWorkers = getScheduler().getActiveWorkers();
++        for (BukkitWorker worker : overdueWorkers) {
++            Plugin plugin = worker.getOwner();
++            String author = "<NoAuthorGiven>";
++            if (plugin.getDescription().getAuthors().size() > 0) {
++                author = plugin.getDescription().getAuthors().get(0);
++            }
++            getLogger().log(Level.SEVERE, String.format(
++                    "Nag author: '%s' of '%s' about the following: %s",
++                    author,
++                    plugin.getDescription().getName(),
++                    "This plugin is not properly shutting down its async tasks when it is being shut down. This task may throw errors during the final shutdown logs and might not complete before process dies."
++            ));
++        }
++    }
++    // Paper end
++
+     @Override
+     public void reloadData() {
+         console.reload();
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index 9a920cc9962e03626e1dd713cf07b4b306e36d19..e329e21ecceafa8587f34f8dad3450cd3a1a6994 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -22,6 +22,7 @@ public class Main {
+ 
+     public static void main(String[] args) {
+         // Todo: Installation script
++        if (System.getProperty("jdk.nio.maxCachedBufferSize") == null) System.setProperty("jdk.nio.maxCachedBufferSize", "262144"); // Paper - cap per-thread NIO cache size
+         OptionParser parser = new OptionParser() {
+             {
+                 acceptsAll(asList("?", "help"), "Show the help");

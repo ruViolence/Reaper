@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Sat, 16 Jul 2022 09:58:04 +0500
+Subject: [PATCH] Fix-Packet-Fly
+
+
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index e0ede414d2e5fd63e3b1ffba8e014cd1495aaf7e..23adfdc901c7508e485994b45d1d2a3b02ef449d 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -134,6 +134,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+     private float lastYaw = Float.MAX_VALUE;
+     private boolean justTeleported = false;
+     private boolean hasMoved; // Spigot
++    private boolean lagbackTeleport; // Reaper
+ 
+     public CraftPlayer getPlayer() {
+         return (this.player == null) ? null : (CraftPlayer) this.player.getBukkitEntity();
+@@ -483,6 +484,15 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+ 
+     public void a(PacketPlayInTeleportAccept packetplayinteleportaccept) {
+         PlayerConnectionUtils.ensureMainThread(packetplayinteleportaccept, this, this.player.x());
++        // Reaper start
++        if (packetplayinteleportaccept.a() == this.teleportAwait && this.lagbackTeleport) {
++            if (++this.teleportAwait == Integer.MAX_VALUE) {
++                this.teleportAwait = 0;
++            }
++            this.lagbackTeleport = false;
++            return;
++        }
++        // Reaper end
+         if (packetplayinteleportaccept.a() == this.teleportAwait && this.teleportPos != null) { // CraftBukkit
+             this.player.setLocation(this.teleportPos.x, this.teleportPos.y, this.teleportPos.z, this.player.yaw, this.player.pitch);
+             if (this.player.L()) {
+@@ -611,8 +621,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+ 
+                                 if (d11 - d10 > Math.max(f2, Math.pow((double) (org.spigotmc.SpigotConfig.movedTooQuicklyMultiplier * (float) i * speed), 2)) /*&& (!this.minecraftServer.R() || !this.minecraftServer.Q().equals(this.player.getName()))*/) { // Spigot // Reaper - Remove singleplayer code
+                                 // CraftBukkit end
+-                                    PlayerConnection.LOGGER.warn("{} moved too quickly! {},{},{}", this.player.getName(), Double.valueOf(d7), Double.valueOf(d8), Double.valueOf(d9));
+-                                    this.a(this.player.locX, this.player.locY, this.player.locZ, this.player.yaw, this.player.pitch);
++                                    PlayerConnection.LOGGER.warn("{} Prevented Packet Fly! {},{},{}", this.player.getName(), Double.valueOf(d7), Double.valueOf(d8), Double.valueOf(d9));
++                                    // Reaper start
++                                    sendPacket(new PacketPlayOutPosition(this.player.locX, this.player.locY, this.player.locZ, this.player.yaw, this.player.pitch, Collections.emptySet(), teleportAwait));
++                                    this.lagbackTeleport = true;
++                                    // Reaper end
+                                     return;
+                                 }
+                             }

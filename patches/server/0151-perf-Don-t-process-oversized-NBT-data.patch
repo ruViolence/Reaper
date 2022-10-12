@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Softik Lord <dimap9986@gmail.com>
+Date: Sat, 16 Jul 2022 09:52:40 +0500
+Subject: [PATCH] perf-Don-t-process-oversized-NBT-data
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index bc24f0890511ed183301413cd8ed28e8aad90348..c81e2a5e42c7472639709949bcee011bda245af6 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -271,6 +271,10 @@ public class ReaperConfig {
+     private static void useEigencraftRedstone() {
+         useEigencraftRedstone = getBoolean("use-Eigencraft-Redstone", true);
+     }
++    public static boolean DontProcessOversizedNbt;
++    private static void DontProcessOversizedNbt() {
++        DontProcessOversizedNbt = getBoolean("Dont-Process-Oversized-NBT-data", false);
++    }
+     public static int maxDataSaveThreads = 8;
+     private static void maxDataSaveThreads() {
+         maxDataSaveThreads = getInt("settings.max-data-save-threads", 8);
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 860e720e0856c5172e189021d965f6e2e430115b..14dcbe06c14aff8dd35472534d07c96da4e8afa7 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -1,6 +1,7 @@
+ package net.minecraft.server;
+ 
+ import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
++import com.github.ruviolence.reaper.ReaperConfig;
+ import com.google.common.base.Objects;
+ import com.google.common.collect.Maps;
+ import java.util.Collection;
+@@ -2020,6 +2021,19 @@ public abstract class EntityLiving extends Entity {
+ 
+                 ItemStack itemstack1 = this.getEquipment(enumitemslot);
+ 
++                // Reaper start
++                NBTTagCompound tag1 = itemstack1.getTag();
++                if (tag1 != null && tag1.toString().length() > 80000 && ReaperConfig.DontProcessOversizedNbt) {
++                    itemstack1.setCount(0);
++                    itemstack1.setTag(new NBTTagCompound());
++                }
++                NBTTagCompound tag = itemstack.getTag();
++                if (tag != null && tag.toString().length() > 80000 && ReaperConfig.DontProcessOversizedNbt) {
++                    itemstack.setCount(0);
++                    itemstack.setTag(new NBTTagCompound());
++                }
++                // Reaper end
++
+                 if (!ItemStack.matches(itemstack1, itemstack)) {
+                     // Paper start - PlayerArmorChangeEvent
+                     if (this instanceof EntityPlayer && enumitemslot.getType() == EnumItemSlot.Function.ARMOR) {
