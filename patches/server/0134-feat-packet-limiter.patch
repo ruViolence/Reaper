@@ -125,6 +125,19 @@ index 52ffaf61a741f17cf7481cc2bbc45577293cf2d2..b9e0ec8066abab58c38886b6a1f94347
 +    }
 +    // Paper end - packet limiter
  }
+diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..5e15f400aab49bc52efe07aac8f368d11826a73c
+--- /dev/null
++++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+@@ -0,0 +1,7 @@
++package io.papermc.paper.configuration;
++
++public class GlobalConfiguration {
++    public class PacketLimiter {
++        // Reaper - This is just a dummy class to prevent ViaVersion from enabling its packet limiter.
++    }
++}
 diff --git a/src/main/java/io/papermc/paper/util/IntervalledCounter.java b/src/main/java/io/papermc/paper/util/IntervalledCounter.java
 new file mode 100644
 index 0000000000000000000000000000000000000000..b9728232925a07c0af4c3b816e9ebd7b6a7ec485
