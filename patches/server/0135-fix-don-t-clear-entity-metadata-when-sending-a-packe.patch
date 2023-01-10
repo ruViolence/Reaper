@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Tue, 10 Jan 2023 06:29:25 +0500
+Subject: [PATCH] fix: don't clear entity metadata when sending a packet with
+ all data
+
+Metadata of an entity is cleared for some reason when some player starts to track that entity.
+This causes desynchronization of states for other trackers and the entity itself if it is a player, for example sprinting or gliding.
+
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutEntityMetadata.java b/src/main/java/net/minecraft/server/PacketPlayOutEntityMetadata.java
+index fdf19d1f41eb581d652e897207b83454ecada873..12ef11ef0eb7d39baf8c66d19466232c1670511c 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutEntityMetadata.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutEntityMetadata.java
+@@ -14,6 +14,7 @@ public class PacketPlayOutEntityMetadata implements Packet<PacketListenerPlayOut
+         this.a = i;
+         if (flag) {
+             this.b = datawatcher.c();
++            if (false) // Reaper - Don't clear because of one player
+             datawatcher.e();
+         } else {
+             this.b = datawatcher.b();
