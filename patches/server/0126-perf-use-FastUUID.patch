@@ -268,7 +268,7 @@ index 921cddd2095f4cf131ac63992ae9aba5cfa215c5..cc83165acfdda7eef2f1511909e802e8
      public static final IDispenseBehavior b = new DispenseBehaviorItem() {
          protected ItemStack b(ISourceBlock isourceblock, ItemStack itemstack) {
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index 7e41a619e2edf3bac0a305e047ba6f2f04ce8f05..95a967bd285479f55c6e686fa7b22dcae68ce499 100644
+index 5fcba6969ea9a2fe899f86ee838a97f468883d9d..df0d975c8dcd88ed16e085d5ba810929f22d1484 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -1080,7 +1080,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add ServerTickStartEvent, ServerTickEndEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index b952d8eb117369095d66dc9ba0d13b9ff3c4c8bc..ef03fe8b0d76a21dd48f38fe3b907496662b827a 100644
+index 966a8df509e96fe076608801c9049e61a9e625a8..fcd59b9f10fc1a071765b73243ae6a3e14031318 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -685,7 +685,15 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs

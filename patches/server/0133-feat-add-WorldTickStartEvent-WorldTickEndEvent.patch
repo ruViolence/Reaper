@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add WorldTickStartEvent, WorldTickEndEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
-index ef03fe8b0d76a21dd48f38fe3b907496662b827a..35bbe5f7ca427aec537654c355f81f7260fe4b59 100644
+index fcd59b9f10fc1a071765b73243ae6a3e14031318..7e6d4ea01c76a9424ded4936be804a0b331764db 100644
 --- a/src/main/java/net/minecraft/server/MinecraftServer.java
 +++ b/src/main/java/net/minecraft/server/MinecraftServer.java
 @@ -917,6 +917,8 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
