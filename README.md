@@ -1,6 +1,15 @@
 # Reaper [![Dev Build](https://github.com/ruViolence/Reaper/actions/workflows/dev-build.yml/badge.svg)](https://github.com/ruViolence/Reaper/actions/workflows/dev-build.yml)
 
-Fork of Paper for 1.12.2 with some performance tweaks, bug fixes and improvements.
+Another Paper 1.12.2 fork with some performance enhancements, bug fixes, and improvements.
+
+## Support limitation
+
+I created this fork for myself and I use it on my server.
+Therefore, it is of little importance to me if it lacks certain features that others may require.
+If you are dissatisfied with this fork, there are many other forks available on the internet.
+You may also create your own fork and patch it as you wish.
+If there are any bugs in the fork, please report them in the [issues](https://github.com/ruViolence/Reaper/issues),
+but there is no guarantee that I will take the time to address them if they do not greatly concern me.
 
 ## How To (Server Admins)
 
