@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sun, 29 Jan 2023 15:25:37 +0500
+Subject: [PATCH] fix: jdk8 support
+
+Fixes JDK8 support after compiling project on JDK17
+
+diff --git a/src/main/java/net/minecraft/server/RegionFile.java b/src/main/java/net/minecraft/server/RegionFile.java
+index 273dc269d5617ce1dd9206014cf77cde11bf7ae1..05bd5fe48889bc47eb347e941e7ec61f0b33d407 100644
+--- a/src/main/java/net/minecraft/server/RegionFile.java
++++ b/src/main/java/net/minecraft/server/RegionFile.java
+@@ -81,7 +81,7 @@ public class RegionFile {
+             while (header.hasRemaining())  {
+                 if (this.c.getChannel().read(header) == -1) throw new EOFException();
+             }
+-            header.clear();
++            ((java.nio.Buffer) header).clear(); // Reaper - Fix JDK8 support
+             IntBuffer headerAsInts = header.asIntBuffer();
+             initOversizedState();
+             // Paper End
