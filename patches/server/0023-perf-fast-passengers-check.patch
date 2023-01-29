@@ -38,7 +38,7 @@ index 82cbcfe6e52f3c4f1b8fd3e657e7c04f8dc9cc05..492e7e2bb64e05f66799f0646ad6e7a5
          return (List) (this.passengers.isEmpty() ? Collections.emptyList() : Lists.newArrayList(this.passengers));
      }
 diff --git a/src/main/java/net/minecraft/server/EntityBoat.java b/src/main/java/net/minecraft/server/EntityBoat.java
-index 369d2b8f4165e92b273ca0133c900e5bc802557e..4dfdbc96ecb3dede6dd227fb1d9e86cea1641596 100644
+index 369d2b8f4165e92b273ca0133c900e5bc802557e..8f00f772957c50661025e81a880add8d9225a6fc 100644
 --- a/src/main/java/net/minecraft/server/EntityBoat.java
 +++ b/src/main/java/net/minecraft/server/EntityBoat.java
 @@ -242,7 +242,7 @@ public class EntityBoat extends Entity {
@@ -77,7 +77,7 @@ index 369d2b8f4165e92b273ca0133c900e5bc802557e..4dfdbc96ecb3dede6dd227fb1d9e86ce
                  int j = entity.getId() % 2 == 0 ? 90 : 270;
  
                  entity.h(((EntityAnimal) entity).aN + (float) j);
-@@ -779,7 +779,7 @@ public class EntityBoat extends Entity {
+@@ -779,14 +779,15 @@ public class EntityBoat extends Entity {
      }
  
      protected boolean q(Entity entity) {
@@ -86,6 +86,15 @@ index 369d2b8f4165e92b273ca0133c900e5bc802557e..4dfdbc96ecb3dede6dd227fb1d9e86ce
      }
  
      @Nullable
+     public Entity bE() {
++        if (isPassengersEmpty()) return null; // Reaper
+         List list = this.bF();
+ 
+-        return list.isEmpty() ? null : (Entity) list.get(0);
++        return (Entity) list.get(0); // Reaper
+     }
+ 
+     public static enum EnumBoatType {
 diff --git a/src/main/java/net/minecraft/server/EntityHorseAbstract.java b/src/main/java/net/minecraft/server/EntityHorseAbstract.java
 index d3e25e43063d34bbba7cafa79abb88348af0f707..c56e170a328c354d330f47aa16f105fec0bf9c04 100644
 --- a/src/main/java/net/minecraft/server/EntityHorseAbstract.java

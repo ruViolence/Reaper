@@ -111,7 +111,7 @@ index 30763d0706af76d488350a4a3cc47369d71a14f5..72efa158e1c0cbd62fecfd721c05413d
  
          if (this.isAsleep()) {
 diff --git a/src/main/java/net/minecraft/server/EntityBoat.java b/src/main/java/net/minecraft/server/EntityBoat.java
-index 4dfdbc96ecb3dede6dd227fb1d9e86cea1641596..04bbc9c172950798cff39fba8c6f44fa7c66ca8a 100644
+index 8f00f772957c50661025e81a880add8d9225a6fc..ed124c113e830301fcf2e6c4f3ef731668703cd2 100644
 --- a/src/main/java/net/minecraft/server/EntityBoat.java
 +++ b/src/main/java/net/minecraft/server/EntityBoat.java
 @@ -735,7 +735,7 @@ public class EntityBoat extends Entity {
