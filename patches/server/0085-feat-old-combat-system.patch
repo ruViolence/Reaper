@@ -219,7 +219,7 @@ index 6b3f13d4b14a22b9e2ba7c8ab9df6e551383fb6d..0dbf25d62e5ed2a6e88ca59565ace278
      }
  
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index 180d5cde8dd751cca950040dc9a9c8d8de8922fb..ca4bf3edf41c27840e147e6abdcfe3aa8ae759be 100644
+index d0070ccd2ba1bf9bfcc482ab0233ccd2e09cb5af..16ffeced2dd31dae87e5fc51ce8c99de7140bb0b 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -991,7 +991,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper

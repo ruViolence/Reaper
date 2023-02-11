@@ -45,7 +45,7 @@ index 39b770ab27c23369385aba281d405ce73587d5a0..779efa3f770a6b1c424ea0cfc26f4e39
                  object = minecraftserver.a(uuid);
                  if (object == null) {
 diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
-index ca4bf3edf41c27840e147e6abdcfe3aa8ae759be..e5a88857451e90ec7f84fa02c5577fc421223fb7 100644
+index 16ffeced2dd31dae87e5fc51ce8c99de7140bb0b..79c868f6ef283886da0a0103d2f7460a149af611 100644
 --- a/src/main/java/net/minecraft/server/Entity.java
 +++ b/src/main/java/net/minecraft/server/Entity.java
 @@ -230,7 +230,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
@@ -75,7 +75,7 @@ index ca4bf3edf41c27840e147e6abdcfe3aa8ae759be..e5a88857451e90ec7f84fa02c5577fc4
      }
  
      public boolean isInvulnerable(DamageSource damagesource) {
-@@ -2685,7 +2685,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+@@ -2684,7 +2684,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
      public void setUUID(UUID uuid) { a(uuid); } // Paper - OBFHELPER
      public void a(UUID uuid) {
          this.uniqueID = uuid;
