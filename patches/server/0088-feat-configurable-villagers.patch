@@ -61,7 +61,7 @@ index a3aa9f82e60a4fc4e90c5a46e37b05e7e3a0b31f..8290d50e12356b88fe090c7750c5fb70
          NBTTagList nbttaglist = nbttagcompound.getList("Villages", 10);
  
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 8457d66e5e5a021223312e05f340a7241c827bcf..6f2191a9ae3481e1bfc4c09a00570bab052d0185 100644
+index bae37c9f3ea9e12d208768f7d3311f89058f2d22..c9c9fcff9eba61d2f943ddb625a0b0b60be17e04 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -338,10 +338,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {

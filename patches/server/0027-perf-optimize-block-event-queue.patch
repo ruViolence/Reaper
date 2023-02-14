@@ -39,7 +39,7 @@ index aa7f0bcb606899c589d7501587dc0f07ee1ea85c..68643c2df7fc26537c80a413c27810c7
          return "TE(" + this.a + ")," + this.c + "," + this.d + "," + this.b;
      }
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index 9180ddae84451e9d60c360639e89824d7662ab85..0807f1530a7fdd9fce6aac327b4646e37261ce48 100644
+index 9180ddae84451e9d60c360639e89824d7662ab85..fd489c2a6aae254557e58b12fe17a2674552b099 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -49,8 +49,12 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -50,7 +50,7 @@ index 9180ddae84451e9d60c360639e89824d7662ab85..0807f1530a7fdd9fce6aac327b4646e3
      private final WorldServer.BlockActionDataList[] U = new WorldServer.BlockActionDataList[] { new WorldServer.BlockActionDataList(null), new WorldServer.BlockActionDataList(null)};
      private int V;
 +    */
-+    private final Set<BlockActionData> blockEventPending = new java.util.HashSet<>(); // Reaper
++    private final Set<BlockActionData> blockEventPending = new java.util.LinkedHashSet<>(); // Reaper
 +    // Reaper end
      private final List<NextTickListEntry> W = Lists.newArrayList();
  
