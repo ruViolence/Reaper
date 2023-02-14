@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 15 Feb 2023 01:13:24 +0500
+Subject: [PATCH] feat: drop use packets while inside the inventory
+
+Will help to get rid of the desynchronization of the number of numPlayersUsing in chests/shulkers.
+However, it modifies vanilla logic and could lead to problems with some plugins.
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index b72f6aa70d2fd54a420254c2f4058a690908a61f..97d95ad1b736ca9b61204c36c55a5f32377f13b6 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -285,6 +285,11 @@ public class ReaperConfig {
+         mapDecorationsLimit = getInt("map-decorations-limit", 10);
+     }
+ 
++    public static boolean dropUsePacketsInInventory;
++    private static void dropUsePacketsInInventory() {
++        dropUsePacketsInInventory = getBoolean("drop-use-packets-in-inventory", false);
++    }
++
+     // Paper start - packet limiter
+     public static String packetLimiterKickMessage;
+     public static PacketLimit packetLimiterAllPackets;
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index ed7352cb23bcbfefb4b25627d8a8f0145e17079c..7660e2c32cf5cf12108744cf7c71fe74c95fa117 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -1009,6 +1009,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+         PlayerConnectionUtils.ensureMainThread(packetplayinuseitem, this, this.player.x());
+         if (this.player.isFrozen()) return; // CraftBukkit
+         if (!checkLimit(packetplayinuseitem.timestamp)) return; // Spigot - check limit
++        if (player.activeContainer != player.defaultContainer && com.github.ruviolence.reaper.ReaperConfig.dropUsePacketsInInventory) return; // Reaper
+         WorldServer worldserver = this.minecraftServer.getWorldServer(this.player.dimension);
+         EnumHand enumhand = packetplayinuseitem.c();
+         ItemStack itemstack = this.player.b(enumhand);
