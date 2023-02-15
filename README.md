@@ -15,7 +15,7 @@ but there is no guarantee that I will take the time to address them if they do n
 
 Reaper uses the same paperclip jar system that Paper uses.
 
-You can download the latest build of Reaper by going [here](https://github.com/ruViolence/Reaper/releases/latest).
+You can download the latest release of Reaper by going [here](https://github.com/ruViolence/Reaper/releases/latest) but I highly recommend to use the latest [dev build](https://nightly.link/ruViolence/Reaper/workflows/dev-build/ver%2F1.12.2/Reaper-JDK8.zip).
 
 ## How To (Plugin Developers)
 
