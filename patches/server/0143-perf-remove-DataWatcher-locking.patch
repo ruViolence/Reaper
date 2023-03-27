@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Mon, 27 Mar 2023 22:30:20 +0500
+Subject: [PATCH] perf: remove DataWatcher locking
+
+The lock in DataWatcher is used to prevent concurrent modifications,
+however any modifications to this map only occur on initialization of
+an Entity in its constructor.
+
+Every other access is through a readlock, which allows the threads to
+pass if there is no thread holding the writelock.
+
+Since the writelock is only obtained in the constructor of the Entity,
+the further readlocks are actually useless.
+
+Credits to Spigot: https://hub.spigotmc.org/stash/projects/SPIGOT/repos/spigot/browse/CraftBukkit-Patches/0108-Remove-DataWatcher-Locking.patch?until=9a643a6af514ba081c8b828a939bc4eb921a5089&untilPath=CraftBukkit-Patches%2F0108-Remove-DataWatcher-Locking.patch
+
+diff --git a/src/main/java/net/minecraft/server/DataWatcher.java b/src/main/java/net/minecraft/server/DataWatcher.java
+index 1d5c727fb360b7cfd6cb7231e6b6e8ee17ce485d..1099a27b24a598b7986c8b4fce0c68896fdd2d61 100644
+--- a/src/main/java/net/minecraft/server/DataWatcher.java
++++ b/src/main/java/net/minecraft/server/DataWatcher.java
+@@ -28,7 +28,7 @@ public class DataWatcher {
+     private static final Object2IntMap<Class<? extends Entity>> b = new Object2IntOpenHashMap<>(); // Reaper - FastUtil optimization
+     private final Entity c;
+     private final Int2ObjectOpenHashMap<DataWatcher.Item<?>> d = new Int2ObjectOpenHashMap<>(); // Paper // Reaper - FastUtil optimization
+-    private final ReadWriteLock e = new ReentrantReadWriteLock();
++    // private final ReadWriteLock e = new ReentrantReadWriteLock(); // Spigot - not required // PAIL
+     private boolean f = true;
+     private boolean g;
+ 
+@@ -76,7 +76,9 @@ public class DataWatcher {
+         }
+     }
+ 
++    boolean registrationLocked; // Spigot
+     public <T> void register(DataWatcherObject<T> datawatcherobject, Object t0) { // CraftBukkit T -> Object
++        if (this.registrationLocked) throw new IllegalStateException("Registering datawatcher object after entity initialization"); // Spigot
+         int i = datawatcherobject.a();
+ 
+         if (i > 254) {
+@@ -93,13 +95,15 @@ public class DataWatcher {
+     private <T> void registerObject(DataWatcherObject<T> datawatcherobject, Object t0) { // CraftBukkit Object
+         DataWatcher.Item datawatcher_item = new DataWatcher.Item(datawatcherobject, t0);
+ 
+-        this.e.writeLock().lock();
++        // this.e.writeLock().lock(); // Spigot - not required
+         this.d.put(datawatcherobject.a(), datawatcher_item); // Reaper - FastUtil optimization
+         this.f = false;
+-        this.e.writeLock().unlock();
++        // this.e.writeLock().unlock(); // Spigot - not required
+     }
+ 
+     private <T> DataWatcher.Item<T> c(DataWatcherObject<T> datawatcherobject) {
++        // Spigot start
++        /*
+         this.e.readLock().lock();
+ 
+         DataWatcher.Item datawatcher_item;
+@@ -116,6 +120,9 @@ public class DataWatcher {
+ 
+         this.e.readLock().unlock();
+         return datawatcher_item;
++        */
++        return (DataWatcher.Item) this.d.get(datawatcherobject.a());
++        // Spigot end
+     }
+ 
+     public <T> T get(DataWatcherObject<T> datawatcherobject) {
+@@ -162,7 +169,7 @@ public class DataWatcher {
+         ArrayList arraylist = null;
+ 
+         if (this.g) {
+-            this.e.readLock().lock();
++            // this.e.readLock().lock(); // Spigot - not required
+             Iterator iterator = this.d.values().iterator();
+ 
+             while (iterator.hasNext()) {
+@@ -178,7 +185,7 @@ public class DataWatcher {
+                 }
+             }
+ 
+-            this.e.readLock().unlock();
++            // this.e.readLock().unlock(); // Spigot - not required
+         }
+ 
+         this.g = false;
+@@ -186,7 +193,7 @@ public class DataWatcher {
+     }
+ 
+     public void a(PacketDataSerializer packetdataserializer) throws IOException {
+-        this.e.readLock().lock();
++        // this.e.readLock().lock(); // Spigot - not required
+         Iterator iterator = this.d.values().iterator();
+ 
+         while (iterator.hasNext()) {
+@@ -195,7 +202,7 @@ public class DataWatcher {
+             a(packetdataserializer, datawatcher_item);
+         }
+ 
+-        this.e.readLock().unlock();
++        // this.e.readLock().unlock(); // Spigot - not required
+         packetdataserializer.writeByte(255);
+     }
+ 
+@@ -203,7 +210,7 @@ public class DataWatcher {
+     public List<DataWatcher.Item<?>> c() {
+         ArrayList arraylist = null;
+ 
+-        this.e.readLock().lock();
++        // this.e.readLock().lock(); // Spigot - not required
+ 
+         DataWatcher.Item datawatcher_item;
+ 
+@@ -214,7 +221,7 @@ public class DataWatcher {
+             }
+         }
+ 
+-        this.e.readLock().unlock();
++        // this.e.readLock().unlock(); // Spigot - not required
+         return arraylist;
+     }
+ 
+@@ -261,7 +268,7 @@ public class DataWatcher {
+ 
+     public void e() {
+         this.g = false;
+-        this.e.readLock().lock();
++        // this.e.readLock().lock(); // Spigot - not required
+         Iterator iterator = this.d.values().iterator();
+ 
+         while (iterator.hasNext()) {
+@@ -270,7 +277,7 @@ public class DataWatcher {
+             datawatcher_item.a(false);
+         }
+ 
+-        this.e.readLock().unlock();
++        // this.e.readLock().unlock(); // Spigot - not required
+     }
+ 
+     public static class Item<T> {
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 79c868f6ef283886da0a0103d2f7460a149af611..f549834001c79662e6c496b0b3c0a0b546067a96 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -253,6 +253,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+         this.datawatcher.register(Entity.aD, Boolean.valueOf(false));
+         this.datawatcher.register(Entity.aE, Boolean.valueOf(false));
+         this.i();
++        this.datawatcher.registrationLocked = true; // Spigot
+     }
+ 
+     public int getId() {
