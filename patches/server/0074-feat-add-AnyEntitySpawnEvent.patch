@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add AnyEntitySpawnEvent
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 0f2f9afc4cbca4d8200a7c98687546957be15551..070488d870ea9dbb85c4093693e2b8139537d615 100644
+index 85be34447769240d629c5d6fce12a7f6a6de5c73..82c6c16c2a20ea7b957b91f7cfa00b267eae09e8 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -1223,6 +1223,10 @@ public abstract class World implements IBlockAccess {

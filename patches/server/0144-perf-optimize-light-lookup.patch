@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 21 Apr 2023 04:06:05 +0800
+Subject: [PATCH] perf: optimize light lookup
+
+Do not search for the same chunk twice
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index ccfec654fd5cd7c1216009c4471f132d067b97e6..29ecc844303965f2fb57454e0c7a189e6389b459 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -881,6 +881,12 @@ public abstract class World implements IBlockAccess {
+     }
+ 
+     public int getBrightness(EnumSkyBlock enumskyblock, BlockPosition blockposition) {
++        // Reaper start - Optimize light lookup
++        return getBrightness(enumskyblock, blockposition, null);
++    }
++
++    public int getBrightness(EnumSkyBlock enumskyblock, BlockPosition blockposition, Chunk inChunk) {
++        // Reaper end - Optimize light lookup
+         if (blockposition.getY() < 0) {
+             blockposition = new BlockPosition(blockposition.getX(), 0, blockposition.getZ());
+         }
+@@ -890,16 +896,22 @@ public abstract class World implements IBlockAccess {
+         } else if (!this.isLoaded(blockposition)) {
+             return enumskyblock.c;
+         } else {
+-            Chunk chunk = this.getChunkAtWorldCoords(blockposition);
++            Chunk chunk = inChunk != null ? inChunk : this.getChunkAtWorldCoords(blockposition); // Reaper - Optimize light lookup
+ 
+             return chunk.getBrightness(enumskyblock, blockposition);
+         }
+     }
+ 
+     public void a(EnumSkyBlock enumskyblock, BlockPosition blockposition, int i) {
++        // Reaper start - Optimize light lookup
++        setLightFor(enumskyblock, blockposition, i, null);
++    }
++
++    public void setLightFor(EnumSkyBlock enumskyblock, BlockPosition blockposition, int i, Chunk inChunk) {
++        // Reaper end - Optimize light lookup
+         if (blockposition.isValidLocation()) { // Paper
+             if (this.isLoaded(blockposition)) {
+-                Chunk chunk = this.getChunkAtWorldCoords(blockposition);
++                Chunk chunk = inChunk != null ? inChunk : this.getChunkAtWorldCoords(blockposition); // Reaper - Optimize light lookup
+ 
+                 chunk.a(enumskyblock, blockposition, i);
+                 this.m(blockposition);
+@@ -2581,6 +2593,12 @@ public abstract class World implements IBlockAccess {
+     public boolean c(EnumSkyBlock enumskyblock, BlockPosition blockposition) {
+         // CraftBukkit start - Use neighbor cache instead of looking up
+         Chunk chunk = this.getChunkIfLoaded(blockposition.getX() >> 4, blockposition.getZ() >> 4);
++        // Reaper start - Optimize light lookup
++        return checkLightFor(enumskyblock, blockposition, chunk);
++    }
++
++    public boolean checkLightFor(EnumSkyBlock enumskyblock, BlockPosition blockposition, Chunk chunk) {
++        // Reaper end - Optimize light lookup
+         if (chunk == null || !chunk.areNeighborsLoaded(1) /*!this.areChunksLoaded(blockposition, 17, false)*/) {
+             // CraftBukkit end
+             return false;
+@@ -2589,7 +2607,7 @@ public abstract class World implements IBlockAccess {
+             int j = 0;
+ 
+             // this.methodProfiler.a("getBrightness"); // Reaper - Remove MethodProfiler
+-            int k = this.getBrightness(enumskyblock, blockposition);
++            int k = this.getBrightness(enumskyblock, blockposition, chunk); // Reaper - Optimize light lookup
+             int l = this.a(blockposition, enumskyblock);
+             int i1 = blockposition.getX();
+             int j1 = blockposition.getY();
+@@ -2620,9 +2638,12 @@ public abstract class World implements IBlockAccess {
+                     int l3 = l1 >> 18 & 15;
+                     blockposition1.c(i2, j2, k2); // Reaper - Optimize BlockPosition
+ 
+-                    l2 = this.getBrightness(enumskyblock, blockposition1);
++                    // Reaper start - Optimize light lookup
++                    Chunk chunk1 = getChunkAtWorldCoords(blockposition1);
++                    l2 = this.getBrightness(enumskyblock, blockposition1, chunk1);
++                    // Reaper end
+                     if (l2 == l3) {
+-                        this.a(enumskyblock, blockposition1, 0);
++                        this.setLightFor(enumskyblock, blockposition1, 0, chunk1); // Reaper - Optimize light lookup
+                         if (l3 > 0) {
+                             i3 = MathHelper.a(i2 - i1);
+                             j3 = MathHelper.a(j2 - j1);
+@@ -2665,11 +2686,14 @@ public abstract class World implements IBlockAccess {
+                 j2 = (l1 >> 6 & 63) - 32 + j1;
+                 k2 = (l1 >> 12 & 63) - 32 + k1;
+                 blockposition2.c(i2, j2, k2); // Reaper - Optimize BlockPosition
+-                int k5 = this.getBrightness(enumskyblock, blockposition2);
++                // Reaper start - Optimize light lookup
++                Chunk chunk1 = getChunkAtWorldCoords(blockposition1);
++                int k5 = this.getBrightness(enumskyblock, blockposition2, chunk1);
++                // Reaper end
+ 
+                 l2 = this.a(blockposition2, enumskyblock);
+                 if (l2 != k5) {
+-                    this.a(enumskyblock, blockposition2, l2);
++                    this.setLightFor(enumskyblock, blockposition2, l2, chunk1); // Reaper - Optimize light lookup
+                     if (l2 > k5) {
+                         i3 = Math.abs(i2 - i1);
+                         j3 = Math.abs(j2 - j1);
+diff --git a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+index 700e917fef9bebe294442c08d50888723bb20bf0..a5b831e74df08e863d69d58e6b02978827f49c19 100644
+--- a/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
++++ b/src/main/java/org/bukkit/craftbukkit/block/CraftBlock.java
+@@ -176,11 +176,17 @@ public class CraftBlock implements Block {
+     }
+ 
+     public byte getLightFromSky() {
+-        return (byte) chunk.getHandle().getWorld().getBrightness(EnumSkyBlock.SKY, new BlockPosition(this.x, this.y, this.z));
++        // Reaper start - Optimize light lookup
++        net.minecraft.server.Chunk chunkHandle = chunk.getHandle();
++        return (byte) chunkHandle.getWorld().getBrightness(EnumSkyBlock.SKY, new BlockPosition(this.x, this.y, this.z), chunkHandle);
++        // Reaper end - Optimize light lookup
+     }
+ 
+     public byte getLightFromBlocks() {
+-        return (byte) chunk.getHandle().getWorld().getBrightness(EnumSkyBlock.BLOCK, new BlockPosition(this.x, this.y, this.z));
++        // Reaper start - Optimize light lookup
++        net.minecraft.server.Chunk chunkHandle = chunk.getHandle();
++        return (byte) chunkHandle.getWorld().getBrightness(EnumSkyBlock.BLOCK, new BlockPosition(this.x, this.y, this.z), chunkHandle);
++        // Reaper end - Optimize light lookup
+     }
+ 
+ 

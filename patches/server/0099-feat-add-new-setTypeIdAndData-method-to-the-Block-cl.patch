@@ -54,7 +54,7 @@ index 8133d9f5232d4cca6e80b1768bcc49d6dc6ae8b4..9a4cba104bf58cc9cd780c6ac3f63a58
                      block.onPlace(this.world, blockposition, iblockdata);
                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 29c121d9daf88e803489a062855a94fe985395b8..3a5b9abae482ae4e236a95c4c3f68068b3527fbf 100644
+index 41d437b97011f78f595feab76aac4398c6e53531..29eb8c5ed591670021c9d246a4516796a5adc2e9 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -363,7 +363,10 @@ public abstract class World implements IBlockAccess {
