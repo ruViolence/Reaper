@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 21 Apr 2023 19:03:32 +0800
+Subject: [PATCH] perf: set IP_TOS 0x18
+
+
+diff --git a/src/main/java/net/minecraft/server/ServerConnection.java b/src/main/java/net/minecraft/server/ServerConnection.java
+index e9781c37cf3a35d0e0bfee17ede785ef7dcb15b5..16721840676643e772571f14caa329aee1f17df7 100644
+--- a/src/main/java/net/minecraft/server/ServerConnection.java
++++ b/src/main/java/net/minecraft/server/ServerConnection.java
+@@ -108,6 +108,13 @@ public class ServerConnection {
+                     } catch (ChannelException channelexception) {
+                         ;
+                     }
++                    // Reaper start
++                    try {
++                        channel.config().setOption(ChannelOption.IP_TOS, 0x18);
++                    } catch (ChannelException channelexception) {
++                        ;
++                    }
++                    // Reaper end
+                     if (!disableFlushConsolidation) channel.pipeline().addFirst(new io.netty.handler.flush.FlushConsolidationHandler()); // Reaper
+                     channel.pipeline().addLast("timeout", new ReadTimeoutHandler(30)).addLast("legacy_query", new LegacyPingHandler(ServerConnection.this)).addLast("splitter", new PacketSplitter()).addLast("decoder", new PacketDecoder(EnumProtocolDirection.SERVERBOUND)).addLast("prepender", new PacketPrepender()).addLast("encoder", new PacketEncoder(EnumProtocolDirection.CLIENTBOUND));
+                     NetworkManager networkmanager = new NetworkManager(EnumProtocolDirection.SERVERBOUND);
