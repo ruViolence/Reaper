@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 21 Apr 2023 23:22:19 +0800
+Subject: [PATCH] feat: add SoundEvent
+
+
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index 29ecc844303965f2fb57454e0c7a189e6389b459..c936ee95c91bf1899300d10d44da225184c39013 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -1146,6 +1146,22 @@ public abstract class World implements IBlockAccess {
+     // Paper end
+ 
+     public void a(@Nullable EntityHuman entityhuman, double d0, double d1, double d2, SoundEffect soundeffect, SoundCategory soundcategory, float f, float f1) {
++        // Reaper start - SoundEvent
++        if (com.github.ruviolence.reaper.event.world.SoundEvent.getHandlerList().getRegisteredListeners().length != 0) {
++            com.github.ruviolence.reaper.event.world.SoundEvent event = CraftEventFactory.callSoundEvent(this, entityhuman, d0, d1, d2, soundeffect, soundcategory, f, f1);
++            if (event.isCancelled()) return;
++
++            org.bukkit.entity.HumanEntity fromEntity = event.getFromEntity();
++            entityhuman = fromEntity != null ? ((org.bukkit.craftbukkit.entity.CraftHumanEntity) fromEntity).getHandle() : null;
++            d0 = event.getX();
++            d1 = event.getY();
++            d2 = event.getZ();
++            soundeffect = org.bukkit.craftbukkit.CraftSound.getSoundEffect(event.getSound());
++            soundcategory = SoundCategory.valueOf(event.getCategory().name());
++            f = event.getVolume();
++            f1 = event.getPitch();
++        }
++        // Reaper end
+         for (int i = 0; i < this.u.size(); ++i) {
+             ((IWorldAccess) this.u.get(i)).a(entityhuman, soundeffect, soundcategory, d0, d1, d2, f, f1);
+         }
+diff --git a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+index 9201f67cba452cdd7345bf5af2557b52f984e03c..e8077e60fd2be93d809b9c4b6446b114c0ffc582 100644
+--- a/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
++++ b/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+@@ -84,6 +84,7 @@ public class CraftEventFactory {
+     private static final com.github.ruviolence.reaper.event.server.ServerTickEndEvent serverTickEndEvent = new com.github.ruviolence.reaper.event.server.ServerTickEndEvent();
+     private static final com.github.ruviolence.reaper.event.server.WorldTickStartEvent worldTickStartEvent = new com.github.ruviolence.reaper.event.server.WorldTickStartEvent();
+     private static final com.github.ruviolence.reaper.event.server.WorldTickEndEvent worldTickEndEvent = new com.github.ruviolence.reaper.event.server.WorldTickEndEvent();
++    private static final com.github.ruviolence.reaper.event.world.SoundEvent soundEvent = new com.github.ruviolence.reaper.event.world.SoundEvent();
+     // Reaper end
+ 
+     // helper methods
+@@ -1284,5 +1285,21 @@ public class CraftEventFactory {
+ 
+         Bukkit.getPluginManager().callEvent(event);
+     }
++
++    public static com.github.ruviolence.reaper.event.world.SoundEvent callSoundEvent(World world, EntityHuman fromEntity, double x, double y, double z, SoundEffect effect, SoundCategory category, float volume, float pitch) {
++        com.github.ruviolence.reaper.event.world.SoundEvent event = CraftEventFactory.soundEvent;
++
++        event.setData(
++                world.getWorld(),
++                fromEntity != null ? fromEntity.getBukkitEntity() : null,
++                x, y, z,
++                org.bukkit.craftbukkit.CraftSound.getSoundByEffect(effect),
++                org.bukkit.SoundCategory.valueOf(category.name()),
++                volume, pitch);
++
++        Bukkit.getPluginManager().callEvent(event);
++
++        return event;
++    }
+     // Reaper end
+ }

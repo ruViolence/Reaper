@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 21 Apr 2023 23:22:19 +0800
+Subject: [PATCH] feat: add SoundEvent
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/event/world/SoundEvent.java b/src/main/java/com/github/ruviolence/reaper/event/world/SoundEvent.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3b3cb5196fd990b12304a8e33bf848ce924afdbc
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/event/world/SoundEvent.java
+@@ -0,0 +1,150 @@
++package com.github.ruviolence.reaper.event.world;
++
++import org.apache.commons.lang.Validate;
++import org.bukkit.Location;
++import org.bukkit.Sound;
++import org.bukkit.SoundCategory;
++import org.bukkit.World;
++import org.bukkit.entity.HumanEntity;
++import org.bukkit.event.Cancellable;
++import org.bukkit.event.Event;
++import org.bukkit.event.HandlerList;
++
++public class SoundEvent extends Event implements Cancellable {
++    private static final HandlerList handlers = new HandlerList();
++    private boolean cancelled = false;
++
++    private World world;
++    private HumanEntity fromEntity;
++
++    private double x;
++    private double y;
++    private double z;
++
++    private Sound sound;
++    private SoundCategory category;
++
++    private float volume;
++    private float pitch;
++
++    public SoundEvent() {}
++
++    public World getWorld() {
++        return world;
++    }
++
++    public HumanEntity getFromEntity() {
++        return fromEntity;
++    }
++
++    public void setFromEntity(HumanEntity fromEntity) {
++        this.fromEntity = fromEntity;
++    }
++
++    public double getX() {
++        return x;
++    }
++
++    public void setX(double x) {
++        this.x = x;
++    }
++
++    public double getY() {
++        return y;
++    }
++
++    public void setY(double y) {
++        this.y = y;
++    }
++
++    public double getZ() {
++        return z;
++    }
++
++    public void setZ(double z) {
++        this.z = z;
++    }
++
++    public Location getLocation() {
++        return new Location(world, x, y, z);
++    }
++
++    public void setLocation(Location location) {
++        this.x = location.getX();
++        this.y = location.getY();
++        this.z = location.getZ();
++    }
++
++    public Sound getSound() {
++        return sound;
++    }
++
++    public void setSound(Sound sound) {
++        Validate.notNull(sound);
++        this.sound = sound;
++    }
++
++    public SoundCategory getCategory() {
++        return category;
++    }
++
++    public void setCategory(SoundCategory category) {
++        Validate.notNull(category);
++        this.category = category;
++    }
++
++    public float getVolume() {
++        return volume;
++    }
++
++    public void setVolume(float volume) {
++        this.volume = volume;
++    }
++
++    public float getPitch() {
++        return pitch;
++    }
++
++    public void setPitch(float pitch) {
++        this.pitch = pitch;
++    }
++
++    public void setData(World world, HumanEntity fromEntity,
++                        double x, double y, double z,
++                        Sound sound, SoundCategory category,
++                        float volume, float pitch) {
++        this.world = world;
++        this.fromEntity = fromEntity;
++
++        this.x = x;
++        this.y = y;
++        this.z = z;
++
++        this.sound = sound;
++        this.category = category;
++
++        this.volume = volume;
++        this.pitch = pitch;
++
++        this.cancelled = false;
++    }
++
++    @Override
++    public HandlerList getHandlers() {
++        return handlers;
++    }
++
++    public static HandlerList getHandlerList() {
++        return handlers;
++    }
++
++    @Override
++    public boolean isCancelled() {
++        return cancelled;
++    }
++
++    @Override
++    public void setCancelled(boolean cancel) {
++        this.cancelled = cancel;
++    }
++}
