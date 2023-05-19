@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 10:44:34 +0500
+Subject: [PATCH] feat: configurable wither spawn shape check
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 02baf4b56afc595a3eeac0738f86bf3ab0bc6749..7310cef699a7da2baa9065291733b12eb90b59c5 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -167,4 +167,9 @@ public class ReaperConfig {
+             player.initDelayedChunksList();
+         }
+     }
++
++    public static boolean shapeCheckWither;
++    private static void shapeCheck() {
++        shapeCheckWither = getBoolean("shape-check.wither", true);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/BlockSkull.java b/src/main/java/net/minecraft/server/BlockSkull.java
+index 56c7639889f359281969ffc9e841ce60cc14de26..4c357da8f6f3f3a5f44a9d040679f20097764823 100644
+--- a/src/main/java/net/minecraft/server/BlockSkull.java
++++ b/src/main/java/net/minecraft/server/BlockSkull.java
+@@ -160,6 +160,7 @@ public class BlockSkull extends BlockTileEntity {
+     }
+ 
+     public void a(World world, BlockPosition blockposition, TileEntitySkull tileentityskull) {
++        if (!com.github.ruviolence.reaper.ReaperConfig.shapeCheckWither) return; // Reaper
+         if (world.captureBlockStates) return; // CraftBukkit
+         if (tileentityskull.getSkullType() == 1 && blockposition.getY() >= 2 && world.getDifficulty() != EnumDifficulty.PEACEFUL) { // Reaper - Remove isClientSide check
+             ShapeDetector shapedetector = this.g();

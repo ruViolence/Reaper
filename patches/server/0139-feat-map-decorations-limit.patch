@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Mon, 13 Feb 2023 14:56:50 +0500
+Subject: [PATCH] feat: map decorations limit
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 4bce1cb4413190670663e30fb964746fbb13fb0e..e182114ec0c5024485dcc284ea4bc927af62f449 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -285,6 +285,11 @@ public class ReaperConfig {
+         saveJsonAsync = getBoolean("save-json-async", false);
+     }
+ 
++    public static int mapDecorationsLimit;
++    private static void mapDecorationsLimit() {
++        mapDecorationsLimit = getInt("map-decorations-limit", 10);
++    }
++
+     // Paper start - packet limiter
+     public static String packetLimiterKickMessage;
+     public static PacketLimit packetLimiterAllPackets;
+diff --git a/src/main/java/net/minecraft/server/WorldMap.java b/src/main/java/net/minecraft/server/WorldMap.java
+index df317009b47918f764cde3fb9ec44e8d2788c482..418dc27946225803ab73ed66721fc6fb6b268dd1 100644
+--- a/src/main/java/net/minecraft/server/WorldMap.java
++++ b/src/main/java/net/minecraft/server/WorldMap.java
+@@ -282,9 +282,31 @@ public class WorldMap extends PersistentBase {
+             }
+         }
+ 
++        if (countMapIcon() >= com.github.ruviolence.reaper.ReaperConfig.mapDecorationsLimit) return; // Reaper - Limit decorations
+         this.decorations.put(s, new MapIcon(mapicon_type, b0, b1, b2));
+     }
+ 
++    // Reaper start - Limit decorations
++    private int countMapIcon() {
++        int count = 0;
++
++        for (MapIcon icon : decorations.values()) {
++            switch (icon.b()) {
++                case PLAYER:
++                case PLAYER_OFF_MAP:
++                case PLAYER_OFF_LIMITS:
++                case MANSION:
++                case MONUMENT:
++                    continue;
++                default:
++                    count += 1;
++            }
++        }
++
++        return count;
++    }
++    // Reaper end
++
+     @Nullable
+     public Packet<?> a(ItemStack itemstack, World world, EntityHuman entityhuman) {
+         WorldMap.WorldMapHumanTracker worldmap_worldmaphumantracker = (WorldMap.WorldMapHumanTracker) this.k.get(entityhuman);

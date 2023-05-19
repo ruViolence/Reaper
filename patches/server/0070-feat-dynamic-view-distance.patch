@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 26 May 2022 07:36:38 +0500
+Subject: [PATCH] feat: dynamic view distance
+
+Sets the player's view distance based on their client settings.
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 1a28b7cb137576710884eb54dcc342f4dd35688a..1f4fcebc94229be9710e145cca51dabd7a9fb0ed 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -128,4 +128,9 @@ public class ReaperConfig {
+     private static void reduceInventoryUpdates() {
+         reduceInventoryUpdates = getBoolean("reduce-inventory-updates", true);
+     }
++
++    public static boolean dynamicViewDistance;
++    private static void dynamicViewDistance() {
++        dynamicViewDistance = getBoolean("dynamic-view-distance", true);
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/EntityPlayer.java b/src/main/java/net/minecraft/server/EntityPlayer.java
+index 6ac026c2486eef738c374b6d4f96a0a79a40b0b8..96814759247c24370a4ce890c784e6fa7cc05006 100644
+--- a/src/main/java/net/minecraft/server/EntityPlayer.java
++++ b/src/main/java/net/minecraft/server/EntityPlayer.java
+@@ -76,8 +76,14 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+     }
+     public void setViewDistance(int viewDistance) {
+         this.viewDistance = viewDistance;
++        this.furthestViewableBlock = PlayerChunkMap.getFurthestViewableBlock(getViewDistance()); // Reaper - Dynamic view distance
+     }
+     // Paper end
++    // Reaper start - Dynamic view distance
++    private int clientsideViewDistance = 0; public int getClientsideViewDistance() { return this.clientsideViewDistance; }
++    private int nextViewDistanceUpdateTick = 0;
++    private int furthestViewableBlock = PlayerChunkMap.getFurthestViewableBlock(getViewDistance()); public int getFurthestViewableBlock() { return furthestViewableBlock; }
++    // Reaper end
+     private int containerUpdateDelay; // Paper
+     // Paper start - cancellable death event
+     public boolean queueHealthUpdatePacket = false;
+@@ -1322,6 +1328,19 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
+         // CraftBukkit end
+         this.cl = EnumChatVisibility.FULL; // Reaper - Always full chat visibility
+         this.cm = packetplayinsettings.d();
++        // Reaper start - Dynamic view distance
++        if (com.github.ruviolence.reaper.ReaperConfig.dynamicViewDistance) {
++            if (viewDistance != packetplayinsettings.getViewDistance() && nextViewDistanceUpdateTick < MinecraftServer.currentTick) {
++                this.nextViewDistanceUpdateTick = MinecraftServer.currentTick + (20 * 15);
++                this.clientsideViewDistance = packetplayinsettings.getViewDistance();
++                int distance = (getBukkitEntity().hasPermission("reaper.dynvd_" + clientsideViewDistance) || getBukkitEntity().hasPermission("reaper.unlimitvd"))
++                        ? clientsideViewDistance
++                        : Math.min(clientsideViewDistance, world.spigotConfig.viewDistance);
++                ((WorldServer) world).getPlayerChunkMap().updateViewDistance(this, distance);
++                ((WorldServer) world).getTracker().a(this); // Update entity tracker
++            }
++        }
++        // Reaper end
+         this.getDataWatcher().set(EntityPlayer.br, Byte.valueOf((byte) packetplayinsettings.e()));
+         this.getDataWatcher().set(EntityPlayer.bs, Byte.valueOf((byte) (packetplayinsettings.getMainHand() == EnumMainHand.LEFT ? 0 : 1)));
+     }
+diff --git a/src/main/java/net/minecraft/server/EntityTrackerEntry.java b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+index 2218b542908688972e23c7c0296617e2975a8eef..01c29a59d77c205bb31a5c90242eabc2f6b27303 100644
+--- a/src/main/java/net/minecraft/server/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/server/EntityTrackerEntry.java
+@@ -509,7 +509,7 @@ public class EntityTrackerEntry {
+         double d0 = entityplayer.locX - this.tracker.locX;
+         double d1 = entityplayer.locZ - this.tracker.locZ;
+         // Reaper end
+-        int i = Math.min(this.e, this.f);
++        int i = Math.min(this.e, com.github.ruviolence.reaper.ReaperConfig.dynamicViewDistance ? entityplayer.getFurthestViewableBlock() : this.f); // Reaper - Dynamic view distance
+ 
+         return d0 >= (double) (-i) && d0 <= (double) i && d1 >= (double) (-i) && d1 <= (double) i && this.tracker.a(entityplayer);
+     }
+diff --git a/src/main/java/net/minecraft/server/PacketPlayInSettings.java b/src/main/java/net/minecraft/server/PacketPlayInSettings.java
+index dbdca94e39cb84822730882133aad91ddbe5caeb..50201509db5c90ccdc5c13c5f3f0246c1c0b6aaf 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayInSettings.java
++++ b/src/main/java/net/minecraft/server/PacketPlayInSettings.java
+@@ -5,7 +5,7 @@ import java.io.IOException;
+ public class PacketPlayInSettings implements Packet<PacketListenerPlayIn> {
+ 
+     private String a;
+-    private int b;
++    private int b; public int getViewDistance() { return b; } // Reaper
+     private EntityHuman.EnumChatVisibility c;
+     private boolean d;
+     private int e;
+diff --git a/src/main/java/net/minecraft/server/PlayerChunkMap.java b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+index 003ba96f3924952be5f683fe1486cfb1be8b0f62..3157d9c15d5a4598f8a4cdcc03ad2dda4350b9ac 100644
+--- a/src/main/java/net/minecraft/server/PlayerChunkMap.java
++++ b/src/main/java/net/minecraft/server/PlayerChunkMap.java
+@@ -55,7 +55,7 @@ public class PlayerChunkMap {
+ 
+     public PlayerChunkMap(WorldServer worldserver) {
+         this.world = worldserver;
+-        this.a(worldserver.spigotConfig.viewDistance); // Spigot
++        this.a(com.github.ruviolence.reaper.ReaperConfig.dynamicViewDistance ? 3 : worldserver.spigotConfig.viewDistance); // Spigot // Reaper - Dynamic view distance
+     }
+ 
+     public WorldServer getWorld() {
+@@ -355,7 +355,7 @@ public class PlayerChunkMap {
+             int k = (int) entityplayer.d >> 4;
+             int l = (int) entityplayer.e >> 4;
+             final int viewDistance = entityplayer.getViewDistance(); // Paper - Player view distance API
+-            int i1 = Math.max(getViewDistance(), viewDistance); // Paper - Player view distance API
++            int i1 = com.github.ruviolence.reaper.ReaperConfig.dynamicViewDistance ? viewDistance : Math.max(getViewDistance(), viewDistance); // Paper - Player view distance API // Reaper - Dynamic view distance
+ 
+             int j1 = i - k;
+             int k1 = j - l;

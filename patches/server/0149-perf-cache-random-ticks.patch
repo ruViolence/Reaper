@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 27 Apr 2023 03:41:00 +0800
+Subject: [PATCH] perf: cache random ticks
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 879cc95e715f4ecf79f1d43c0618637a4a624f08..acb41ec363e71b8cda7f523226a06d2fc568a4a6 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -122,6 +122,25 @@ public class Chunk {
+     }
+     // CraftBukkit end
+ 
++    // Reaper start - Cache random ticks
++    private int lightningTick;
++    boolean shouldDoLightning(Random random) {
++        if (this.lightningTick-- <= 0) {
++            this.lightningTick = random.nextInt(100000);
++            return true;
++        }
++        return false;
++    }
++    private int iceAndSnowTick;
++    boolean shouldDoIceAndSnow(Random random) {
++        if (this.iceAndSnowTick-- <= 0) {
++            this.iceAndSnowTick = random.nextInt(16);
++            return true;
++        }
++        return false;
++    }
++    // Reaper end
++
+     public Chunk(World world, int i, int j) {
+         this.sections = new ChunkSection[16];
+         this.g = new byte[256];
+@@ -142,6 +161,10 @@ public class Chunk {
+ 
+         Arrays.fill(this.h, -999);
+         Arrays.fill(this.g, (byte) -1);
++        // Reaper start - Cache random ticks
++        shouldDoLightning(world.random);
++        shouldDoIceAndSnow(world.random);
++        // Reaper end
+         // CraftBukkit start
+         this.bukkitChunk = new org.bukkit.craftbukkit.CraftChunk(this);
+         this.chunkKey = ChunkCoordIntPair.a(this.locX, this.locZ);
+diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
+index c9c9fcff9eba61d2f943ddb625a0b0b60be17e04..e4797d60fde461031d15486dbb656376e73583a5 100644
+--- a/src/main/java/net/minecraft/server/WorldServer.java
++++ b/src/main/java/net/minecraft/server/WorldServer.java
+@@ -509,7 +509,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 BlockPosition blockposition;
+ 
+                 // Paper - Disable thunder
+-                if (!this.paperConfig.disableThunder && flag && flag1 && this.random.nextInt(100000) == 0) {
++                if (!this.paperConfig.disableThunder && flag && flag1 && chunk.shouldDoLightning(this.random)) { // Reaper - Cache random ticks
+                     timings.chunkTicksThunder.startTiming(); // Reaper
+                     this.l = this.l * 3 + 1013904223;
+                     l = this.l >> 2;
+@@ -533,7 +533,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                 }
+ 
+                 // this.methodProfiler.c("iceandsnow"); // Reaper - Remove MethodProfiler
+-                if (!this.paperConfig.disableIceAndSnow && this.random.nextInt(16) == 0) { // Paper - Disable ice and snow
++                if (!this.paperConfig.disableIceAndSnow && chunk.shouldDoIceAndSnow(this.random)) { // Paper - Disable ice and snow // Reaper - Cache random ticks
+                     timings.chunkTicksIceAndSnow.startTiming(); // Reaper
+                     this.l = this.l * 3 + 1013904223;
+                     l = this.l >> 2;

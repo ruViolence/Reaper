@@ -7,12 +7,15 @@ Reduces the network load and prevents potential lag exploits.
 
 diff --git a/src/main/java/com/github/ruviolence/reaper/InventoryUpdateHelper.java b/src/main/java/com/github/ruviolence/reaper/InventoryUpdateHelper.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..f75fd894e8a94fcc0351bc93af6c339a9f3e1c6a
+index 0000000000000000000000000000000000000000..0fea42d69c7762b8cd22523d667e7866d6902a6c
 --- /dev/null
 +++ b/src/main/java/com/github/ruviolence/reaper/InventoryUpdateHelper.java
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,158 @@
 +package com.github.ruviolence.reaper;
 +
++import net.minecraft.server.Block;
++import net.minecraft.server.BlockLongGrass;
++import net.minecraft.server.Blocks;
 +import net.minecraft.server.EntityPlayer;
 +import net.minecraft.server.EnumHand;
 +import net.minecraft.server.EnumItemSlot;
@@ -23,8 +26,8 @@ index 0000000000000000000000000000000000000000..f75fd894e8a94fcc0351bc93af6c339a
 +import net.minecraft.server.ItemSword;
 +import net.minecraft.server.ItemTool;
 +import net.minecraft.server.Items;
++import net.minecraft.server.NonNullList;
 +import net.minecraft.server.PacketPlayOutSetSlot;
-+import net.minecraft.server.PlayerInventory;
 +
 +public class InventoryUpdateHelper {
 +    public static void onLeftClick(EntityPlayer player, EnumHand hand, ItemStack itemInHand) {
@@ -64,6 +67,17 @@ index 0000000000000000000000000000000000000000..f75fd894e8a94fcc0351bc93af6c339a
 +        if (!(itemInMainHand.getItem() instanceof ItemSword)) return;
 +        // Update held item
 +        player.playerConnection.sendPacket(new PacketPlayOutSetSlot(player.defaultContainer.windowId, getHeldItemPacketSlot(player, EnumHand.MAIN_HAND), itemInMainHand));
++    }
++
++    public static void onPotInteract(EntityPlayer player) {
++        NonNullList<ItemStack> items = player.defaultContainer.a();
++        for (int i = 0; i < items.size(); i++) {
++            ItemStack itemstack = items.get(i);
++
++            if (itemstack.isEmpty() || canBePotted(itemstack)) {
++                player.playerConnection.sendPacket(new PacketPlayOutSetSlot(player.defaultContainer.windowId, i, itemstack));
++            }
++        }
 +    }
 +
 +    public static void onBowShoot(EntityPlayer player) {
@@ -120,9 +134,9 @@ index 0000000000000000000000000000000000000000..f75fd894e8a94fcc0351bc93af6c339a
 +            return;
 +        }
 +
-+        PlayerInventory inventory = player.inventory;
-+        for (int i = 0; i < inventory.getSize(); ++i) {
-+            ItemStack itemstack = inventory.getItem(i);
++        NonNullList<ItemStack> items = player.defaultContainer.a();
++        for (int i = 0; i < items.size(); ++i) {
++            ItemStack itemstack = items.get(i);
 +
 +            if (itemstack.getItem() instanceof ItemArrow) {
 +                player.playerConnection.sendPacket(new PacketPlayOutSetSlot(player.defaultContainer.windowId, i, itemstack));
@@ -137,217 +151,285 @@ index 0000000000000000000000000000000000000000..f75fd894e8a94fcc0351bc93af6c339a
 +        if (item == Items.WRITTEN_BOOK) return true;
 +        return false;
 +    }
++
++    // Copied from BlockFlowerPot
++    private static boolean canBePotted(ItemStack stack) {
++        Block block = Block.asBlock(stack.getItem());
++        if (block != Blocks.YELLOW_FLOWER &&
++                block != Blocks.RED_FLOWER &&
++                block != Blocks.CACTUS &&
++                block != Blocks.BROWN_MUSHROOM &&
++                block != Blocks.RED_MUSHROOM &&
++                block != Blocks.SAPLING &&
++                block != Blocks.DEADBUSH) {
++            int data = stack.getData();
++            return block == Blocks.TALLGRASS && data == BlockLongGrass.EnumTallGrassType.FERN.a();
++        }
++
++        return true;
++    }
 +}
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 726b89f392de6351484e56a3799ffc588ab176a4..1a28b7cb137576710884eb54dcc342f4dd35688a 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -123,4 +123,9 @@ public class ReaperConfig {
+         config.addDefault(path, def);
+         return config.getString(path, config.getString(path));
+     }
++
++    public static boolean reduceInventoryUpdates;
++    private static void reduceInventoryUpdates() {
++        reduceInventoryUpdates = getBoolean("reduce-inventory-updates", true);
++    }
+ }
 diff --git a/src/main/java/net/minecraft/server/BlockCauldron.java b/src/main/java/net/minecraft/server/BlockCauldron.java
-index 366e886910e34db757394eef117e793fe0d67bba..645b2b2b1409097f953a95819e9bde774549a445 100644
+index 366e886910e34db757394eef117e793fe0d67bba..5b82c9c28a9e89c59af68604337f3eb871bb2ce1 100644
 --- a/src/main/java/net/minecraft/server/BlockCauldron.java
 +++ b/src/main/java/net/minecraft/server/BlockCauldron.java
-@@ -120,8 +120,10 @@ public class BlockCauldron extends Block {
-                                 entityhuman.a(enumhand, itemstack1);
+@@ -121,6 +121,7 @@ public class BlockCauldron extends Block {
                              } else if (!entityhuman.inventory.pickup(itemstack1)) {
                                  entityhuman.drop(itemstack1, false);
-+                                /* // Reaper start
                              } else if (entityhuman instanceof EntityPlayer) {
++                                if (!com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) // Reaper - Reduce inventory updates
                                  ((EntityPlayer) entityhuman).updateInventory(entityhuman.defaultContainer);
-+                                */ // Reaper end
                              }
                          }
- 
-@@ -141,9 +143,11 @@ public class BlockCauldron extends Block {
-                             itemstack1 = new ItemStack(Items.GLASS_BOTTLE);
+@@ -142,6 +143,7 @@ public class BlockCauldron extends Block {
                              entityhuman.b(StatisticList.J);
                              entityhuman.a(enumhand, itemstack1);
-+                            /* // Reaper start - Reduce inventory updates
                              if (entityhuman instanceof EntityPlayer) {
++                                if (!com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) // Reaper - Reduce inventory updates
                                  ((EntityPlayer) entityhuman).updateInventory(entityhuman.defaultContainer);
                              }
-+                            */ // Reaper end
                          }
- 
-                         world.a((EntityHuman) null, blockposition, SoundEffects.M, SoundCategory.BLOCKS, 1.0F, 1.0F);
-@@ -189,8 +193,10 @@ public class BlockCauldron extends Block {
-                                 entityhuman.a(enumhand, itemstack1);
+@@ -190,6 +192,7 @@ public class BlockCauldron extends Block {
                              } else if (!entityhuman.inventory.pickup(itemstack1)) {
                                  entityhuman.drop(itemstack1, false);
-+                                /* // Reaper start - Reduce inventory updates
                              } else if (entityhuman instanceof EntityPlayer) {
++                                if (!com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) // Reaper - Reduce inventory updates
                                  ((EntityPlayer) entityhuman).updateInventory(entityhuman.defaultContainer);
-+                                */ // Reaper end
                              }
                          }
- 
 diff --git a/src/main/java/net/minecraft/server/EntityHuman.java b/src/main/java/net/minecraft/server/EntityHuman.java
-index 16a9e06438cd6f499beba7bee37fcc870913783a..7a82b1d4695ffcb67372015a8f603f530725ac73 100644
+index 16a9e06438cd6f499beba7bee37fcc870913783a..fdc80f6f09817c99143dec00b493ce7645f2a508 100644
 --- a/src/main/java/net/minecraft/server/EntityHuman.java
 +++ b/src/main/java/net/minecraft/server/EntityHuman.java
-@@ -1162,7 +1162,7 @@ public abstract class EntityHuman extends EntityLiving {
+@@ -1162,6 +1162,11 @@ public abstract class EntityHuman extends EntityLiving {
                          }
                          // CraftBukkit start - resync on cancelled event
                          if (this instanceof EntityPlayer) {
--                            ((EntityPlayer) this).getBukkitEntity().updateInventory();
-+                            com.github.ruviolence.reaper.InventoryUpdateHelper.onLeftClick((EntityPlayer) this, EnumHand.MAIN_HAND, this.b(EnumHand.MAIN_HAND)); // Reaper - Reduce inventory updates
++                            // Reaper start - Reduce inventory updates
++                            if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                                com.github.ruviolence.reaper.InventoryUpdateHelper.onLeftClick((EntityPlayer) this, EnumHand.MAIN_HAND, this.b(EnumHand.MAIN_HAND));
++                            } else
++                            // Reaper end - Reduce inventory updates
+                             ((EntityPlayer) this).getBukkitEntity().updateInventory();
                          }
                          // CraftBukkit end
-                     }
 diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
-index b9886c68045c783c7ced0874411f0363a32232eb..3daf3d05fdd319bf7c798ec8e826c3eeb371affa 100644
+index b9886c68045c783c7ced0874411f0363a32232eb..3b504c23702725240dfc1aa304e29d239c3ed1a2 100644
 --- a/src/main/java/net/minecraft/server/EntityLiving.java
 +++ b/src/main/java/net/minecraft/server/EntityLiving.java
-@@ -2491,7 +2491,7 @@ public abstract class EntityLiving extends Entity {
+@@ -2491,6 +2491,11 @@ public abstract class EntityLiving extends Entity {
  
                  if (event.isCancelled()) {
                      // Update client
--                    ((EntityPlayer) this).getBukkitEntity().updateInventory();
-+                    com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) this, this.cH()); // Reaper - Reduce inventory updates
++                    // Reaper start - Reduce inventory updates
++                    if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                        com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) this, this.cH());
++                    } else
++                    // Reaper end - Reduce inventory updates
+                     ((EntityPlayer) this).getBukkitEntity().updateInventory();
                      ((EntityPlayer) this).getBukkitEntity().updateScaledHealth();
                      return;
-                 }
-@@ -2514,7 +2514,7 @@ public abstract class EntityLiving extends Entity {
+@@ -2514,6 +2519,11 @@ public abstract class EntityLiving extends Entity {
  
              // Paper start - if the replacement is anything but the default, update the client inventory
              if (this instanceof EntityPlayer && !com.google.common.base.Objects.equal(defaultReplacement, itemstack)) {
--                ((EntityPlayer) this).getBukkitEntity().updateInventory();
-+                com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) this, this.cH()); // Reaper - Reduce inventory updates
++                // Reaper start - Reduce inventory updates
++                if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                    com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) this, this.cH());
++                } else
++                // Reaper end - Reduce inventory updates
+                 ((EntityPlayer) this).getBukkitEntity().updateInventory();
              }
          }
- 
 diff --git a/src/main/java/net/minecraft/server/ItemBow.java b/src/main/java/net/minecraft/server/ItemBow.java
-index 9cac4e6dd16d515ff81e6609134326d29d4ab574..51fa763fddc8b2d63b93f23b997680993085700f 100644
+index 9cac4e6dd16d515ff81e6609134326d29d4ab574..3aaf861c1eca67de4460266b1bce83928de1b6db 100644
 --- a/src/main/java/net/minecraft/server/ItemBow.java
 +++ b/src/main/java/net/minecraft/server/ItemBow.java
-@@ -110,7 +110,7 @@ public class ItemBow extends Item {
+@@ -110,6 +110,11 @@ public class ItemBow extends Item {
                          if (event.getProjectile() == entityarrow.getBukkitEntity()) {
                              if (!world.addEntity(entityarrow)) {
                                  if (entityhuman instanceof EntityPlayer) {
--                                    ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory();
-+                                    com.github.ruviolence.reaper.InventoryUpdateHelper.onBowShoot((EntityPlayer) entityhuman); // Reaper - Reduce inventory updates
++                                    // Reaper start - Reduce inventory updates
++                                    if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                                        com.github.ruviolence.reaper.InventoryUpdateHelper.onBowShoot((EntityPlayer) entityhuman);
++                                    } else
++                                    // Reaper end - Reduce inventory updates
+                                     ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory();
                                  }
                                  return;
-                             }
 diff --git a/src/main/java/net/minecraft/server/ItemEnderPearl.java b/src/main/java/net/minecraft/server/ItemEnderPearl.java
-index 65e53127b97a7476eaf3c778b488a0fcd226c83e..6b1ed8c65b7af325d74c20f725adf866e9992b15 100644
+index 65e53127b97a7476eaf3c778b488a0fcd226c83e..298e0945bb8088fb4958a19703d2f08ba7e4568a 100644
 --- a/src/main/java/net/minecraft/server/ItemEnderPearl.java
 +++ b/src/main/java/net/minecraft/server/ItemEnderPearl.java
-@@ -17,7 +17,7 @@ public class ItemEnderPearl extends Item {
+@@ -17,6 +17,11 @@ public class ItemEnderPearl extends Item {
              entityenderpearl.a(entityhuman, entityhuman.pitch, entityhuman.yaw, 0.0F, 1.5F, 1.0F);
              if (!world.addEntity(entityenderpearl)) {
                  if (entityhuman instanceof EntityPlayer) {
--                    ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory();
-+                    com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand); // Reaper - Reduce inventory updates
++                    // Reaper start - Reduce inventory updates
++                    if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                        com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand);
++                    } else
++                    // Reaper end - Reduce inventory updates
+                     ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory();
                  }
                  return new InteractionResultWrapper(EnumInteractionResult.FAIL, itemstack);
-             }
 diff --git a/src/main/java/net/minecraft/server/ItemSnowball.java b/src/main/java/net/minecraft/server/ItemSnowball.java
-index 6bb1106d9dc6ce8fac045f38a0f19041b6652d6b..7a5cfe43a90ff81309f5407dcc5a6c5e5fb8fe69 100644
+index 6bb1106d9dc6ce8fac045f38a0f19041b6652d6b..4d938dd7406f25ad3ae212362f9bed213c6af7a7 100644
 --- a/src/main/java/net/minecraft/server/ItemSnowball.java
 +++ b/src/main/java/net/minecraft/server/ItemSnowball.java
-@@ -29,7 +29,7 @@ public class ItemSnowball extends Item {
+@@ -29,6 +29,11 @@ public class ItemSnowball extends Item {
  
                  world.a((EntityHuman) null, entityhuman.locX, entityhuman.locY, entityhuman.locZ, SoundEffects.hp, SoundCategory.NEUTRAL, 0.5F, 0.4F / (ItemSnowball.j.nextFloat() * 0.4F + 0.8F));
              } else if (entityhuman instanceof EntityPlayer) {
--                ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory();
-+                com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand); // Reaper - Reduce inventory updates
++                // Reaper start - Reduce inventory updates
++                if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                    com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand);
++                } else
++                // Reaper end - Reduce inventory updates
+                 ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory();
              }
          }
-         // CraftBukkit end
 diff --git a/src/main/java/net/minecraft/server/ItemStack.java b/src/main/java/net/minecraft/server/ItemStack.java
-index 012c9dd54db32b573109f5567851cd96b91699a0..a4df957aabc688a3cc414284f53b5ebadff8500a 100644
+index 012c9dd54db32b573109f5567851cd96b91699a0..68486a0d814f472d02ad39c2db3c12309f596e14 100644
 --- a/src/main/java/net/minecraft/server/ItemStack.java
 +++ b/src/main/java/net/minecraft/server/ItemStack.java
-@@ -243,7 +243,7 @@ public final class ItemStack {
+@@ -243,6 +243,11 @@ public final class ItemStack {
              if (placeEvent != null && (placeEvent.isCancelled() || !placeEvent.canBuild())) {
                  enuminteractionresult = EnumInteractionResult.FAIL; // cancel placement
                  // PAIL: Remove this when MC-99075 fixed
--                placeEvent.getPlayer().updateInventory();
-+                com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand); // Reaper - Reduce inventory updates
++                // Reaper start - Reduce inventory updates
++                if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                    com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand);
++                } else
++                // Reaper end - Reduce inventory updates
+                 placeEvent.getPlayer().updateInventory();
  
                  // Paper start
-                 for (Map.Entry<BlockPosition, TileEntity> e : world.capturedTileEntities.entrySet()) {
-@@ -435,7 +435,7 @@ public final class ItemStack {
+@@ -435,6 +440,11 @@ public final class ItemStack {
                      org.bukkit.event.player.PlayerItemDamageEvent event = new org.bukkit.event.player.PlayerItemDamageEvent(entityplayer.getBukkitEntity(), item, i);
                      org.bukkit.Bukkit.getServer().getPluginManager().callEvent(event);
                      if (i != event.getDamage() || event.isCancelled()) {
--                        event.getPlayer().updateInventory();
-+                        com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld(entityplayer); // Reaper - Reduce inventory updates
++                        // Reaper start - Reduce inventory updates
++                        if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                            com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld(entityplayer);
++                        } else
++                        // Reaper end - Reduce inventory updates
+                         event.getPlayer().updateInventory();
                      }
                      if (event.isCancelled()) return false;
-                     i = event.getDamage();
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 8dedbe4c4e6198cd9659023022eab4d5335ef560..6f5f5ab508eb6026553c2719e4ce1bdd042da755 100644
+index 8dedbe4c4e6198cd9659023022eab4d5335ef560..25f549122432147027868a1632dbb668c31bb1ee 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -1062,7 +1062,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+@@ -1062,6 +1062,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
              }
  
              if (cancelled) {
--                this.player.getBukkitEntity().updateInventory(); // SPIGOT-2524
-+                com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, enumhand, itemstack); // SPIGOT-2524 // Reaper - Reduce inventory updates
++                // Reaper start - Reduce inventory updates
++                if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                    com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, enumhand, itemstack);
++                } else
++                // Reaper end - Reduce inventory updates
+                 this.player.getBukkitEntity().updateInventory(); // SPIGOT-2524
              } else {
                  this.player.playerInteractManager.a(this.player, worldserver, itemstack, enumhand);
-             }
-@@ -1695,7 +1695,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+@@ -1695,6 +1700,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
                      }
  
                      if (event.isCancelled()) {
--                        this.player.updateInventory(this.player.activeContainer); // Paper - Refresh player inventory
-+                        com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, packetplayinuseentity.b(), itemInHand); // Reaper - Reduce inventory updates // Paper - Refresh player inventory
++                        // Reaper start - Reduce inventory updates
++                        if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                            com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, packetplayinuseentity.b(), itemInHand);
++                        } else
++                        // Reaper end - Reduce inventory updates
+                         this.player.updateInventory(this.player.activeContainer); // Paper - Refresh player inventory
                          return;
                      }
-                     // CraftBukkit end
-@@ -1708,7 +1708,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+@@ -1708,6 +1718,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
                      this.player.a(entity, enumhand);
                      // CraftBukkit start
                      if (!itemInHand.isEmpty() && itemInHand.getCount() <= -1) {
--                        this.player.updateInventory(this.player.activeContainer);
-+                        com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, enumhand, itemInHand); // Reaper - Reduce inventory updates
++                        // Reaper start - Reduce inventory updates
++                        if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                            com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, enumhand, itemInHand);
++                        } else
++                        // Reaper end - Reduce inventory updates
+                         this.player.updateInventory(this.player.activeContainer);
                      }
                      // CraftBukkit end
-                     break;
-@@ -1717,7 +1717,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+@@ -1717,6 +1732,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
                      entity.a(this.player, packetplayinuseentity.c(), enumhand);
                      // CraftBukkit start
                      if (!itemInHand.isEmpty() && itemInHand.getCount() <= -1) {
--                        this.player.updateInventory(this.player.activeContainer);
-+                        com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, enumhand, itemInHand); // Reaper - Reduce inventory updates
++                        // Reaper start - Reduce inventory updates
++                        if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                            com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, enumhand, itemInHand);
++                        } else
++                        // Reaper end - Reduce inventory updates
+                         this.player.updateInventory(this.player.activeContainer);
                      }
                      // CraftBukkit end
-                     break;
-@@ -1732,7 +1732,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+@@ -1732,6 +1752,11 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
  
                      // CraftBukkit start
                      if (!itemInHand.isEmpty() && itemInHand.getCount() <= -1) {
--                        this.player.updateInventory(this.player.activeContainer);
-+                        com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, packetplayinuseentity.b(), itemInHand); // Reaper - Reduce inventory updates
++                        // Reaper start - Reduce inventory updates
++                        if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                            com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick(this.player, packetplayinuseentity.b(), itemInHand);
++                        } else
++                        // Reaper end - Reduce inventory updates
+                         this.player.updateInventory(this.player.activeContainer);
                      }
                      // CraftBukkit end
-                     break;
 diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
-index 5458e442916d4912c4c6eec6223c07d2f2eb95f2..0bc3aa6fc30de57fa87d51f17ae20360ba13b037 100644
+index 5458e442916d4912c4c6eec6223c07d2f2eb95f2..c9082c26d04e73e43eeafd1c5a6f48fe846e8805 100644
 --- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
 +++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
-@@ -336,6 +336,7 @@ public class PlayerInteractManager {
-                 if (tileentity != null) {
-                     this.player.playerConnection.sendPacket(tileentity.getUpdatePacket());
-                 }
-+                com.github.ruviolence.reaper.InventoryUpdateHelper.onBlockBreak(this.player, itemInMainHand); // Reaper - Fix clientside sword damage
-                 return false;
-             }
-         }
-@@ -452,7 +453,7 @@ public class PlayerInteractManager {
+@@ -452,6 +452,11 @@ public class PlayerInteractManager {
                  }
  
                  if (!entityhuman.isHandRaised()) {
--                    ((EntityPlayer) entityhuman).updateInventory(entityhuman.defaultContainer);
-+                    com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick((EntityPlayer) entityhuman, enumhand, itemstack1); // Reaper - Reduce inventory updates
++                    // Reaper start - Reduce inventory updates
++                    if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                        com.github.ruviolence.reaper.InventoryUpdateHelper.onRightClick((EntityPlayer) entityhuman, enumhand, itemstack1);
++                    } else
++                    // Reaper end - Reduce inventory updates
+                     ((EntityPlayer) entityhuman).updateInventory(entityhuman.defaultContainer);
                  }
  
-                 return interactionresultwrapper.a();
-@@ -515,7 +516,7 @@ public class PlayerInteractManager {
+@@ -512,9 +517,21 @@ public class PlayerInteractManager {
+                     TileEntity tileentity = this.world.getTileEntity(blockposition);
+                     if (tileentity != null) {
+                         player.playerConnection.sendPacket(tileentity.getUpdatePacket());
++                        // Reaper start - Reduce inventory updates
++                        if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                            if (!((TileEntityFlowerPot) tileentity).getContents().isEmpty()) {
++                                com.github.ruviolence.reaper.InventoryUpdateHelper.onPotInteract(player);
++                            }
++                        }
++                        // Reaper end - Reduce inventory updates
                      }
                  // Paper end - extend Player Interact cancellation
                  }
--                ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory(); // SPIGOT-2867
-+                com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand); // Reaper - Reduce inventory updates // SPIGOT-2867
++                // Reaper start - Reduce inventory updates
++                if (com.github.ruviolence.reaper.ReaperConfig.reduceInventoryUpdates) {
++                    com.github.ruviolence.reaper.InventoryUpdateHelper.updateHeld((EntityPlayer) entityhuman, enumhand);
++                } else
++                // Reaper end - Reduce inventory updates
+                 ((EntityPlayer) entityhuman).getBukkitEntity().updateInventory(); // SPIGOT-2867
                  enuminteractionresult = (event.useItemInHand() != Event.Result.ALLOW) ? EnumInteractionResult.SUCCESS : EnumInteractionResult.PASS;
              } else if (this.gamemode == EnumGamemode.SPECTATOR) {
-                 TileEntity tileentity = world.getTileEntity(blockposition);

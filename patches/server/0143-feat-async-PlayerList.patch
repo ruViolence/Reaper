@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Mon, 6 Mar 2023 21:52:50 +0500
+Subject: [PATCH] feat: async PlayerList
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index d60b6f56625c905b32ed513c7b71b1b9d28b4f36..b567f78570980d4b949f1ad2fc86cb0b770ee7dd 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -300,6 +300,11 @@ public class ReaperConfig {
+         generatePortalExitChunks = getBoolean("generate-portal-exit-chunks", false);
+     }
+ 
++    public static boolean asyncPlayerList;
++    private static void asyncPlayerList() {
++        asyncPlayerList = getBoolean("async-player-list", true);
++    }
++
+     // Paper start - packet limiter
+     public static String packetLimiterKickMessage;
+     public static PacketLimit packetLimiterAllPackets;
+diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
+index b9e3fc6e7375a2cdeed57345ecbcf11ac258c47c..40fd3d6cbeb4a920fba195db668a677f00286dfa 100644
+--- a/src/main/java/net/minecraft/server/PlayerList.java
++++ b/src/main/java/net/minecraft/server/PlayerList.java
+@@ -1043,6 +1043,28 @@ public abstract class PlayerList {
+ 
+     public void tick() {
+         if (++this.v > 600) {
++            // Reaper start - Async PlayerList
++            if (com.github.ruviolence.reaper.ReaperConfig.asyncPlayerList) {
++                List<Tuple<EntityPlayer, Packet<?>>> packetEntries = new ArrayList<>(this.players.size());
++
++                for (int i = 0; i < this.players.size(); ++i) {
++                    EntityPlayer target = this.players.get(i);
++
++                    packetEntries.add(new Tuple<>(target, new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.UPDATE_LATENCY, Iterables.filter(this.players, new Predicate<EntityPlayer>() {
++                        @Override
++                        public boolean apply(EntityPlayer input) {
++                            return target.getBukkitEntity().canSee(input.getBukkitEntity());
++                        }
++                    }))));
++                }
++
++                MCUtil.scheduleAsyncTask(() -> {
++                    for (Tuple<EntityPlayer, Packet<?>> tuple : packetEntries) {
++                        tuple.a().playerConnection.sendPacket(tuple.b());
++                    }
++                });
++            } else {
++            // Reaper end
+             // CraftBukkit start
+             for (int i = 0; i < this.players.size(); ++i) {
+                 final EntityPlayer target = (EntityPlayer) this.players.get(i);
+@@ -1054,6 +1076,7 @@ public abstract class PlayerList {
+                     }
+                 })));
+             }
++            } // Reaper - Async PlayerList
+             // CraftBukkit end
+             this.v = 0;
+         }

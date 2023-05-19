@@ -1,0 +1,560 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 14 Jul 2022 22:13:44 +0500
+Subject: [PATCH] perf: use FastUUID
+
+
+diff --git a/pom.xml b/pom.xml
+index 3ce010078065e367e04cf19c2bcc103a0cbed0a0..a39bc9d75aa5677d51a05d37d031237a84606cf0 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -157,6 +157,13 @@
+             <scope>compile</scope>
+         </dependency>
+         <!-- Reaper end -->
++        <!-- Reaper start - Add FastUUID -->
++        <dependency>
++            <groupId>com.eatthepath</groupId>
++            <artifactId>fast-uuid</artifactId>
++            <version>0.2.0</version>
++        </dependency>
++        <!-- Reaper end -->
+     </dependencies>
+ 
+     <repositories>
+diff --git a/src/main/java/net/minecraft/server/CommandAbstract.java b/src/main/java/net/minecraft/server/CommandAbstract.java
+index 39b770ab27c23369385aba281d405ce73587d5a0..779efa3f770a6b1c424ea0cfc26f4e390fed7833 100644
+--- a/src/main/java/net/minecraft/server/CommandAbstract.java
++++ b/src/main/java/net/minecraft/server/CommandAbstract.java
+@@ -187,7 +187,7 @@ public abstract class CommandAbstract implements ICommand {
+     private static EntityPlayer a(MinecraftServer minecraftserver, @Nullable EntityPlayer entityplayer, String s) throws CommandException {
+         if (entityplayer == null) {
+             try {
+-                entityplayer = minecraftserver.getPlayerList().a(UUID.fromString(s));
++                entityplayer = minecraftserver.getPlayerList().a(com.eatthepath.uuid.FastUUID.parseUUID(s)); // Reaper - Use FastUUID
+             } catch (IllegalArgumentException illegalargumentexception) {
+                 ;
+             }
+@@ -217,7 +217,7 @@ public abstract class CommandAbstract implements ICommand {
+ 
+         if (object == null) {
+             try {
+-                UUID uuid = UUID.fromString(s);
++                UUID uuid = com.eatthepath.uuid.FastUUID.parseUUID(s); // Reaper - Use FastUUID
+ 
+                 object = minecraftserver.a(uuid);
+                 if (object == null) {
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index 16ffeced2dd31dae87e5fc51ce8c99de7140bb0b..79c868f6ef283886da0a0103d2f7460a149af611 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -230,7 +230,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+         this.fireTicks = -this.getMaxFireTicks();
+         this.justCreated = true;
+         this.uniqueID = MathHelper.a(this.random);
+-        this.ar = this.uniqueID.toString();
++        this.ar = com.eatthepath.uuid.FastUUID.toString(this.uniqueID); // Reaper - Use FastUUID
+         this.aG = new CommandObjectiveExecutor();
+         this.aH = Sets.newHashSet();
+         this.aJ = new double[] { 0.0D, 0.0D, 0.0D};
+@@ -1732,7 +1732,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+             this.portalCooldown = nbttagcompound.getInt("PortalCooldown");
+             if (nbttagcompound.b("UUID")) {
+                 this.uniqueID = nbttagcompound.a("UUID");
+-                this.ar = this.uniqueID.toString();
++                this.ar = com.eatthepath.uuid.FastUUID.toString(this.uniqueID); // Reaper - Use FastUUID
+             }
+ 
+             this.setPosition(this.locX, this.locY, this.locZ);
+@@ -2429,7 +2429,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+     }
+ 
+     public String toString() {
+-        return String.format("%s[\'%s\'/%d, uuid=\'%s\', l=\'%s\', x=%.2f, y=%.2f, z=%.2f, cx=%d, cd=%d, tl=%d, v=%b, d=%b]", new Object[] { this.getClass().getSimpleName(), this.getName(), Integer.valueOf(this.id), this.uniqueID.toString(), this.world == null ? "~NULL~" : this.world.getWorldData().getName(), Double.valueOf(this.locX), Double.valueOf(this.locY), Double.valueOf(this.locZ), getChunkX(), getChunkZ(), this.ticksLived, this.valid, this.dead}); // Paper - add more information
++        return String.format("%s[\'%s\'/%d, uuid=\'%s\', l=\'%s\', x=%.2f, y=%.2f, z=%.2f, cx=%d, cd=%d, tl=%d, v=%b, d=%b]", new Object[] { this.getClass().getSimpleName(), this.getName(), Integer.valueOf(this.id), com.eatthepath.uuid.FastUUID.toString(this.uniqueID), this.world == null ? "~NULL~" : this.world.getWorldData().getName(), Double.valueOf(this.locX), Double.valueOf(this.locY), Double.valueOf(this.locZ), getChunkX(), getChunkZ(), this.ticksLived, this.valid, this.dead}); // Paper - add more information // Reaper - Use FastUUID
+     }
+ 
+     public boolean isInvulnerable(DamageSource damagesource) {
+@@ -2684,7 +2684,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+     public void setUUID(UUID uuid) { a(uuid); } // Paper - OBFHELPER
+     public void a(UUID uuid) {
+         this.uniqueID = uuid;
+-        this.ar = this.uniqueID.toString();
++        this.ar = com.eatthepath.uuid.FastUUID.toString(this.uniqueID); // Reaper - Use FastUUID
+     }
+ 
+     public UUID getUniqueID() {
+diff --git a/src/main/java/net/minecraft/server/EntityCreature.java b/src/main/java/net/minecraft/server/EntityCreature.java
+index 2cb70f749452d07b17377f2d32d25d1ace9f6496..702cece6e3745e1daca1fc233b478ab81a665753 100644
+--- a/src/main/java/net/minecraft/server/EntityCreature.java
++++ b/src/main/java/net/minecraft/server/EntityCreature.java
+@@ -8,7 +8,7 @@ import org.bukkit.event.entity.EntityUnleashEvent;
+ 
+ public abstract class EntityCreature extends EntityInsentient {
+ 
+-    public static final UUID bv = UUID.fromString("E199AD21-BA8A-4C53-8D13-6182D5C69D3A");
++    public static final UUID bv = com.eatthepath.uuid.FastUUID.parseUUID("E199AD21-BA8A-4C53-8D13-6182D5C69D3A"); // Reaper - Use FastUUID
+     public static final AttributeModifier bw = (new AttributeModifier(EntityCreature.bv, "Fleeing speed bonus", 2.0D, 2)).a(false);
+     public BlockPosition movingTarget = null; public BlockPosition getMovingTarget() { return movingTarget; } // Paper
+     private BlockPosition a;
+diff --git a/src/main/java/net/minecraft/server/EntityEnderman.java b/src/main/java/net/minecraft/server/EntityEnderman.java
+index 65f88cd5209f8581842cefd076daffbb47a6bc7a..043096096d46aa05c3ad056b3d4b324163e00863 100644
+--- a/src/main/java/net/minecraft/server/EntityEnderman.java
++++ b/src/main/java/net/minecraft/server/EntityEnderman.java
+@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
+ 
+ public class EntityEnderman extends EntityMonster {
+ 
+-    private static final UUID a = UUID.fromString("020E0DFB-87AE-4653-9556-831010E291A0");
++    private static final UUID a = com.eatthepath.uuid.FastUUID.parseUUID("020E0DFB-87AE-4653-9556-831010E291A0"); // Reaper - Use FastUUID
+     private static final AttributeModifier b = (new AttributeModifier(EntityEnderman.a, "Attacking speed boost", 0.15000000596046448D, 0)).a(false);
+     private static final Set<Block> c = Sets.newIdentityHashSet();
+     private static final DataWatcherObject<Optional<IBlockData>> bx = DataWatcher.a(EntityEnderman.class, DataWatcherRegistry.g);
+diff --git a/src/main/java/net/minecraft/server/EntityHorse.java b/src/main/java/net/minecraft/server/EntityHorse.java
+index 03bb8cd396e683b5e5b4a9beae352095c55f16fe..b5a70589f1aec477905b7d15a589a35a66fa8615 100644
+--- a/src/main/java/net/minecraft/server/EntityHorse.java
++++ b/src/main/java/net/minecraft/server/EntityHorse.java
+@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
+ 
+ public class EntityHorse extends EntityHorseAbstract {
+ 
+-    private static final UUID bH = UUID.fromString("556E1665-8B10-40C8-8F9D-CF9B1667F295");
++    private static final UUID bH = com.eatthepath.uuid.FastUUID.parseUUID("556E1665-8B10-40C8-8F9D-CF9B1667F295"); // Reaper - Use FastUUID
+     private static final DataWatcherObject<Integer> bI = DataWatcher.a(EntityHorse.class, DataWatcherRegistry.b);
+     private static final DataWatcherObject<Integer> bJ = DataWatcher.a(EntityHorse.class, DataWatcherRegistry.b);
+     /* // Reaper start - Clientside texture fields
+diff --git a/src/main/java/net/minecraft/server/EntityHorseAbstract.java b/src/main/java/net/minecraft/server/EntityHorseAbstract.java
+index f074ac108438b63e035970e86f90dfa0e8a287f1..967f67615313a032aab148204eea3df2751792b8 100644
+--- a/src/main/java/net/minecraft/server/EntityHorseAbstract.java
++++ b/src/main/java/net/minecraft/server/EntityHorseAbstract.java
+@@ -731,7 +731,7 @@ public abstract class EntityHorseAbstract extends EntityAnimal implements IInven
+         nbttagcompound.setInt("Temper", this.getTemper());
+         nbttagcompound.setBoolean("Tame", this.isTamed());
+         if (this.getOwnerUUID() != null) {
+-            nbttagcompound.setString("OwnerUUID", this.getOwnerUUID().toString());
++            nbttagcompound.setString("OwnerUUID", com.eatthepath.uuid.FastUUID.toString(this.getOwnerUUID())); // Reaper - Use FastUUID
+         }
+         nbttagcompound.setInt("Bukkit.MaxDomestication", this.maxDomestication); // CraftBukkit
+ 
+@@ -758,7 +758,7 @@ public abstract class EntityHorseAbstract extends EntityAnimal implements IInven
+         }
+ 
+         if (!s.isEmpty()) {
+-            this.setOwnerUUID(UUID.fromString(s));
++            this.setOwnerUUID(com.eatthepath.uuid.FastUUID.parseUUID(s)); // Reaper - Use FastUUID
+         }
+         // CraftBukkit start
+         if (nbttagcompound.hasKey("Bukkit.MaxDomestication")) {
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 2bed87b19d5fc87f93e229ef5860502d644b4323..a4395ab3cde44bda444695b8a8351f87b34b9817 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -37,7 +37,7 @@ import co.aikar.timings.MinecraftTimings; // Paper
+ public abstract class EntityLiving extends Entity {
+ 
+     private static final Logger a = LogManager.getLogger();
+-    private static final UUID b = UUID.fromString("662A6B8D-DA3E-4C1C-8813-96EA6097278D");
++    private static final UUID b = com.eatthepath.uuid.FastUUID.parseUUID("662A6B8D-DA3E-4C1C-8813-96EA6097278D"); // Reaper - Use FastUUID
+     private static final AttributeModifier c = (new AttributeModifier(EntityLiving.b, "Sprinting speed boost", 0.30000001192092896D, 2)).a(false);
+     protected static final DataWatcherObject<Byte> at = DataWatcher.a(EntityLiving.class, DataWatcherRegistry.a);
+     public static final DataWatcherObject<Float> HEALTH = DataWatcher.a(EntityLiving.class, DataWatcherRegistry.c);
+diff --git a/src/main/java/net/minecraft/server/EntityProjectile.java b/src/main/java/net/minecraft/server/EntityProjectile.java
+index 23a502cecd5121b6456ef5f166a5ed8ec9399fc4..1feba1c699ceef1039e9e7d42894fcc7ee2f379f 100644
+--- a/src/main/java/net/minecraft/server/EntityProjectile.java
++++ b/src/main/java/net/minecraft/server/EntityProjectile.java
+@@ -285,7 +285,7 @@ public abstract class EntityProjectile extends Entity implements IProjectile {
+             this.shooter = this.world.a(this.shooterName);
+             if (this.shooter == null && this.world instanceof WorldServer) {
+                 try {
+-                    Entity entity = ((WorldServer) this.world).getEntity(UUID.fromString(this.shooterName));
++                    Entity entity = ((WorldServer) this.world).getEntity(com.eatthepath.uuid.FastUUID.parseUUID(this.shooterName)); // Reaper - Use FastUUID
+ 
+                     if (entity instanceof EntityLiving) {
+                         this.shooter = (EntityLiving) entity;
+diff --git a/src/main/java/net/minecraft/server/EntityShulker.java b/src/main/java/net/minecraft/server/EntityShulker.java
+index 8a5e909f63c0b0298351070675daa46557c39a6d..00839007d469a46a342c0bd5457d4d74cce94ed9 100644
+--- a/src/main/java/net/minecraft/server/EntityShulker.java
++++ b/src/main/java/net/minecraft/server/EntityShulker.java
+@@ -13,7 +13,7 @@ import org.bukkit.event.entity.EntityTeleportEvent;
+ 
+ public class EntityShulker extends EntityGolem implements IMonster {
+ 
+-    private static final UUID bz = UUID.fromString("7E0292F2-9434-48D5-A29F-9583AF7DF27F");
++    private static final UUID bz = com.eatthepath.uuid.FastUUID.parseUUID("7E0292F2-9434-48D5-A29F-9583AF7DF27F"); // Reaper - Use FastUUID
+     private static final AttributeModifier bA = (new AttributeModifier(EntityShulker.bz, "Covered armor bonus", 20.0D, 0)).a(false);
+     protected static final DataWatcherObject<EnumDirection> a = DataWatcher.a(EntityShulker.class, DataWatcherRegistry.l);
+     protected static final DataWatcherObject<Optional<BlockPosition>> b = DataWatcher.a(EntityShulker.class, DataWatcherRegistry.k);
+diff --git a/src/main/java/net/minecraft/server/EntityTameableAnimal.java b/src/main/java/net/minecraft/server/EntityTameableAnimal.java
+index 4c678a30e968c79012ce9ac4ddd12a8d86c1b505..8271ab3b7cf13d506ddb747f8c77b5c67a948fff 100644
+--- a/src/main/java/net/minecraft/server/EntityTameableAnimal.java
++++ b/src/main/java/net/minecraft/server/EntityTameableAnimal.java
+@@ -27,7 +27,7 @@ public abstract class EntityTameableAnimal extends EntityAnimal implements Entit
+         if (this.getOwnerUUID() == null) {
+             nbttagcompound.setString("OwnerUUID", "");
+         } else {
+-            nbttagcompound.setString("OwnerUUID", this.getOwnerUUID().toString());
++            nbttagcompound.setString("OwnerUUID", com.eatthepath.uuid.FastUUID.toString(this.getOwnerUUID())); // Reaper - Use FastUUID
+         }
+ 
+         nbttagcompound.setBoolean("Sitting", this.isSitting());
+@@ -47,7 +47,7 @@ public abstract class EntityTameableAnimal extends EntityAnimal implements Entit
+ 
+         if (!s.isEmpty()) {
+             try {
+-                this.setOwnerUUID(UUID.fromString(s));
++                this.setOwnerUUID(com.eatthepath.uuid.FastUUID.parseUUID(s)); // Reaper - Use FastUUID
+                 this.setTamed(true);
+             } catch (Throwable throwable) {
+                 this.setTamed(false);
+diff --git a/src/main/java/net/minecraft/server/EntityWitch.java b/src/main/java/net/minecraft/server/EntityWitch.java
+index 105eccfa3d21d6ea486803626ed90eedf71d6729..44973b45038d6c8855f99203b0e7f7bd0d635429 100644
+--- a/src/main/java/net/minecraft/server/EntityWitch.java
++++ b/src/main/java/net/minecraft/server/EntityWitch.java
+@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
+ 
+ public class EntityWitch extends EntityMonster implements IRangedEntity {
+ 
+-    private static final UUID a = UUID.fromString("5CD17E52-A79A-43D3-A529-90FDE04B181E");
++    private static final UUID a = com.eatthepath.uuid.FastUUID.parseUUID("5CD17E52-A79A-43D3-A529-90FDE04B181E"); // Reaper - Use FastUUID
+     private static final AttributeModifier b = (new AttributeModifier(EntityWitch.a, "Drinking speed penalty", -0.25D, 0)).a(false);
+     private static final DataWatcherObject<Boolean> c = DataWatcher.a(EntityWitch.class, DataWatcherRegistry.h);
+     private int bx;
+diff --git a/src/main/java/net/minecraft/server/EntityZombie.java b/src/main/java/net/minecraft/server/EntityZombie.java
+index 8091049992b6d822eb705df8616c49e6ef16c239..c62aeed29d81b2a3eb36db1981465af0e8aaf04e 100644
+--- a/src/main/java/net/minecraft/server/EntityZombie.java
++++ b/src/main/java/net/minecraft/server/EntityZombie.java
+@@ -15,7 +15,7 @@ import org.bukkit.event.entity.EntityTargetEvent;
+ public class EntityZombie extends EntityMonster {
+ 
+     protected static final IAttribute a = (new AttributeRanged((IAttribute) null, "zombie.spawnReinforcements", 0.0D, 0.0D, 1.0D)).a("Spawn Reinforcements Chance");
+-    private static final UUID b = UUID.fromString("B9766B59-9566-4402-BC1F-2EE2A276D836");
++    private static final UUID b = com.eatthepath.uuid.FastUUID.parseUUID("B9766B59-9566-4402-BC1F-2EE2A276D836"); // Reaper - Use FastUUID
+     private final AttributeModifier c = new AttributeModifier(EntityZombie.b, "Baby speed boost", world.paperConfig.babyZombieMovementSpeed, 1); // Paper - Remove static - Make baby speed configurable
+     private static final DataWatcherObject<Boolean> bx = DataWatcher.a(EntityZombie.class, DataWatcherRegistry.h);
+     private static final DataWatcherObject<Integer> by = DataWatcher.a(EntityZombie.class, DataWatcherRegistry.b);
+diff --git a/src/main/java/net/minecraft/server/GameProfileBanEntry.java b/src/main/java/net/minecraft/server/GameProfileBanEntry.java
+index 16fe4819341b97dc889084652387921dfbf41e89..7ec8c7b97754233bef69b1183f0495c143a827b1 100644
+--- a/src/main/java/net/minecraft/server/GameProfileBanEntry.java
++++ b/src/main/java/net/minecraft/server/GameProfileBanEntry.java
+@@ -21,7 +21,7 @@ public class GameProfileBanEntry extends ExpirableListEntry<GameProfile> {
+ 
+     protected void a(JsonObject jsonobject) {
+         if (this.getKey() != null) {
+-            jsonobject.addProperty("uuid", ((GameProfile) this.getKey()).getId() == null ? "" : ((GameProfile) this.getKey()).getId().toString());
++            jsonobject.addProperty("uuid", ((GameProfile) this.getKey()).getId() == null ? "" : com.eatthepath.uuid.FastUUID.toString(((GameProfile) this.getKey()).getId())); // Reaper - Use FastUUID
+             jsonobject.addProperty("name", ((GameProfile) this.getKey()).getName());
+             super.a(jsonobject);
+         }
+@@ -36,7 +36,7 @@ public class GameProfileBanEntry extends ExpirableListEntry<GameProfile> {
+             String s = jsonobject.get("uuid").getAsString();
+ 
+             try {
+-                uuid = UUID.fromString(s);
++                uuid = com.eatthepath.uuid.FastUUID.parseUUID(s); // Reaper - Use FastUUID
+             } catch (Throwable throwable) {
+             }
+ 
+diff --git a/src/main/java/net/minecraft/server/ItemArmor.java b/src/main/java/net/minecraft/server/ItemArmor.java
+index 921cddd2095f4cf131ac63992ae9aba5cfa215c5..cc83165acfdda7eef2f1511909e802e8591985ea 100644
+--- a/src/main/java/net/minecraft/server/ItemArmor.java
++++ b/src/main/java/net/minecraft/server/ItemArmor.java
+@@ -13,7 +13,7 @@ import org.bukkit.event.block.BlockDispenseEvent;
+ public class ItemArmor extends Item {
+ 
+     private static final int[] n = new int[] { 13, 15, 16, 11};
+-    private static final UUID[] o = new UUID[] { UUID.fromString("845DB27C-C624-495F-8C9F-6020A9A58B6B"), UUID.fromString("D8499B04-0E66-4726-AB29-64469D734E0D"), UUID.fromString("9F3D476D-C118-4544-8365-64846904B48E"), UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150")};
++    private static final UUID[] o = new UUID[] { com.eatthepath.uuid.FastUUID.parseUUID("845DB27C-C624-495F-8C9F-6020A9A58B6B"), com.eatthepath.uuid.FastUUID.parseUUID("D8499B04-0E66-4726-AB29-64469D734E0D"), com.eatthepath.uuid.FastUUID.parseUUID("9F3D476D-C118-4544-8365-64846904B48E"), com.eatthepath.uuid.FastUUID.parseUUID("2AD3F246-FEE1-4E67-B886-69FD380BB150")}; // Reaper - Use FastUUID
+     public static final String[] a = new String[] { "minecraft:items/empty_armor_slot_boots", "minecraft:items/empty_armor_slot_leggings", "minecraft:items/empty_armor_slot_chestplate", "minecraft:items/empty_armor_slot_helmet"};
+     public static final IDispenseBehavior b = new DispenseBehaviorItem() {
+         protected ItemStack b(ISourceBlock isourceblock, ItemStack itemstack) {
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 5fcba6969ea9a2fe899f86ee838a97f468883d9d..df0d975c8dcd88ed16e085d5ba810929f22d1484 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1080,7 +1080,7 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+             */ // CraftBukkit end
+ 
+             String s1 = "."; // PAIL?
+-            YggdrasilAuthenticationService yggdrasilauthenticationservice = new com.destroystokyo.paper.profile.PaperAuthenticationService(Proxy.NO_PROXY, UUID.randomUUID().toString()); // Paper
++            YggdrasilAuthenticationService yggdrasilauthenticationservice = new com.destroystokyo.paper.profile.PaperAuthenticationService(Proxy.NO_PROXY, com.eatthepath.uuid.FastUUID.toString(UUID.randomUUID())); // Paper // Reaper - Use FastUUID
+             MinecraftSessionService minecraftsessionservice = yggdrasilauthenticationservice.createMinecraftSessionService();
+             GameProfileRepository gameprofilerepository = yggdrasilauthenticationservice.createProfileRepository();
+             UserCache usercache = new UserCache(gameprofilerepository, new File(s1, MinecraftServer.a.getName()));
+diff --git a/src/main/java/net/minecraft/server/MobEffectList.java b/src/main/java/net/minecraft/server/MobEffectList.java
+index 426e7b27f0df8ea169972540d13189c4ebfd380c..a01afedda2e82bb2a5a838ad65d2ab747fff457f 100644
+--- a/src/main/java/net/minecraft/server/MobEffectList.java
++++ b/src/main/java/net/minecraft/server/MobEffectList.java
+@@ -150,7 +150,7 @@ public class MobEffectList {
+     }
+ 
+     public MobEffectList a(IAttribute iattribute, String s, double d0, int i) {
+-        AttributeModifier attributemodifier = new AttributeModifier(UUID.fromString(s), this.a(), d0, i);
++        AttributeModifier attributemodifier = new AttributeModifier(com.eatthepath.uuid.FastUUID.parseUUID(s), this.a(), d0, i); // Reaper - Use FastUUID
+ 
+         this.a.put(iattribute, attributemodifier);
+         return this;
+diff --git a/src/main/java/net/minecraft/server/NameReferencingFileConverter.java b/src/main/java/net/minecraft/server/NameReferencingFileConverter.java
+index beed783a40a1b39f287e240744172cc28d59065e..3ab23439ed21f5c233dffa8e72419ffab7764c3f 100644
+--- a/src/main/java/net/minecraft/server/NameReferencingFileConverter.java
++++ b/src/main/java/net/minecraft/server/NameReferencingFileConverter.java
+@@ -280,7 +280,7 @@ public class NameReferencingFileConverter {
+             GameProfile gameprofile = minecraftserver.getUserCache().getProfile(s);
+ 
+             if (gameprofile != null && gameprofile.getId() != null) {
+-                return gameprofile.getId().toString();
++                return com.eatthepath.uuid.FastUUID.toString(gameprofile.getId()); // Reaper - Use FastUUID
+             } else if (/*!minecraftserver.R()*/true && minecraftserver.getOnlineMode()) { // Reaper - Remove singleplayer code
+                 final ArrayList arraylist = Lists.newArrayList();
+                 ProfileLookupCallback profilelookupcallback = new ProfileLookupCallback() {
+@@ -295,9 +295,9 @@ public class NameReferencingFileConverter {
+                 };
+ 
+                 a(minecraftserver, Lists.newArrayList(new String[] { s}), profilelookupcallback);
+-                return !arraylist.isEmpty() && ((GameProfile) arraylist.get(0)).getId() != null ? ((GameProfile) arraylist.get(0)).getId().toString() : "";
++                return !arraylist.isEmpty() && ((GameProfile) arraylist.get(0)).getId() != null ? com.eatthepath.uuid.FastUUID.toString(((GameProfile) arraylist.get(0)).getId()) : ""; // Reaper - Use FastUUID
+             } else {
+-                return EntityHuman.a(new GameProfile((UUID) null, s)).toString();
++                return com.eatthepath.uuid.FastUUID.toString(EntityHuman.a(new GameProfile((UUID) null, s))); // Reaper - Use FastUUID
+             }
+         } else {
+             return s;
+@@ -338,7 +338,7 @@ public class NameReferencingFileConverter {
+                         if (uuid == null) {
+                             throw new NameReferencingFileConverter.FileConversionException("Missing UUID for user profile " + gameprofile.getName(), null);
+                         } else {
+-                            this.a(file, this.a(gameprofile), uuid.toString());
++                            this.a(file, this.a(gameprofile), com.eatthepath.uuid.FastUUID.toString(uuid)); // Reaper - Use FastUUID
+                         }
+                     }
+ 
+diff --git a/src/main/java/net/minecraft/server/PlayerList.java b/src/main/java/net/minecraft/server/PlayerList.java
+index 9a233711473cb1af473538bda669279023f9ca2f..b9e3fc6e7375a2cdeed57345ecbcf11ac258c47c 100644
+--- a/src/main/java/net/minecraft/server/PlayerList.java
++++ b/src/main/java/net/minecraft/server/PlayerList.java
+@@ -1498,7 +1498,7 @@ public abstract class PlayerList {
+ 
+         if (serverstatisticmanager == null) {
+             File file = new File(this.server.getWorldServer(0).getDataManager().getDirectory(), "stats");
+-            File file1 = new File(file, uuid + ".json");
++            File file1 = new File(file, com.eatthepath.uuid.FastUUID.toString(uuid) + ".json"); // Reaper - Use FastUUID
+ 
+             if (!file1.exists()) {
+                 File file2 = new File(file, entityhuman.getName() + ".json");
+@@ -1522,7 +1522,7 @@ public abstract class PlayerList {
+ 
+         if (advancementdataplayer == null) {
+             File file = new File(this.server.getWorldServer(0).getDataManager().getDirectory(), "advancements");
+-            File file1 = new File(file, uuid + ".json");
++            File file1 = new File(file, com.eatthepath.uuid.FastUUID.toString(uuid) + ".json"); // Reaper - Use FastUUID
+ 
+             advancementdataplayer = new AdvancementDataPlayer(this.server, file1, entityplayer);
+             // this.p.put(uuid, advancementdataplayer); // CraftBukkit
+diff --git a/src/main/java/net/minecraft/server/ServerPing.java b/src/main/java/net/minecraft/server/ServerPing.java
+index ac161f5059a43c9b6937cf11f3cf6273472e23c0..885e4f5f7e8a41b56a5a5dfc4f907aa8f4a3968a 100644
+--- a/src/main/java/net/minecraft/server/ServerPing.java
++++ b/src/main/java/net/minecraft/server/ServerPing.java
+@@ -194,7 +194,7 @@ public class ServerPing {
+                             JsonObject jsonobject1 = ChatDeserializer.m(jsonarray.get(i), "player[" + i + "]");
+                             String s = ChatDeserializer.h(jsonobject1, "id");
+ 
+-                            agameprofile[i] = new GameProfile(UUID.fromString(s), ChatDeserializer.h(jsonobject1, "name"));
++                            agameprofile[i] = new GameProfile(com.eatthepath.uuid.FastUUID.parseUUID(s), ChatDeserializer.h(jsonobject1, "name")); // Reaper - Use FastUUID
+                         }
+ 
+                         serverping_serverpingplayersample.a(agameprofile);
+@@ -217,7 +217,7 @@ public class ServerPing {
+                         JsonObject jsonobject1 = new JsonObject();
+                         UUID uuid = serverping_serverpingplayersample.c()[i].getId();
+ 
+-                        jsonobject1.addProperty("id", uuid == null ? "" : uuid.toString());
++                        jsonobject1.addProperty("id", uuid == null ? "" : com.eatthepath.uuid.FastUUID.toString(uuid)); // Reaper - Use FastUUID
+                         jsonobject1.addProperty("name", serverping_serverpingplayersample.c()[i].getName());
+                         jsonarray.add(jsonobject1);
+                     }
+diff --git a/src/main/java/net/minecraft/server/UserCache.java b/src/main/java/net/minecraft/server/UserCache.java
+index 8d75289cd76d8a101d9b8a1bee93ad4b3406a0f0..2aeb6542e0e50dccfb6129d7adcb4aac0112d1d9 100644
+--- a/src/main/java/net/minecraft/server/UserCache.java
++++ b/src/main/java/net/minecraft/server/UserCache.java
+@@ -320,7 +320,7 @@ public class UserCache {
+             jsonobject.addProperty("name", usercache_usercacheentry.a().getName());
+             UUID uuid = usercache_usercacheentry.a().getId();
+ 
+-            jsonobject.addProperty("uuid", uuid == null ? "" : uuid.toString());
++            jsonobject.addProperty("uuid", uuid == null ? "" : com.eatthepath.uuid.FastUUID.toString(uuid)); // Reaper - Use FastUUID
+             jsonobject.addProperty("expiresOn", UserCache.a.format(usercache_usercacheentry.b()));
+             return jsonobject;
+         }
+@@ -349,7 +349,7 @@ public class UserCache {
+                         UUID uuid;
+ 
+                         try {
+-                            uuid = UUID.fromString(s);
++                            uuid = com.eatthepath.uuid.FastUUID.parseUUID(s); // Reaper - Use FastUUID
+                         } catch (Throwable throwable) {
+                             return null;
+                         }
+diff --git a/src/main/java/net/minecraft/server/Village.java b/src/main/java/net/minecraft/server/Village.java
+index 634cc51777fbbb3256d57805da3a25dba3b12aa3..105a6726d8e83f9628459bb1ead396902e299e01 100644
+--- a/src/main/java/net/minecraft/server/Village.java
++++ b/src/main/java/net/minecraft/server/Village.java
+@@ -440,7 +440,7 @@ public class Village {
+ 
+             if (nbttagcompound2.hasKey("UUID") && this.a != null && this.a.getMinecraftServer() != null) {
+                 UserCache usercache = this.a.getMinecraftServer().getUserCache();
+-                GameProfile gameprofile = usercache.a(UUID.fromString(nbttagcompound2.getString("UUID")));
++                GameProfile gameprofile = usercache.a(com.eatthepath.uuid.FastUUID.parseUUID(nbttagcompound2.getString("UUID"))); // Reaper - Use FastUUID
+ 
+                 if (gameprofile != null) {
+                     this.j.put(gameprofile.getName(), Integer.valueOf(nbttagcompound2.getInt("S")));
+@@ -494,7 +494,7 @@ public class Village {
+                 GameProfile gameprofile = usercache.getProfile(s);
+ 
+                 if (gameprofile != null) {
+-                    nbttagcompound2.setString("UUID", gameprofile.getId().toString());
++                    nbttagcompound2.setString("UUID", com.eatthepath.uuid.FastUUID.toString(gameprofile.getId())); // Reaper - Use FastUUID
+                     nbttagcompound2.setInt("S", ((Integer) this.j.get(s)).intValue());
+                     nbttaglist1.add(nbttagcompound2);
+                 }
+diff --git a/src/main/java/net/minecraft/server/WorldNBTStorage.java b/src/main/java/net/minecraft/server/WorldNBTStorage.java
+index 8b113eac32c732d15cd5b146153c08cbf0e25fd6..ceca6c6e80981c08b3e863fc0082c648913d7e9c 100644
+--- a/src/main/java/net/minecraft/server/WorldNBTStorage.java
++++ b/src/main/java/net/minecraft/server/WorldNBTStorage.java
+@@ -171,7 +171,7 @@ public class WorldNBTStorage implements IDataManager, IPlayerFileData {
+             boolean normalFile = file.exists() && file.isFile(); // Reaper - Ensures normal file
+             if ( org.bukkit.Bukkit.getOnlineMode() && !normalFile ) // Paper - Check online mode first // Reaper - Ensures normal file
+             {
+-                file = new File( this.playerDir, UUID.nameUUIDFromBytes( ( "OfflinePlayer:" + entityhuman.getName() ).getBytes( "UTF-8" ) ).toString() + ".dat");
++                file = new File( this.playerDir, com.eatthepath.uuid.FastUUID.toString(UUID.nameUUIDFromBytes( ( "OfflinePlayer:" + entityhuman.getName() ).getBytes( "UTF-8" ) )) + ".dat"); // Reaper - Use FastUUID
+                 if ( file.exists() )
+                 {
+                     usingWrongFile = true;
+@@ -198,7 +198,7 @@ public class WorldNBTStorage implements IDataManager, IPlayerFileData {
+             if (entityhuman instanceof EntityPlayer) {
+                 CraftPlayer player = (CraftPlayer) entityhuman.getBukkitEntity();
+                 // Only update first played if it is older than the one we have
+-                long modified = new File(this.playerDir, entityhuman.getUniqueID().toString() + ".dat").lastModified();
++                long modified = new File(this.playerDir, com.eatthepath.uuid.FastUUID.toString(entityhuman.getUniqueID()) + ".dat").lastModified(); // Reaper - Use FastUUID
+                 if (modified < player.getFirstPlayed()) {
+                     player.setFirstPlayed(modified);
+                 }
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java b/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
+index 62d27871e6594ec87437a42cc833427ed679a587..3172f8ea4ceeb825ee1a51698d41e5e2c76468f3 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftOfflinePlayer.java
+@@ -124,7 +124,7 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
+     public Map<String, Object> serialize() {
+         Map<String, Object> result = new LinkedHashMap<String, Object>();
+ 
+-        result.put("UUID", profile.getId().toString());
++        result.put("UUID", com.eatthepath.uuid.FastUUID.toString(profile.getId())); // Reaper - Use FastUUID
+ 
+         return result;
+     }
+@@ -135,12 +135,12 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
+             return Bukkit.getServer().getOfflinePlayer((String) args.get("name"));
+         }
+ 
+-        return Bukkit.getServer().getOfflinePlayer(UUID.fromString((String) args.get("UUID")));
++        return Bukkit.getServer().getOfflinePlayer(com.eatthepath.uuid.FastUUID.parseUUID((String) args.get("UUID"))); // Reaper - Use FastUUID
+     }
+ 
+     @Override
+     public String toString() {
+-        return getClass().getSimpleName() + "[UUID=" + profile.getId() + "]";
++        return getClass().getSimpleName() + "[UUID=" + com.eatthepath.uuid.FastUUID.toString(profile.getId()) + "]"; // Reaper - Use FastUUID
+     }
+ 
+     public Player getPlayer() {
+@@ -169,7 +169,7 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
+     }
+ 
+     private NBTTagCompound getData() {
+-        return storage.getPlayerData(getUniqueId().toString());
++        return storage.getPlayerData(com.eatthepath.uuid.FastUUID.toString(getUniqueId())); // Reaper - Use FastUUID
+     }
+ 
+     private NBTTagCompound getBukkitData() {
+@@ -186,7 +186,7 @@ public class CraftOfflinePlayer implements OfflinePlayer, ConfigurationSerializa
+     }
+ 
+     private File getDataFile() {
+-        return new File(storage.getPlayerDir(), getUniqueId() + ".dat");
++        return new File(storage.getPlayerDir(), com.eatthepath.uuid.FastUUID.toString(getUniqueId()) + ".dat"); // Reaper - Use FastUUID
+     }
+ 
+     public long getFirstPlayed() {
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 56ef78618da942b9074e4bcd2222efd4a624b62f..afe3e23a0567a8c229fef78f27fa3c61f21795bf 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -1552,7 +1552,7 @@ public final class CraftServer implements Server {
+ 
+         for (String file : files) {
+             try {
+-                players.add(getOfflinePlayer(UUID.fromString(file.substring(0, file.length() - 4))));
++                players.add(getOfflinePlayer(com.eatthepath.uuid.FastUUID.parseUUID(file.substring(0, file.length() - 4)))); // Reaper - Use FastUUID
+             } catch (IllegalArgumentException ex) {
+                 // Who knows what is in this directory, just ignore invalid files
+             }
+diff --git a/src/main/java/org/bukkit/craftbukkit/command/VanillaCommandWrapper.java b/src/main/java/org/bukkit/craftbukkit/command/VanillaCommandWrapper.java
+index 5bf8ef62aaaa4e646c55044b38d17bd32db53d4e..0d80f70151dfe4cb77d37f984cf4c09505356438 100644
+--- a/src/main/java/org/bukkit/craftbukkit/command/VanillaCommandWrapper.java
++++ b/src/main/java/org/bukkit/craftbukkit/command/VanillaCommandWrapper.java
+@@ -90,7 +90,7 @@ public final class VanillaCommandWrapper extends BukkitCommand {
+                         CommandSender oldSender = lastSender;
+                         lastSender = bSender;
+                         try {
+-                            as[i] = entity.getUniqueID().toString();
++                            as[i] = com.eatthepath.uuid.FastUUID.toString(entity.getUniqueID()); // Reaper - Use FastUUID
+                             vanillaCommand.execute(server, icommandlistener, as);
+                             j++;
+                         } catch (ExceptionUsage exceptionusage) {
+diff --git a/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java b/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java
+index 35c484f46c7d24d3b87339d9e31da38269fad0de..64abb5b555b2a4ecbe8fc7556df1c6b14e0a3557 100644
+--- a/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java
++++ b/src/main/java/org/bukkit/craftbukkit/metadata/EntityMetadataStore.java
+@@ -18,6 +18,6 @@ public class EntityMetadataStore extends MetadataStoreBase<Entity> implements Me
+      */
+     @Override
+     protected String disambiguate(Entity entity, String metadataKey) {
+-        return entity.getUniqueId().toString() + ":" + metadataKey;
++        return com.eatthepath.uuid.FastUUID.toString(entity.getUniqueId()) + ":" + metadataKey; // Reaper - Use FastUUID
+     }
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/metadata/PlayerMetadataStore.java b/src/main/java/org/bukkit/craftbukkit/metadata/PlayerMetadataStore.java
+index bac5c9e434cdf28ef67d24604a4a01be4ad0c57d..64caed64aea748b061b22ae16a5ae36818a279d7 100644
+--- a/src/main/java/org/bukkit/craftbukkit/metadata/PlayerMetadataStore.java
++++ b/src/main/java/org/bukkit/craftbukkit/metadata/PlayerMetadataStore.java
+@@ -18,6 +18,6 @@ public class PlayerMetadataStore extends MetadataStoreBase<OfflinePlayer> implem
+      */
+     @Override
+     protected String disambiguate(OfflinePlayer player, String metadataKey) {
+-        return player.getUniqueId() + ":" + metadataKey;
++        return com.eatthepath.uuid.FastUUID.toString(player.getUniqueId()) + ":" + metadataKey; // Reaper - Use FastUUID
+     }
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/metadata/WorldMetadataStore.java b/src/main/java/org/bukkit/craftbukkit/metadata/WorldMetadataStore.java
+index dd37ed29492d6f2fb65af9d5e5fce647c63b6081..9a99579d134e2fbd749d7e4ebe848af5306ad8d0 100644
+--- a/src/main/java/org/bukkit/craftbukkit/metadata/WorldMetadataStore.java
++++ b/src/main/java/org/bukkit/craftbukkit/metadata/WorldMetadataStore.java
+@@ -17,6 +17,6 @@ public class WorldMetadataStore extends MetadataStoreBase<World> implements Meta
+      */
+     @Override
+     protected String disambiguate(World world, String metadataKey) {
+-        return world.getUID().toString() + ":" + metadataKey;
++        return com.eatthepath.uuid.FastUUID.toString(world.getUID()) + ":" + metadataKey; // Reaper - Use FastUUID
+     }
+ }
+diff --git a/src/main/java/org/bukkit/craftbukkit/util/MojangNameLookup.java b/src/main/java/org/bukkit/craftbukkit/util/MojangNameLookup.java
+index ed8159abce324ec5f205530e8ad02559d26d17bc..49c742f99537ad16265c27cc195c3aa9cce8aba5 100644
+--- a/src/main/java/org/bukkit/craftbukkit/util/MojangNameLookup.java
++++ b/src/main/java/org/bukkit/craftbukkit/util/MojangNameLookup.java
+@@ -23,7 +23,7 @@ public class MojangNameLookup {
+ 
+         InputStream inputStream = null;
+         try {
+-            URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + org.apache.commons.lang3.StringUtils.remove(id.toString(), '-')); // Reaper - Optimize
++            URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + org.apache.commons.lang3.StringUtils.remove(com.eatthepath.uuid.FastUUID.toString(id), '-')); // Reaper - Optimize // Reaper - Use FastUUID
+             URLConnection connection = url.openConnection();
+             connection.setConnectTimeout(15000);
+             connection.setReadTimeout(15000);

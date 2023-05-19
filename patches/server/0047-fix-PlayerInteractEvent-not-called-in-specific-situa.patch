@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 8 Jun 2022 11:04:53 +0500
+Subject: [PATCH] fix: PlayerInteractEvent not called in specific situations
+
+
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index 25f549122432147027868a1632dbb668c31bb1ee..11a5efc2092c71b46a483d3c400676c2112f9c86 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -1052,8 +1052,10 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+                 org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(this.player, Action.RIGHT_CLICK_AIR, itemstack, enumhand);
+                 cancelled = event.useItemInHand() == Event.Result.DENY;
+             } else {
+-                if (player.playerInteractManager.firedInteract) {
+-                    player.playerInteractManager.firedInteract = false;
++                // Reaper start
++                if (player.playerInteractManager.firedInteractTick == MinecraftServer.currentTick && itemstack == player.playerInteractManager.firedInteractItem) {
++                    player.playerInteractManager.firedInteractTick = 0;
++                    // Reaper end
+                     cancelled = player.playerInteractManager.interactResult;
+                 } else {
+                     org.bukkit.event.player.PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, movingobjectposition.a(), movingobjectposition.direction, itemstack, true, enumhand);
+diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+index 74f76c51da750d72679670e810a06e13a0d63a2c..91f6e31ec1a3ffb6c274c405cfe5788f4bc94f38 100644
+--- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
++++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+@@ -469,7 +469,10 @@ public class PlayerInteractManager {
+ 
+     // CraftBukkit start - whole method
+     public boolean interactResult = false;
+-    public boolean firedInteract = false;
++    // Reaper start
++    public int firedInteractTick = 0;
++    public ItemStack firedInteractItem = null;
++    // Reaper end
+     public EnumInteractionResult a(EntityHuman entityhuman, World world, ItemStack itemstack, EnumHand enumhand, BlockPosition blockposition, EnumDirection enumdirection, float f, float f1, float f2) {
+         IBlockData blockdata = world.getType(blockposition);
+         EnumInteractionResult enuminteractionresult = EnumInteractionResult.FAIL;
+@@ -494,7 +497,10 @@ public class PlayerInteractManager {
+             }
+ 
+             PlayerInteractEvent event = CraftEventFactory.callPlayerInteractEvent(entityhuman, Action.RIGHT_CLICK_BLOCK, blockposition, enumdirection, itemstack, cancelledBlock, enumhand);
+-            firedInteract = true;
++            // Reaper start
++            firedInteractTick = MinecraftServer.currentTick;
++            firedInteractItem = itemstack;
++            // Reaper end
+             interactResult = event.useItemInHand() == Event.Result.DENY;
+ 
+             if (event.useInteractedBlock() == Event.Result.DENY) {

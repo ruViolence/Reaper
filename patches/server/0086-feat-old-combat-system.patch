@@ -1,0 +1,764 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 21:35:52 +0500
+Subject: [PATCH] feat: old combat system
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/Metrics.java b/src/main/java/com/github/ruviolence/reaper/Metrics.java
+index 04ee268ec9eb44990cb440bcf24941edf0b40924..6523836ff67fe05ab92113c89a4babcb95dc0ce4 100644
+--- a/src/main/java/com/github/ruviolence/reaper/Metrics.java
++++ b/src/main/java/com/github/ruviolence/reaper/Metrics.java
+@@ -32,6 +32,8 @@ public class Metrics {
+     public Metrics(String serverUUID) {
+         this.serverUUID = serverUUID;
+ 
++        addCustomChart(new Metrics.SimplePie("combatSystem", () -> ReaperConfig.oldCombatEnabled ? "old" : "new"));
++
+         startSubmitting();
+     }
+ 
+diff --git a/src/main/java/com/github/ruviolence/reaper/OldCombatHelper.java b/src/main/java/com/github/ruviolence/reaper/OldCombatHelper.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..d73ef7652b67c97987ea973b129b771db54a5921
+--- /dev/null
++++ b/src/main/java/com/github/ruviolence/reaper/OldCombatHelper.java
+@@ -0,0 +1,30 @@
++package com.github.ruviolence.reaper;
++
++import net.minecraft.server.Item;
++import net.minecraft.server.ItemAxe;
++import net.minecraft.server.ItemPickaxe;
++import net.minecraft.server.ItemSpade;
++import net.minecraft.server.ItemSword;
++
++public class OldCombatHelper {
++    public static final float EXHAUSTION_BLOCK_BREAK = ReaperConfig.oldCombatRegen ? 0.025F : 0.005F;
++    public static final float EXHAUSTION_HUNGER_EFFECT = ReaperConfig.oldCombatRegen ? 0.025F : 0.005F;
++    public static final float EXHAUSTION_HURT = ReaperConfig.oldCombatRegen ? 0.3F : 0.1F;
++
++    public static final double POTION_MODIFIER_STRENGTH = ReaperConfig.oldCombatRegen ? 1.3D : 3.0D;
++    public static final double POTION_MODIFIER_WEAKNESS = ReaperConfig.oldCombatRegen ? -0.5D : -4.0D;
++
++    public static final int POTION_DURATION_POISON_LONG = ReaperConfig.oldCombatPotionsDuration ? 2400 : 1800;
++    public static final int POTION_DURATION_POISON_STRONG = ReaperConfig.oldCombatPotionsDuration ? 450 : 432;
++    public static final int POTION_DURATION_REGENERATION_LONG = ReaperConfig.oldCombatPotionsDuration ? 2400 : 1800;
++
++    public static float calcItemDamage(Item item, Item.EnumToolMaterial material, float defValue) {
++        if (!ReaperConfig.oldCombatEnabled) return defValue;
++        Class<? extends Item> itemClass = item.getClass();
++        if (ItemSword.class.isAssignableFrom(itemClass)) return 4.0F + material.c();
++        if (ItemAxe.class.isAssignableFrom(itemClass)) return 3.0F + material.c();
++        if (ItemPickaxe.class.isAssignableFrom(itemClass)) return 2.0F + material.c();
++        if (ItemSpade.class.isAssignableFrom(itemClass)) return 1.0F + material.c();
++        throw new IllegalArgumentException("Unexpected item: " + item);
++    }
++}
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 92a594faca06bc25631e3213962077f776c9ac43..d293ee89253e73a9ace7a63964424263530e363c 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -18,6 +18,7 @@ import java.lang.reflect.Modifier;
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
++import java.util.Random;
+ import java.util.logging.Level;
+ 
+ public class ReaperConfig {
+@@ -191,4 +192,35 @@ public class ReaperConfig {
+     private static void stepSounds() {
+         stepSounds = getBoolean("step-sounds", true);
+     }
++
++    public static boolean oldCombatEnabled;
++    public static boolean oldCombatAttackSpeed;
++    public static boolean oldCombatRegen;
++    public static boolean oldCombatPotionsDuration;
++    public static boolean oldCombatGoldenApple;
++    public static boolean oldCombatFireCombust;
++    public static boolean oldCombatBlockingModifier;
++    public static boolean oldCombatProjectileMotion;
++    public static boolean oldCombatFishingHooksKnockback;
++    public static boolean oldCombatDisableSounds;
++    public static boolean oldCombatDisableDamageIndicator;
++    public static boolean oldCombatDisablePearlCooldown;
++    public static boolean oldCombatHideAttributes;
++    public static Random oldCombatRandom;
++    private static void oldCombat() {
++        oldCombatEnabled = getBoolean("old-combat.enabled", false);
++        oldCombatAttackSpeed = getBoolean("old-combat.attack-speed", false);
++        oldCombatRegen = getBoolean("old-combat.regen", false);
++        oldCombatPotionsDuration = getBoolean("old-combat.potions-duration", false);
++        oldCombatGoldenApple = getBoolean("old-combat.golden-apple", false);
++        oldCombatFireCombust = getBoolean("old-combat.fire-combust", false);
++        oldCombatBlockingModifier = getBoolean("old-combat.blocking-modifier", false);
++        oldCombatProjectileMotion = getBoolean("old-combat.projectile-motion", false);
++        oldCombatFishingHooksKnockback = getBoolean("old-combat.fishing-hooks-knockback", false);
++        oldCombatDisableSounds = getBoolean("old-combat.disable-new-sounds", false);
++        oldCombatDisableDamageIndicator = getBoolean("old-combat.disable-damage-indicator", false);
++        oldCombatDisablePearlCooldown = getBoolean("old-combat.disable-pearl-cooldown", false);
++        oldCombatHideAttributes = getBoolean("old-combat.hide-item-attributes", false);
++        oldCombatRandom = oldCombatEnabled ? new Random() : null;
++    }
+ }
+diff --git a/src/main/java/net/minecraft/server/Block.java b/src/main/java/net/minecraft/server/Block.java
+index f764e59177acc358baf6d408c6cfcd74adb4e648..6978bb52f5ddf9b8d6a0aa2692f42e9108831902 100644
+--- a/src/main/java/net/minecraft/server/Block.java
++++ b/src/main/java/net/minecraft/server/Block.java
+@@ -468,7 +468,7 @@ public class Block {
+ 
+     public void a(World world, EntityHuman entityhuman, BlockPosition blockposition, IBlockData iblockdata, @Nullable TileEntity tileentity, ItemStack itemstack) {
+         entityhuman.b(StatisticList.a(this));
+-        entityhuman.applyExhaustion(0.005F);
++        entityhuman.applyExhaustion(com.github.ruviolence.reaper.OldCombatHelper.EXHAUSTION_BLOCK_BREAK); // Reaper - Old combat
+         if (this.n() && EnchantmentManager.getEnchantmentLevel(Enchantments.SILK_TOUCH, itemstack) > 0) {
+             ItemStack itemstack1 = this.u(iblockdata);
+ 
+diff --git a/src/main/java/net/minecraft/server/BlockIce.java b/src/main/java/net/minecraft/server/BlockIce.java
+index 7bb4443f3f6aaa1dcb84094c92d21a46c348e251..2861a808af5dbfd25776c15e1495b2e34aae4e47 100644
+--- a/src/main/java/net/minecraft/server/BlockIce.java
++++ b/src/main/java/net/minecraft/server/BlockIce.java
+@@ -14,7 +14,7 @@ public class BlockIce extends BlockHalfTransparent {
+ 
+     public void a(World world, EntityHuman entityhuman, BlockPosition blockposition, IBlockData iblockdata, @Nullable TileEntity tileentity, ItemStack itemstack) {
+         entityhuman.b(StatisticList.a((Block) this));
+-        entityhuman.applyExhaustion(0.005F);
++        entityhuman.applyExhaustion(com.github.ruviolence.reaper.OldCombatHelper.EXHAUSTION_BLOCK_BREAK); // Reaper - Old combat
+         if (this.n() && EnchantmentManager.getEnchantmentLevel(Enchantments.SILK_TOUCH, itemstack) > 0) {
+             a(world, blockposition, this.u(iblockdata));
+         } else {
+diff --git a/src/main/java/net/minecraft/server/BlockTileEntity.java b/src/main/java/net/minecraft/server/BlockTileEntity.java
+index be2ab3fb722c689d6d2db261611cc46be54bc11d..c6fceed4889f2a8896473a363dd7937c279afb76 100644
+--- a/src/main/java/net/minecraft/server/BlockTileEntity.java
++++ b/src/main/java/net/minecraft/server/BlockTileEntity.java
+@@ -33,7 +33,7 @@ public abstract class BlockTileEntity extends Block implements ITileEntity {
+     public void a(World world, EntityHuman entityhuman, BlockPosition blockposition, IBlockData iblockdata, @Nullable TileEntity tileentity, ItemStack itemstack) {
+         if (tileentity instanceof INamableTileEntity && ((INamableTileEntity) tileentity).hasCustomName()) {
+             entityhuman.b(StatisticList.a((Block) this));
+-            entityhuman.applyExhaustion(0.005F);
++            entityhuman.applyExhaustion(com.github.ruviolence.reaper.OldCombatHelper.EXHAUSTION_BLOCK_BREAK); // Reaper - Old combat
+             if (false) { // Reaper - Remove isClientSide check
+                 return;
+             }
+diff --git a/src/main/java/net/minecraft/server/DamageSource.java b/src/main/java/net/minecraft/server/DamageSource.java
+index 9cc19868b36a36d9447b6751ffbefa3464ee9304..455119e26a0d5b04507c48aba54bac361224c56c 100644
+--- a/src/main/java/net/minecraft/server/DamageSource.java
++++ b/src/main/java/net/minecraft/server/DamageSource.java
+@@ -27,7 +27,7 @@ public class DamageSource {
+     private boolean v;
+     private boolean w;
+     private boolean x;
+-    private float y = 0.1F;
++    private float y = com.github.ruviolence.reaper.OldCombatHelper.EXHAUSTION_HURT; // Reaper - Old combat
+     private boolean z;
+     private boolean A;
+     private boolean B;
+diff --git a/src/main/java/net/minecraft/server/EnchantmentManager.java b/src/main/java/net/minecraft/server/EnchantmentManager.java
+index 9d3f2c6c2e8e29d290b5594948e87359c92dc8fe..d6ecadf9f4a00a86f002bd18706564e85e8e1971 100644
+--- a/src/main/java/net/minecraft/server/EnchantmentManager.java
++++ b/src/main/java/net/minecraft/server/EnchantmentManager.java
+@@ -111,6 +111,20 @@ public class EnchantmentManager {
+     }
+ 
+     public static int a(Iterable<ItemStack> iterable, DamageSource damagesource) {
++        // Reaper start - Old combat
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) {
++            EnchantmentManager.a.a = 0;
++            EnchantmentManager.a.b = damagesource;
++            a(EnchantmentManager.a, iterable);
++            EnchantmentManager.a.b = null; // Reaper - Fix MC-128547
++            if (EnchantmentManager.a.a > 25) {
++                EnchantmentManager.a.a = 25;
++            } else if (EnchantmentManager.a.a < 0) {
++                EnchantmentManager.a.a = 0;
++            }
++            return (EnchantmentManager.a.a + 1 >> 1) + com.github.ruviolence.reaper.ReaperConfig.oldCombatRandom.nextInt((EnchantmentManager.a.a >> 1) + 1);
++        }
++        // Reaper end
+         EnchantmentManager.a.a = 0;
+         EnchantmentManager.a.b = damagesource;
+         a((EnchantmentManager.EnchantmentModifier) EnchantmentManager.a, iterable);
+diff --git a/src/main/java/net/minecraft/server/EnchantmentProtection.java b/src/main/java/net/minecraft/server/EnchantmentProtection.java
+index 511ef48960d4213dfde89f29f8df6203d28d447f..a53c08794777198bdba34ae27337d661393bd256 100644
+--- a/src/main/java/net/minecraft/server/EnchantmentProtection.java
++++ b/src/main/java/net/minecraft/server/EnchantmentProtection.java
+@@ -26,6 +26,23 @@ public class EnchantmentProtection extends Enchantment {
+     }
+ 
+     public int a(int i, DamageSource damagesource) {
++        // Reaper start - Old combat
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) {
++            if (damagesource.ignoresInvulnerability()) return 0;
++            float lvl = (6 + i * i) / 3.0F;
++            if (this.a == EnchantmentProtection.DamageType.ALL) {
++                return MathHelper.d(lvl * 0.75F);
++            } else if (this.a == EnchantmentProtection.DamageType.FIRE && damagesource.o()) {
++                return MathHelper.d(lvl * 1.25F);
++            } else if (this.a == EnchantmentProtection.DamageType.FALL && damagesource == DamageSource.FALL) {
++                return MathHelper.d(lvl * 2.5F);
++            } else if (this.a == EnchantmentProtection.DamageType.EXPLOSION && damagesource.isExplosion()) {
++                return MathHelper.d(lvl * 1.5F);
++            } else {
++                return this.a == EnchantmentProtection.DamageType.PROJECTILE && damagesource.a() ? MathHelper.d(lvl * 1.5F) : 0;
++            }
++        }
++        // Reaper end
+         return damagesource.ignoresInvulnerability() ? 0 : (this.a == EnchantmentProtection.DamageType.ALL ? i : (this.a == EnchantmentProtection.DamageType.FIRE && damagesource.o() ? i * 2 : (this.a == EnchantmentProtection.DamageType.FALL && damagesource == DamageSource.FALL ? i * 3 : (this.a == EnchantmentProtection.DamageType.EXPLOSION && damagesource.isExplosion() ? i * 2 : (this.a == EnchantmentProtection.DamageType.PROJECTILE && damagesource.a() ? i * 2 : 0)))));
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/EnchantmentWeaponDamage.java b/src/main/java/net/minecraft/server/EnchantmentWeaponDamage.java
+index 6b3f13d4b14a22b9e2ba7c8ab9df6e551383fb6d..0dbf25d62e5ed2a6e88ca59565ace2787be2d899 100644
+--- a/src/main/java/net/minecraft/server/EnchantmentWeaponDamage.java
++++ b/src/main/java/net/minecraft/server/EnchantmentWeaponDamage.java
+@@ -26,6 +26,7 @@ public class EnchantmentWeaponDamage extends Enchantment {
+     }
+ 
+     public float a(int i, EnumMonsterType enummonstertype) {
++        if (this.a == 0 && com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) return i * 1.25F; // Reaper - Old pvp
+         return this.a == 0 ? 1.0F + (float) Math.max(0, i - 1) * 0.5F : (this.a == 1 && enummonstertype == EnumMonsterType.UNDEAD ? (float) i * 2.5F : (this.a == 2 && enummonstertype == EnumMonsterType.ARTHROPOD ? (float) i * 2.5F : 0.0F));
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/Entity.java b/src/main/java/net/minecraft/server/Entity.java
+index d0070ccd2ba1bf9bfcc482ab0233ccd2e09cb5af..16ffeced2dd31dae87e5fc51ce8c99de7140bb0b 100644
+--- a/src/main/java/net/minecraft/server/Entity.java
++++ b/src/main/java/net/minecraft/server/Entity.java
+@@ -991,7 +991,7 @@ public abstract class Entity implements ICommandListener, KeyedObject { // Paper
+                             this.setOnFire(event.getDuration());
+                         }
+                         // CraftBukkit end
+-                    }
++                    } else if (com.github.ruviolence.reaper.ReaperConfig.oldCombatFireCombust) this.setOnFire(8); // Reaper - Old combat
+                 }
+             } else if (this.fireTicks <= 0) {
+                 this.fireTicks = -this.getMaxFireTicks();
+diff --git a/src/main/java/net/minecraft/server/EntityFishingHook.java b/src/main/java/net/minecraft/server/EntityFishingHook.java
+index c7b2b4bedd31e30dc0444ffbfd33aaa0cd4f2952..377b6d21fb6c2dce4645cd174a044b39203075aa 100644
+--- a/src/main/java/net/minecraft/server/EntityFishingHook.java
++++ b/src/main/java/net/minecraft/server/EntityFishingHook.java
+@@ -284,6 +284,11 @@ public class EntityFishingHook extends Entity {
+         if (movingobjectposition != null && movingobjectposition.type != MovingObjectPosition.EnumMovingObjectType.MISS) {
+             org.bukkit.craftbukkit.event.CraftEventFactory.callProjectileHitEvent(this, movingobjectposition); // Craftbukkit - Call event
+             if (movingobjectposition.type == MovingObjectPosition.EnumMovingObjectType.ENTITY) {
++                // Reaper start - Old combat
++                if (com.github.ruviolence.reaper.ReaperConfig.oldCombatFishingHooksKnockback) {
++                    movingobjectposition.entity.damageEntity(DamageSource.projectile(this, this.owner), 0.0F);
++                }
++                // Reaper end
+                 this.hooked = movingobjectposition.entity;
+                 this.s();
+             } else {
+diff --git a/src/main/java/net/minecraft/server/EntityHuman.java b/src/main/java/net/minecraft/server/EntityHuman.java
+index 1b523a9058a271620d315add0dd62f172300fb6f..76b9b90af9ec33255462a2178a8d97f5fd90d4e1 100644
+--- a/src/main/java/net/minecraft/server/EntityHuman.java
++++ b/src/main/java/net/minecraft/server/EntityHuman.java
+@@ -973,10 +973,14 @@ public abstract class EntityHuman extends EntityLiving {
+                     f1 = EnchantmentManager.a(this.getItemInMainHand(), EnumMonsterType.UNDEFINED);
+                 }
+ 
+-                float f2 = this.n(0.5F);
++                float f2 = com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled ? 1 : this.n(0.5F); // Reaper - Old combat
+ 
+-                f *= 0.2F + f2 * f2 * 0.8F;
+-                f1 *= f2;
++                // Reaper start - Old combat
++                if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) {
++                    f *= 0.2F + f2 * f2 * 0.8F;
++                    f1 *= f2;
++                }
++                // Reaper end
+                 this.ds();
+                 if (f > 0.0F || f1 > 0.0F) {
+                     boolean flag = f2 > 0.9F;
+@@ -985,6 +989,7 @@ public abstract class EntityHuman extends EntityLiving {
+                     int i = b0 + EnchantmentManager.b((EntityLiving) this);
+ 
+                     if (this.isSprinting() && flag) {
++                        if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatDisableSounds) // Reaper - Old combat
+                         sendSoundEffect(this, this.locX, this.locY, this.locZ, SoundEffects.fw, this.bK(), 1.0F, 1.0F); // Paper - send while respecting visibility
+                         ++i;
+                         flag1 = true;
+@@ -992,6 +997,7 @@ public abstract class EntityHuman extends EntityLiving {
+ 
+                     boolean flag2 = flag && this.fallDistance > 0.0F && !this.onGround && !this.m_() && !this.isInWater() && !this.hasEffect(MobEffects.BLINDNESS) && !this.isPassenger() && entity instanceof EntityLiving;
+                     flag2 = flag2 && !world.paperConfig.disablePlayerCrits; // Paper
++                    if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) // Reaper - Old combat
+                     flag2 = flag2 && !this.isSprinting();
+                     if (flag2) {
+                         f *= 1.5F;
+@@ -1001,6 +1007,7 @@ public abstract class EntityHuman extends EntityLiving {
+                     boolean flag3 = false;
+                     double d0 = (double) (this.J - this.I);
+ 
++                    if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) // Reaper - Old combat
+                     if (flag && !flag2 && !flag1 && this.onGround && d0 < (double) this.cy()) {
+                         ItemStack itemstack = this.b(EnumHand.MAIN_HAND);
+ 
+@@ -1035,11 +1042,17 @@ public abstract class EntityHuman extends EntityLiving {
+ 
+                     if (flag5) {
+                         if (i > 0) {
+-                            if (entity instanceof EntityLiving) {
+-                                ((EntityLiving) entity).a(this, (float) i * 0.5F, (double) MathHelper.sin(this.yaw * 0.017453292F), (double) (-MathHelper.cos(this.yaw * 0.017453292F)));
++                            // Reaper start - Old combat
++                            if (com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) {
++                                entity.f(-MathHelper.sin(this.yaw * 0.017453292F) * i * 0.5F, 0.1D, MathHelper.cos(this.yaw * 0.017453292F) * i * 0.5F);
+                             } else {
+-                                entity.f((double) (-MathHelper.sin(this.yaw * 0.017453292F) * (float) i * 0.5F), 0.1D, (double) (MathHelper.cos(this.yaw * 0.017453292F) * (float) i * 0.5F));
++                                if (entity instanceof EntityLiving) {
++                                    ((EntityLiving) entity).a(this, (float) i * 0.5F, MathHelper.sin(this.yaw * 0.017453292F), -MathHelper.cos(this.yaw * 0.017453292F));
++                                } else {
++                                    entity.f(-MathHelper.sin(this.yaw * 0.017453292F) * (float) i * 0.5F, 0.1D, MathHelper.cos(this.yaw * 0.017453292F) * (float) i * 0.5F);
++                                }
+                             }
++                            // Reaper end
+ 
+                             this.motX *= 0.6D;
+                             this.motZ *= 0.6D;
+@@ -1097,10 +1110,12 @@ public abstract class EntityHuman extends EntityLiving {
+                         }
+ 
+                         if (flag2) {
++                            if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatDisableSounds) // Reaper - Old combat
+                             sendSoundEffect(this, this.locX, this.locY, this.locZ, SoundEffects.fv, this.bK(), 1.0F, 1.0F); // Paper - send while respecting visibility
+                             this.a(entity);
+                         }
+ 
++                        if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatDisableSounds) // Reaper - Old combat
+                         if (!flag2 && !flag3) {
+                             if (flag) {
+                                 sendSoundEffect(this, this.locX, this.locY, this.locZ, SoundEffects.fy, this.bK(), 1.0F, 1.0F); // Paper - send while respecting visibility
+@@ -1152,6 +1167,7 @@ public abstract class EntityHuman extends EntityLiving {
+                                 // CraftBukkit end
+                             }
+ 
++                            if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatDisableDamageIndicator) // Reaper - Old combat
+                             if (this.world instanceof WorldServer && f5 > 2.0F) {
+                                 int k = (int) ((double) f5 * 0.5D);
+ 
+@@ -1161,6 +1177,7 @@ public abstract class EntityHuman extends EntityLiving {
+ 
+                         this.applyExhaustion(world.spigotConfig.combatExhaustion); // Spigot - Change to use configurable value
+                     } else {
++                        if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatDisableSounds) // Reaper - Old combat
+                         sendSoundEffect(this, this.locX, this.locY, this.locZ, SoundEffects.fx, this.bK(), 1.0F, 1.0F); // Paper - send while respecting visibility
+                         if (flag4) {
+                             entity.extinguish();
+@@ -1183,6 +1200,7 @@ public abstract class EntityHuman extends EntityLiving {
+     }
+ 
+     public void m(boolean flag) {
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatBlockingModifier) return; // Reaper - Old combat
+         float f = 0.25F + (float) EnchantmentManager.getDigSpeedEnchantmentLevel(this) * 0.05F;
+ 
+         if (flag) {
+@@ -1969,6 +1987,7 @@ public abstract class EntityHuman extends EntityLiving {
+     }
+ 
+     public float n(float f) {
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) return 1; // Reaper - Old combat
+         return MathHelper.a(((float) this.aE + f) / this.dr(), 0.0F, 1.0F);
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index f715215a17d4ed9c495e8eea1455eeec7155f32e..157fee44297815113e5764b51b33b38311d76e2d 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -1208,7 +1208,7 @@ public abstract class EntityLiving extends Entity {
+             this.motZ /= 2.0D;
+             this.motX -= d0 / (double) f1 * (double) f;
+             this.motZ -= d1 / (double) f1 * (double) f;
+-            if (this.onGround) {
++            if (this.onGround || com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) { // Reaper - Old combat
+                 this.motY /= 2.0D;
+                 this.motY += (double) f;
+                 if (this.motY > 0.4000000059604645D) {
+@@ -1320,6 +1320,7 @@ public abstract class EntityLiving extends Entity {
+ 
+     protected float applyArmorModifier(DamageSource damagesource, float f) {
+         if (!damagesource.ignoresArmor()) {
++            if (com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) return f * (25 - this.getArmorStrength()) / 25.0F; // Reaper - Old combat
+             // this.damageArmor(f); // CraftBukkit - Moved into damageEntity0(DamageSource, float)
+             f = CombatMath.a(f, (float) this.getArmorStrength(), (float) this.getAttributeInstance(GenericAttributes.i).getValue());
+         }
+@@ -1347,6 +1348,12 @@ public abstract class EntityLiving extends Entity {
+             } else {
+                 i = EnchantmentManager.a(this.getArmorItems(), damagesource);
+                 if (i > 0) {
++                    // Reaper start - Old combat
++                    if (com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled) {
++                        if (i > 20) i = 20;
++                        return f * (25 - i) / 25.0F;
++                    }
++                    // Reaper end
+                     f = CombatMath.a(f, (float) i);
+                 }
+ 
+@@ -1376,6 +1383,11 @@ public abstract class EntityLiving extends Entity {
+             Function<Double, Double> blocking = new Function<Double, Double>() {
+                 @Override
+                 public Double apply(Double f) {
++                    // Reaper start - Old combat
++                    if (com.github.ruviolence.reaper.ReaperConfig.oldCombatBlockingModifier) {
++                        return human && !damagesource.ignoresArmor() && EntityLiving.this.isBlocking() && f > 0.0D ? -(f - (1.0D + f) * 0.5D) : -0.0D;
++                    }
++                    // Reaper end
+                     return -((EntityLiving.this.applyBlockingModifier(damagesource)) ? f : 0.0);
+                 }
+             };
+@@ -1483,9 +1495,9 @@ public abstract class EntityLiving extends Entity {
+                         CriterionTriggers.g.a((EntityPlayer) damagesource.getEntity(), this, damagesource, f, originalDamage, true);
+                     }
+ 
+-                    return false;
++                    return com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled; // Reaper - Old combat
+                 } else {
+-                    return originalDamage > 0;
++                    return originalDamage > 0 || com.github.ruviolence.reaper.ReaperConfig.oldCombatEnabled; // Reaper - Old combat
+                 }
+                 // CraftBukkit end
+             }
+diff --git a/src/main/java/net/minecraft/server/EntityMonster.java b/src/main/java/net/minecraft/server/EntityMonster.java
+index 752760fab52727443c75d9584f32f11617c93bcd..d4278e92b125c403ea8445b5a3c824b97d68d480 100644
+--- a/src/main/java/net/minecraft/server/EntityMonster.java
++++ b/src/main/java/net/minecraft/server/EntityMonster.java
+@@ -87,6 +87,7 @@ public abstract class EntityMonster extends EntityCreature implements IMonster {
+                 // CraftBukkit end
+             }
+ 
++            if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatBlockingModifier) // Reaper - Old combat
+             if (entity instanceof EntityHuman) {
+                 EntityHuman entityhuman = (EntityHuman) entity;
+                 ItemStack itemstack = this.getItemInMainHand();
+diff --git a/src/main/java/net/minecraft/server/EntityProjectile.java b/src/main/java/net/minecraft/server/EntityProjectile.java
+index fcfae8c31d6c7ca066a93d997a7b96d92cf569b4..23a502cecd5121b6456ef5f166a5ed8ec9399fc4 100644
+--- a/src/main/java/net/minecraft/server/EntityProjectile.java
++++ b/src/main/java/net/minecraft/server/EntityProjectile.java
+@@ -46,6 +46,7 @@ public abstract class EntityProjectile extends Entity implements IProjectile {
+         float f7 = MathHelper.cos(f1 * 0.017453292F) * MathHelper.cos(f * 0.017453292F);
+ 
+         this.shoot((double) f5, (double) f6, (double) f7, f3, f4);
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatProjectileMotion) return; // Reaper - Old combat
+         this.motX += entity.motX;
+         this.motZ += entity.motZ;
+         if (!entity.onGround) {
+diff --git a/src/main/java/net/minecraft/server/FoodMetaData.java b/src/main/java/net/minecraft/server/FoodMetaData.java
+index c715138eee71e36b86344371b39b71ccd14da753..0b295ba05caca6b780f8740e77ffa5e163d97801 100644
+--- a/src/main/java/net/minecraft/server/FoodMetaData.java
++++ b/src/main/java/net/minecraft/server/FoodMetaData.java
+@@ -60,7 +60,7 @@ public class FoodMetaData {
+ 
+         boolean flag = entityhuman.world.getGameRules().getBoolean("naturalRegeneration");
+ 
+-        if (flag && this.saturationLevel > 0.0F && entityhuman.dj() && this.foodLevel >= 20) {
++        if (flag && !com.github.ruviolence.reaper.ReaperConfig.oldCombatRegen && this.saturationLevel > 0.0F && entityhuman.dj() && this.foodLevel >= 20) { // Reaper - Old combat
+             ++this.foodTickTimer;
+             if (this.foodTickTimer >= 10) {
+                 float f = Math.min(this.saturationLevel, 6.0F);
+diff --git a/src/main/java/net/minecraft/server/ItemAxe.java b/src/main/java/net/minecraft/server/ItemAxe.java
+index 241535d280e385844e83bb071806ad3b7099c0b9..a814ebd85288bc77be4d60fb736db502fe770806 100644
+--- a/src/main/java/net/minecraft/server/ItemAxe.java
++++ b/src/main/java/net/minecraft/server/ItemAxe.java
+@@ -11,7 +11,7 @@ public class ItemAxe extends ItemTool {
+ 
+     protected ItemAxe(Item.EnumToolMaterial item_enumtoolmaterial) {
+         super(item_enumtoolmaterial, ItemAxe.e);
+-        this.b = ItemAxe.f[item_enumtoolmaterial.ordinal()];
++        this.b = com.github.ruviolence.reaper.OldCombatHelper.calcItemDamage(this, item_enumtoolmaterial, ItemAxe.f[item_enumtoolmaterial.ordinal()]); // Reaper - Old combat
+         this.c = ItemAxe.n[item_enumtoolmaterial.ordinal()];
+     }
+ 
+diff --git a/src/main/java/net/minecraft/server/ItemEnderPearl.java b/src/main/java/net/minecraft/server/ItemEnderPearl.java
+index 298e0945bb8088fb4958a19703d2f08ba7e4568a..d6ab73de664b8e527c432384377c7ca84fb4a1d0 100644
+--- a/src/main/java/net/minecraft/server/ItemEnderPearl.java
++++ b/src/main/java/net/minecraft/server/ItemEnderPearl.java
+@@ -33,6 +33,7 @@ public class ItemEnderPearl extends Item {
+         }
+ 
+         world.a((EntityHuman) null, entityhuman.locX, entityhuman.locY, entityhuman.locZ, SoundEffects.bn, SoundCategory.NEUTRAL, 0.5F, 0.4F / (ItemEnderPearl.j.nextFloat() * 0.4F + 0.8F));
++        if (!com.github.ruviolence.reaper.ReaperConfig.oldCombatDisablePearlCooldown) // Reaper - Old combat
+         entityhuman.getCooldownTracker().a(this, 20);
+         // CraftBukkit end
+ 
+diff --git a/src/main/java/net/minecraft/server/ItemGoldenApple.java b/src/main/java/net/minecraft/server/ItemGoldenApple.java
+index 31c07906fa73bbc5666ad6897ba11a4a2207adfc..ffc42539a1a2840748bf1e5e1ec8dbd416e52032 100644
+--- a/src/main/java/net/minecraft/server/ItemGoldenApple.java
++++ b/src/main/java/net/minecraft/server/ItemGoldenApple.java
+@@ -13,6 +13,19 @@ public class ItemGoldenApple extends ItemFood {
+ 
+     protected void a(ItemStack itemstack, World world, EntityHuman entityhuman) {
+         if (true) { // Reaper - Remove isClientSide check
++            // Reaper start - Old combat
++            if (com.github.ruviolence.reaper.ReaperConfig.oldCombatGoldenApple) {
++                entityhuman.addEffect(new MobEffect(MobEffects.ABSORBTION, 2400, 0));
++                if (itemstack.getData() > 0) {
++                    entityhuman.addEffect(new MobEffect(MobEffects.REGENERATION, 600, 4));
++                    entityhuman.addEffect(new MobEffect(MobEffects.RESISTANCE, 6000, 0));
++                    entityhuman.addEffect(new MobEffect(MobEffects.FIRE_RESISTANCE, 6000, 0));
++                } else {
++                    entityhuman.addEffect(new MobEffect(MobEffects.REGENERATION, 100, 1));
++                }
++                return;
++            }
++            // Reaper end
+             if (itemstack.getData() > 0) {
+                 entityhuman.addEffect(new MobEffect(MobEffects.REGENERATION, 400, 1));
+                 entityhuman.addEffect(new MobEffect(MobEffects.RESISTANCE, 6000, 0));
+diff --git a/src/main/java/net/minecraft/server/ItemSword.java b/src/main/java/net/minecraft/server/ItemSword.java
+index 0b090734867bd4a1ac543d389db86401ea489022..7d5d6a89d3c1df6e2f4a216b8a720adc9b2ada8e 100644
+--- a/src/main/java/net/minecraft/server/ItemSword.java
++++ b/src/main/java/net/minecraft/server/ItemSword.java
+@@ -12,7 +12,7 @@ public class ItemSword extends Item {
+         this.maxStackSize = 1;
+         this.setMaxDurability(item_enumtoolmaterial.a());
+         this.b(CreativeModeTab.j);
+-        this.a = 3.0F + item_enumtoolmaterial.c();
++        this.a = com.github.ruviolence.reaper.OldCombatHelper.calcItemDamage(this, item_enumtoolmaterial, 3.0F + item_enumtoolmaterial.c()); // Reaper - Old combat
+     }
+ 
+     public float g() {
+diff --git a/src/main/java/net/minecraft/server/ItemTool.java b/src/main/java/net/minecraft/server/ItemTool.java
+index ce2123f345fb53e15d6d4a4a276ed09256803acd..f7f9735ebc6800f50eeff957acb82f7f3d62e9ba 100644
+--- a/src/main/java/net/minecraft/server/ItemTool.java
++++ b/src/main/java/net/minecraft/server/ItemTool.java
+@@ -18,7 +18,7 @@ public class ItemTool extends Item {
+         this.maxStackSize = 1;
+         this.setMaxDurability(item_enumtoolmaterial.a());
+         this.a = item_enumtoolmaterial.b();
+-        this.b = f + item_enumtoolmaterial.c();
++        this.b = com.github.ruviolence.reaper.OldCombatHelper.calcItemDamage(this, item_enumtoolmaterial, f + item_enumtoolmaterial.c()); // Reaper - Old combat
+         this.c = f1;
+         this.b(CreativeModeTab.i);
+     }
+diff --git a/src/main/java/net/minecraft/server/MobEffectList.java b/src/main/java/net/minecraft/server/MobEffectList.java
+index 5d8d9746e7fcc361ec72d5ea79ef4da4a68f010f..426e7b27f0df8ea169972540d13189c4ebfd380c 100644
+--- a/src/main/java/net/minecraft/server/MobEffectList.java
++++ b/src/main/java/net/minecraft/server/MobEffectList.java
+@@ -65,7 +65,7 @@ public class MobEffectList {
+         } else if (this == MobEffects.WITHER) {
+             entityliving.damageEntity(DamageSource.WITHER, 1.0F);
+         } else if (this == MobEffects.HUNGER && entityliving instanceof EntityHuman) {
+-            ((EntityHuman) entityliving).applyExhaustion(0.005F * (float) (i + 1));
++            ((EntityHuman) entityliving).applyExhaustion(com.github.ruviolence.reaper.OldCombatHelper.EXHAUSTION_HUNGER_EFFECT * (i + 1));
+         } else if (this == MobEffects.SATURATION && entityliving instanceof EntityHuman) {
+             if (true) { // Reaper - Remove isClientSide check
+                 // CraftBukkit start
+@@ -201,7 +201,7 @@ public class MobEffectList {
+         MobEffectList.REGISTRY.a(2, new MinecraftKey("slowness"), (new MobEffectList(true, 5926017)).c("effect.moveSlowdown").b(1, 0).a(GenericAttributes.MOVEMENT_SPEED, "7107DE5E-7CE8-4030-940E-514C1F160890", -0.15000000596046448D, 2));
+         MobEffectList.REGISTRY.a(3, new MinecraftKey("haste"), (new MobEffectList(false, 14270531)).c("effect.digSpeed").b(2, 0).a(1.5D).j().a(GenericAttributes.g, "AF8B6E3F-3328-4C0A-AA36-5BA2BB9DBEF3", 0.10000000149011612D, 2));
+         MobEffectList.REGISTRY.a(4, new MinecraftKey("mining_fatigue"), (new MobEffectList(true, 4866583)).c("effect.digSlowDown").b(3, 0).a(GenericAttributes.g, "55FCED67-E92A-486E-9800-B47F202C4386", -0.10000000149011612D, 2));
+-        MobEffectList.REGISTRY.a(5, new MinecraftKey("strength"), (new MobEffectAttackDamage(false, 9643043, 3.0D)).c("effect.damageBoost").b(4, 0).a(GenericAttributes.ATTACK_DAMAGE, "648D7064-6A60-4F59-8ABE-C2C23A6DD7A9", 0.0D, 0).j());
++        MobEffectList.REGISTRY.a(5, new MinecraftKey("strength"), (new MobEffectAttackDamage(false, 9643043, com.github.ruviolence.reaper.OldCombatHelper.POTION_MODIFIER_STRENGTH)).c("effect.damageBoost").b(4, 0).a(GenericAttributes.ATTACK_DAMAGE, "648D7064-6A60-4F59-8ABE-C2C23A6DD7A9", 0.0D, 0).j());
+         MobEffectList.REGISTRY.a(6, new MinecraftKey("instant_health"), (new InstantMobEffect(false, 16262179)).c("effect.heal").j());
+         MobEffectList.REGISTRY.a(7, new MinecraftKey("instant_damage"), (new InstantMobEffect(true, 4393481)).c("effect.harm").j());
+         MobEffectList.REGISTRY.a(8, new MinecraftKey("jump_boost"), (new MobEffectList(false, 2293580)).c("effect.jump").b(2, 1).j());
+@@ -214,7 +214,7 @@ public class MobEffectList {
+         MobEffectList.REGISTRY.a(15, new MinecraftKey("blindness"), (new MobEffectList(true, 2039587)).c("effect.blindness").b(5, 1).a(0.25D));
+         MobEffectList.REGISTRY.a(16, new MinecraftKey("night_vision"), (new MobEffectList(false, 2039713)).c("effect.nightVision").b(4, 1).j());
+         MobEffectList.REGISTRY.a(17, new MinecraftKey("hunger"), (new MobEffectList(true, 5797459)).c("effect.hunger").b(1, 1));
+-        MobEffectList.REGISTRY.a(18, new MinecraftKey("weakness"), (new MobEffectAttackDamage(true, 4738376, -4.0D)).c("effect.weakness").b(5, 0).a(GenericAttributes.ATTACK_DAMAGE, "22653B89-116E-49DC-9B6B-9971489B5BE5", 0.0D, 0));
++        MobEffectList.REGISTRY.a(18, new MinecraftKey("weakness"), (new MobEffectAttackDamage(true, 4738376, com.github.ruviolence.reaper.OldCombatHelper.POTION_MODIFIER_WEAKNESS)).c("effect.weakness").b(5, 0).a(GenericAttributes.ATTACK_DAMAGE, "22653B89-116E-49DC-9B6B-9971489B5BE5", 0.0D, 0));
+         MobEffectList.REGISTRY.a(19, new MinecraftKey("poison"), (new MobEffectList(true, 5149489)).c("effect.poison").b(6, 0).a(0.25D));
+         MobEffectList.REGISTRY.a(20, new MinecraftKey("wither"), (new MobEffectList(true, 3484199)).c("effect.wither").b(1, 2).a(0.25D));
+         MobEffectList.REGISTRY.a(21, new MinecraftKey("health_boost"), (new MobEffectHealthBoost(false, 16284963)).c("effect.healthBoost").b(7, 2).a(GenericAttributes.maxHealth, "5D6F0BA2-1186-46AC-B896-C61C5CEE99CC", 4.0D, 0).j());
+diff --git a/src/main/java/net/minecraft/server/PacketDataSerializer.java b/src/main/java/net/minecraft/server/PacketDataSerializer.java
+index 147ea6d9d803e324edc0ef7269a102ae9d04f4d9..0eef9ed2ecc3a277ea186543370b17d572f795f1 100644
+--- a/src/main/java/net/minecraft/server/PacketDataSerializer.java
++++ b/src/main/java/net/minecraft/server/PacketDataSerializer.java
+@@ -258,6 +258,102 @@ public class PacketDataSerializer extends ByteBuf {
+         return this;
+     }
+ 
++    // Reaper start
++    public PacketDataSerializer writeItemStackWithHidedAttributes(ItemStack itemstack) {
++        Item item = itemstack.getItem();
++        if (itemstack.isEmpty() || item == null) { // CraftBukkit - NPE fix itemstack.getItem()
++            this.writeShort(-1);
++            return this;
++        }
++
++        boolean shownAttributesByDefault = (item instanceof ItemSword) || (item instanceof ItemTool) || (item instanceof ItemArmor);
++        if (!shownAttributesByDefault) return this.a(itemstack);
++
++        this.writeShort(Item.getId(item));
++        this.writeByte(itemstack.getCount());
++        this.writeShort(itemstack.getData());
++        NBTTagCompound nbttagcompound = null;
++
++        if (item.usesDurability() || item.p()) {
++            // Spigot start - filter
++            itemstack = itemstack.cloneItemStack();
++            CraftItemStack.setItemMeta(itemstack, CraftItemStack.getItemMeta(itemstack));
++            // Spigot end
++            nbttagcompound = itemstack.getTag();
++        }
++
++        // Inject tag if it does not exists with the only HideFlags
++        if (nbttagcompound == null) {
++            try {
++                DataOutput output = new ByteBufOutputStream(this);
++
++                output.writeByte(10); // TagCompound ID
++                output.writeUTF(""); // Separator
++
++                output.writeByte(3); // TagInt ID
++                output.writeUTF("HideFlags"); // Key
++                output.writeInt(2); // Value - Only Hide Attributes
++            } catch (Exception e) {
++                throw new EncoderException(e);
++            }
++
++            this.writeByte(0); // End
++            return this;
++        }
++
++        boolean hasCustomAttributes = (nbttagcompound.d("AttributeModifiers") == 9);
++
++        try {
++            DataOutput dataoutput = new ByteBufOutputStream(this);
++
++            dataoutput.writeByte(10); // TagCompound ID
++            dataoutput.writeUTF(""); // Separator
++
++            // Do not inject flag if the item has custom attributes
++            if (hasCustomAttributes) {
++                nbttagcompound.write(dataoutput);
++            } else {
++                boolean hideFlagsInjected = false;
++
++                for (java.util.Map.Entry<String, NBTBase> entry : nbttagcompound.map.entrySet()) {
++                    String key = entry.getKey();
++                    NBTBase nbt = entry.getValue();
++
++                    if (nbt instanceof NBTTagInt && key.equals("HideFlags")) {
++                        int hideFlag = ((NBTTagInt) nbt).e();
++                        hideFlag |= (1 << 1);
++
++                        dataoutput.writeByte(3); // TagInt ID
++                        dataoutput.writeUTF("HideFlags"); // Key
++                        dataoutput.writeInt(hideFlag); // Value - Modded With Hide Attributes
++
++                        hideFlagsInjected = true;
++                        continue;
++                    }
++
++                    dataoutput.writeByte(nbt.getTypeId());
++                    if (nbt.getTypeId() != 0) {
++                        dataoutput.writeUTF(key);
++                        nbt.write(dataoutput);
++                    }
++                }
++
++                if (!hideFlagsInjected) {
++                    dataoutput.writeByte(3); // TagInt ID
++                    dataoutput.writeUTF("HideFlags"); // Key
++                    dataoutput.writeInt(2); // Value - Only Hide Attributes
++                }
++
++                dataoutput.writeByte(0); // End
++            }
++        } catch (Exception e) {
++            throw new EncoderException(e);
++        }
++
++        return this;
++    }
++    // Reaper end
++
+     public ItemStack k() {
+         short short0 = this.readShort();
+ 
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutSetSlot.java b/src/main/java/net/minecraft/server/PacketPlayOutSetSlot.java
+index f9c5e9ef44236635cdc04957278960c0be8d1d67..5eb99a574e192116856c2be0d07b9b30161f8d99 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutSetSlot.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutSetSlot.java
+@@ -32,6 +32,12 @@ public class PacketPlayOutSetSlot implements Packet<PacketListenerPlayOut> {
+     public void b(PacketDataSerializer packetdataserializer) throws IOException {
+         packetdataserializer.writeByte(this.a);
+         packetdataserializer.writeShort(this.b);
++        // Reaper start - Old combat
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatHideAttributes) {
++            packetdataserializer.writeItemStackWithHidedAttributes(this.c);
++            return;
++        }
++        // Reaper end
+         packetdataserializer.a(this.c);
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutUpdateAttributes.java b/src/main/java/net/minecraft/server/PacketPlayOutUpdateAttributes.java
+index 0115340cd2a351ea4cdc2b3af1c287f0f03f8b58..6490e08ca41493dc182e5a67cfeedd2a3e70bc6f 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutUpdateAttributes.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutUpdateAttributes.java
+@@ -22,6 +22,14 @@ public class PacketPlayOutUpdateAttributes implements Packet<PacketListenerPlayO
+         while (iterator.hasNext()) {
+             AttributeInstance attributeinstance = (AttributeInstance) iterator.next();
+ 
++            // Reaper start - Old combat
++            if (com.github.ruviolence.reaper.ReaperConfig.oldCombatAttackSpeed) {
++                if (attributeinstance.getAttribute().getName().equals("generic.attackSpeed")) {
++                    this.b.add(new PacketPlayOutUpdateAttributes.AttributeSnapshot("generic.attackSpeed", 127, java.util.Collections.emptyList()));
++                    continue;
++                }
++            }
++            // Reaper end
+             this.b.add(new PacketPlayOutUpdateAttributes.AttributeSnapshot(attributeinstance.getAttribute().getName(), attributeinstance.b(), attributeinstance.c()));
+         }
+ 
+diff --git a/src/main/java/net/minecraft/server/PacketPlayOutWindowItems.java b/src/main/java/net/minecraft/server/PacketPlayOutWindowItems.java
+index e054757d2fff32f1a3141784c2047d412830a943..9276b54b19f9061a0c921d6d8c8027edbb413ae8 100644
+--- a/src/main/java/net/minecraft/server/PacketPlayOutWindowItems.java
++++ b/src/main/java/net/minecraft/server/PacketPlayOutWindowItems.java
+@@ -49,6 +49,14 @@ public class PacketPlayOutWindowItems implements Packet<PacketListenerPlayOut> {
+         packetdataserializer.writeShort(this.b.size());
+         Iterator iterator = this.b.iterator();
+ 
++        // Reaper start - Old combat
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatHideAttributes) {
++            while (iterator.hasNext()) {
++                ItemStack itemstack = (ItemStack) iterator.next();
++                packetdataserializer.writeItemStackWithHidedAttributes(itemstack);
++            }
++        }
++        // Reaper end
+         while (iterator.hasNext()) {
+             ItemStack itemstack = (ItemStack) iterator.next();
+ 
+diff --git a/src/main/java/net/minecraft/server/PotionRegistry.java b/src/main/java/net/minecraft/server/PotionRegistry.java
+index 54665f5d294a3157ec9af9ce84fc50ca5e7c1b25..70c5d42b3b601429392da4c878a5f828017b0ea9 100644
+--- a/src/main/java/net/minecraft/server/PotionRegistry.java
++++ b/src/main/java/net/minecraft/server/PotionRegistry.java
+@@ -62,10 +62,10 @@ public class PotionRegistry {
+         a("harming", new PotionRegistry(new MobEffect[] { new MobEffect(MobEffects.HARM, 1)}));
+         a("strong_harming", new PotionRegistry("harming", new MobEffect[] { new MobEffect(MobEffects.HARM, 1, 1)}));
+         a("poison", new PotionRegistry(new MobEffect[] { new MobEffect(MobEffects.POISON, 900)}));
+-        a("long_poison", new PotionRegistry("poison", new MobEffect[] { new MobEffect(MobEffects.POISON, 1800)}));
+-        a("strong_poison", new PotionRegistry("poison", new MobEffect[] { new MobEffect(MobEffects.POISON, 432, 1)}));
++        a("long_poison", new PotionRegistry("poison", new MobEffect[] { new MobEffect(MobEffects.POISON, com.github.ruviolence.reaper.OldCombatHelper.POTION_DURATION_POISON_LONG)}));
++        a("strong_poison", new PotionRegistry("poison", new MobEffect[] { new MobEffect(MobEffects.POISON, com.github.ruviolence.reaper.OldCombatHelper.POTION_DURATION_POISON_STRONG, 1)}));
+         a("regeneration", new PotionRegistry(new MobEffect[] { new MobEffect(MobEffects.REGENERATION, 900)}));
+-        a("long_regeneration", new PotionRegistry("regeneration", new MobEffect[] { new MobEffect(MobEffects.REGENERATION, 1800)}));
++        a("long_regeneration", new PotionRegistry("regeneration", new MobEffect[] { new MobEffect(MobEffects.REGENERATION,  com.github.ruviolence.reaper.OldCombatHelper.POTION_DURATION_REGENERATION_LONG)}));
+         a("strong_regeneration", new PotionRegistry("regeneration", new MobEffect[] { new MobEffect(MobEffects.REGENERATION, 450, 1)}));
+         a("strength", new PotionRegistry(new MobEffect[] { new MobEffect(MobEffects.INCREASE_DAMAGE, 3600)}));
+         a("long_strength", new PotionRegistry("strength", new MobEffect[] { new MobEffect(MobEffects.INCREASE_DAMAGE, 9600)}));
+diff --git a/src/main/java/org/spigotmc/SpigotWorldConfig.java b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+index f872c1554d911d28bb2fe8e0e1ce0bad87accaae..a1c46441f574be31ec70b7d449004747823c13f3 100644
+--- a/src/main/java/org/spigotmc/SpigotWorldConfig.java
++++ b/src/main/java/org/spigotmc/SpigotWorldConfig.java
+@@ -283,6 +283,17 @@ public class SpigotWorldConfig
+         swimMultiplier =  (float) getDouble( "hunger.swim-multiplier", 0.01 );
+         sprintMultiplier = (float) getDouble( "hunger.sprint-multiplier", 0.1 );
+         otherMultiplier = (float) getDouble( "hunger.other-multiplier", 0.0 );
++        // Reaper start - Old combat
++        if (com.github.ruviolence.reaper.ReaperConfig.oldCombatRegen) {
++            jumpWalkExhaustion = 0.2F;
++            jumpSprintExhaustion = 0.8F;
++            combatExhaustion = 0.3F;
++            regenExhaustion = 3.0F;
++            swimMultiplier = 0.015F;
++            sprintMultiplier = 0.099999994F;
++            otherMultiplier = 0.1F;
++        }
++        // Reaper end
+     }
+ 
+     public int currentPrimedTnt = 0;

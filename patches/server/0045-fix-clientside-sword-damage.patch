@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 19 May 2023 12:55:57 +0800
+Subject: [PATCH] fix: clientside sword damage
+
+
+diff --git a/src/main/java/net/minecraft/server/PlayerInteractManager.java b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+index c9082c26d04e73e43eeafd1c5a6f48fe846e8805..74f76c51da750d72679670e810a06e13a0d63a2c 100644
+--- a/src/main/java/net/minecraft/server/PlayerInteractManager.java
++++ b/src/main/java/net/minecraft/server/PlayerInteractManager.java
+@@ -226,6 +226,7 @@ public class PlayerInteractManager {
+             }
+         // CraftBukkit start - Force block reset to client
+         } else {
++            com.github.ruviolence.reaper.InventoryUpdateHelper.onBlockBreak(this.player, this.player.getItemInMainHand()); // Reaper - Fix clientside sword damage
+             this.player.playerConnection.sendPacket(new PacketPlayOutBlockChange(this.world, blockposition));
+             // CraftBukkit end
+         }
+@@ -336,6 +337,7 @@ public class PlayerInteractManager {
+                 if (tileentity != null) {
+                     this.player.playerConnection.sendPacket(tileentity.getUpdatePacket());
+                 }
++                com.github.ruviolence.reaper.InventoryUpdateHelper.onBlockBreak(this.player, itemInMainHand); // Reaper - Fix clientside sword damage
+                 return false;
+             }
+         }

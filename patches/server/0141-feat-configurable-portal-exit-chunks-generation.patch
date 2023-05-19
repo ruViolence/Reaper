@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Wed, 15 Feb 2023 18:37:46 +0500
+Subject: [PATCH] feat: configurable portal exit chunks generation
+
+Allows to disable chunk generation when searching for an exit nether portal. Since the chunks in that scenario are generated synchronously, this saves a lot of performance when exiting to ungenerated area.
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index c3dc3cb84dee84057189eee9e29a4452fb2edddd..d60b6f56625c905b32ed513c7b71b1b9d28b4f36 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -295,6 +295,11 @@ public class ReaperConfig {
+         dropUsePacketsInInventory = getBoolean("drop-use-packets-in-inventory", false);
+     }
+ 
++    public static boolean generatePortalExitChunks;
++    private static void generatePortalExitChunks() {
++        generatePortalExitChunks = getBoolean("generate-portal-exit-chunks", false);
++    }
++
+     // Paper start - packet limiter
+     public static String packetLimiterKickMessage;
+     public static PacketLimit packetLimiterAllPackets;
+diff --git a/src/main/java/net/minecraft/server/PortalTravelAgent.java b/src/main/java/net/minecraft/server/PortalTravelAgent.java
+index 897a92d1c193c3b33a679fbd4cded878710e1ed7..18124f264ca7fa74df1ea9376abe6614cf16dc14 100644
+--- a/src/main/java/net/minecraft/server/PortalTravelAgent.java
++++ b/src/main/java/net/minecraft/server/PortalTravelAgent.java
+@@ -154,10 +154,21 @@ public class PortalTravelAgent {
+         } else {
+             BlockPosition blockposition = new BlockPosition(x, y, z); // CraftBukkit
+ 
++            java.util.Set<ChunkCoordIntPair> notGeneratedChunks = com.github.ruviolence.reaper.ReaperConfig.generatePortalExitChunks ? null : new HashSet<>(); // Reaper
+             for (int l = -radius; l <= radius; ++l) {
+                 BlockPosition blockposition1;
+ 
+                 for (int i1 = -radius; i1 <= radius; ++i1) {
++                    // Reaper start
++                    if (notGeneratedChunks != null) {
++                        ChunkCoordIntPair chunkCoord = new ChunkCoordIntPair((blockposition.getX() + l) >> 4, (blockposition.getZ() + i1) >> 4);
++                        if (notGeneratedChunks.contains(chunkCoord)) continue;
++                        if (!this.world.getChunkProviderServer().isChunkGenerated(chunkCoord.x, chunkCoord.z)) {
++                            notGeneratedChunks.add(chunkCoord);
++                            continue;
++                        }
++                    }
++                    // Reaper end
+                     for (BlockPosition blockposition2 = blockposition.a(l, this.world.ab() - 1 - blockposition.getY(), i1); blockposition2.getY() >= 0; blockposition2 = blockposition1) {
+                         blockposition1 = blockposition2.down();
+                         if (this.world.getType(blockposition2).getBlock() == Blocks.PORTAL) {

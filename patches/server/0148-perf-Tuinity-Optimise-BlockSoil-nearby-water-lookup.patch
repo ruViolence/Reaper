@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 27 Apr 2023 02:59:43 +0800
+Subject: [PATCH] perf: Tuinity - Optimise BlockSoil nearby water lookup
+
+Credits to Tuinity: https://github.com/Tuinity/Tuinity/blob/4c31ea1630f3dfd4a1d64de56c37ac1b0cc096a7/patches/server/0054-Optimise-BlockSoil-nearby-water-lookup.patch
+
+diff --git a/src/main/java/net/minecraft/server/BlockSoil.java b/src/main/java/net/minecraft/server/BlockSoil.java
+index 5c4b290971d2a074bab397f9f9b2568372e1d74f..abffb9e8d6b7bb2e3cc4917583bf8ee997e98385 100644
+--- a/src/main/java/net/minecraft/server/BlockSoil.java
++++ b/src/main/java/net/minecraft/server/BlockSoil.java
+@@ -103,6 +103,7 @@ public class BlockSoil extends Block {
+     }
+ 
+     private boolean d(World world, BlockPosition blockposition) {
++        /* // Reaper start - Tuinity: remove abstract block iteration
+         Iterator iterator = BlockPosition.b(blockposition.a(-4, 0, -4), blockposition.a(4, 1, 4)).iterator();
+ 
+         BlockPosition.MutableBlockPosition blockposition_mutableblockposition;
+@@ -116,6 +117,27 @@ public class BlockSoil extends Block {
+         } while (world.getType(blockposition_mutableblockposition).getMaterial() != Material.WATER);
+ 
+         return true;
++        */
++        int xOff = blockposition.getX();
++        int yOff = blockposition.getY();
++        int zOff = blockposition.getZ();
++
++        for (int dz = -4; dz <= 4; ++dz) {
++            int z = dz + zOff;
++            for (int dx = -4; dx <= 4; ++dx) {
++                int x = xOff + dx;
++                for (int dy = 0; dy <= 1; ++dy) {
++                    int y = dy + yOff;
++                    Chunk chunk = world.getChunkAt(x >> 4, z >> 4);
++                    if (chunk.getBlockData(x, y, z).getMaterial() == Material.WATER) {
++                        return true;
++                    }
++                }
++            }
++        }
++
++        return false;
++        // Reaper end - Tuinity: remove abstract block iteration
+     }
+ 
+     public void a(IBlockData iblockdata, World world, BlockPosition blockposition, Block block, BlockPosition blockposition1) {

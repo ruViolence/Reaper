@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Mon, 30 May 2022 06:10:57 +0500
+Subject: [PATCH] fix: do not accept invalid client settings
+
+Credits to Paper: https://github.com/PaperMC/Paper/blob/e3997543203bc1d86b58b6f1e751b0593228ca7b/patches/server/0906-Do-not-accept-invalid-client-settings.patch
+
+diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
+index ca590df2973a9db97f5b48b37ee46a10c36f98ab..d23dc67054f9823f85b4f8287bae376a18a7ae6e 100644
+--- a/src/main/java/net/minecraft/server/PlayerConnection.java
++++ b/src/main/java/net/minecraft/server/PlayerConnection.java
+@@ -2397,6 +2397,13 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+ 
+     public void a(PacketPlayInSettings packetplayinsettings) {
+         PlayerConnectionUtils.ensureMainThread(packetplayinsettings, this, this.player.x());
++        // Reaper start - do not accept invalid information
++        if (packetplayinsettings.getViewDistance() < 0) {
++            LOGGER.warn("Disconnecting " + this.player.getName() + " for invalid view distance: " + packetplayinsettings.getViewDistance());
++            this.disconnect("Invalid client settings");
++            return;
++        }
++        // Reaper end
+         this.player.a(packetplayinsettings);
+     }
+ 

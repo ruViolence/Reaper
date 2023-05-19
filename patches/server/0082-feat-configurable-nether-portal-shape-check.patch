@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Fri, 27 May 2022 11:00:01 +0500
+Subject: [PATCH] feat: configurable nether portal shape check
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index f6fbba7ad487d5d80dbae2d4e352f86bfeaf7d4e..454d4f88edb9eced87a796afc623b7ee8e903857 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -170,8 +170,10 @@ public class ReaperConfig {
+ 
+     public static boolean shapeCheckWither;
+     public static boolean shapeCheckEndPortal;
++    public static boolean shapeCheckNetherPortal;
+     private static void shapeCheck() {
+         shapeCheckWither = getBoolean("shape-check.wither", true);
+         shapeCheckEndPortal = getBoolean("shape-check.end-portal", true);
++        shapeCheckNetherPortal = getBoolean("shape-check.nether-portal", true);
+     }
+ }
+diff --git a/src/main/java/net/minecraft/server/BlockFire.java b/src/main/java/net/minecraft/server/BlockFire.java
+index 93dfcc3eeb58f93db5fc551e2ccb962210eddbb0..b7afac783cdb38f0133148153c1eedf9afdbd39e 100644
+--- a/src/main/java/net/minecraft/server/BlockFire.java
++++ b/src/main/java/net/minecraft/server/BlockFire.java
+@@ -335,7 +335,7 @@ public class BlockFire extends Block {
+     }
+ 
+     public void onPlace(World world, BlockPosition blockposition, IBlockData iblockdata) {
+-        if (world.worldProvider.getDimensionManager().getDimensionID() > 0 || !Blocks.PORTAL.b(world, blockposition)) {
++        if (world.worldProvider.getDimensionManager().getDimensionID() > 0 || (!com.github.ruviolence.reaper.ReaperConfig.shapeCheckNetherPortal || !Blocks.PORTAL.b(world, blockposition))) { // Reaper
+             if (!world.getType(blockposition.down()).q() && !this.c(world, blockposition)) {
+                 fireExtinguished(world, blockposition); // CraftBukkit - fuel block broke
+             } else {

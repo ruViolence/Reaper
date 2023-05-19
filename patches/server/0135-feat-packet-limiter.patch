@@ -1,0 +1,345 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sun, 8 Jan 2023 04:45:28 +0500
+Subject: [PATCH] feat: packet limiter
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Credits to Paper: https://github.com/PaperMC/Paper/blob/d5f1ffc2e6928a6728f91ab2ad2e020b105eab7f/patches/server/0713-Add-packet-limiter-config.patch
+
+Backport from PaperMC
+
+[PATCH] Add packet limiter config
+
+Example config:
+packet-limiter:
+  kick-message: '§cSent too many packets'
+  all-packets:
+    interval: 7.0
+    max-packet-rate: 500.0
+    action: KICK
+  overrides:
+    PacketPlayInAutoRecipe:
+      interval: 4.0
+      max-packet-rate: 5.0
+      action: DROP
+
+all-packets section refers to all incoming packets.
+
+For specific limits, the section name is the class's name,
+and an action can be defined: DROP or KICK
+
+If interval or rate are less-than 0, the limit is ignored
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index 70726e18b250570152c5f27eb924e1a0f1e8c7e8..4bce1cb4413190670663e30fb964746fbb13fb0e 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -5,21 +5,26 @@ import net.minecraft.server.DispenserRegistry;
+ import net.minecraft.server.EntityPlayer;
+ import net.minecraft.server.MathHelper;
+ import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.Packet;
+ import net.minecraft.server.ReaperLightingQueue;
+ import org.bukkit.Bukkit;
+ import org.bukkit.command.Command;
++import org.bukkit.configuration.ConfigurationSection;
+ import org.bukkit.configuration.InvalidConfigurationException;
+ import org.bukkit.configuration.file.YamlConfiguration;
++import org.spigotmc.SneakyThrow;
+ 
+ import java.io.File;
+ import java.io.IOException;
+ import java.lang.reflect.InvocationTargetException;
+ import java.lang.reflect.Method;
+ import java.lang.reflect.Modifier;
++import java.util.Collections;
+ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Random;
++import java.util.Set;
+ import java.util.logging.Level;
+ 
+ public class ReaperConfig {
+@@ -279,4 +284,61 @@ public class ReaperConfig {
+     private static void saveJsonAsync() {
+         saveJsonAsync = getBoolean("save-json-async", false);
+     }
++
++    // Paper start - packet limiter
++    public static String packetLimiterKickMessage;
++    public static PacketLimit packetLimiterAllPackets;
++    public static Map<Class<? extends Packet<?>>, PacketLimit> packetLimiterOverrides;
++    private static void packetLimiter() {
++        packetLimiterKickMessage = getString("packet-limiter.kick-message", "Kicked for exceeding packet rate limit");
++        packetLimiterAllPackets = new PacketLimit(getDouble("packet-limiter.all-packets.interval", 7.0),
++                getDouble("packet-limiter.all-packets.max-packet-rate", 500.0),
++                getString("packet-limiter.all-packets.action", "KICK"));
++
++        Map<Class<? extends Packet<?>>, PacketLimit> overridesMap = new HashMap<>();
++        ConfigurationSection overridesSect = config.getConfigurationSection("packet-limiter.overrides");
++        if (overridesSect == null) {
++            set("packet-limiter.overrides.PacketPlayInAutoRecipe.interval", 4.0);
++            set("packet-limiter.overrides.PacketPlayInAutoRecipe.max-packet-rate", 5.0);
++            set("packet-limiter.overrides.PacketPlayInAutoRecipe.action", "DROP");
++            overridesSect = config.getConfigurationSection("packet-limiter.overrides");
++        }
++        for (String packet : overridesSect.getKeys(false)) {
++            double interval = config.getDouble("packet-limiter.overrides." + packet + ".interval");
++            double maxPacketRate = config.getDouble("packet-limiter.overrides." + packet + ".max-packet-rate");
++            String action = config.getString("packet-limiter.overrides." + packet + ".action");
++            try {
++                overridesMap.put((Class<? extends Packet<?>>) Class.forName("net.minecraft.server." + packet), new PacketLimit(interval, maxPacketRate, action));
++            } catch (ClassNotFoundException e) {
++                SneakyThrow.sneaky(e);
++            }
++        }
++        packetLimiterOverrides = overridesMap;
++    }
++    public static class PacketLimit {
++        public final double interval;
++        public final double maxPacketRate;
++        public final ViolateAction action;
++
++        public PacketLimit(final double interval, final double maxPacketRate, final String action) {
++            this.interval = interval;
++            this.maxPacketRate = maxPacketRate;
++            if (action.equalsIgnoreCase("KICK") ||
++                    action.equalsIgnoreCase("DROP")) {
++                this.action = PacketLimit.ViolateAction.valueOf(action);
++            } else {
++                this.action = ViolateAction.KICK;
++            }
++        }
++
++        public boolean isEnabled() {
++            return this.interval > 0.0 && this.maxPacketRate > 0.0;
++        }
++
++        public enum ViolateAction {
++            KICK,
++            DROP;
++        }
++    }
++    // Paper end - packet limiter
+ }
+diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..5e15f400aab49bc52efe07aac8f368d11826a73c
+--- /dev/null
++++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+@@ -0,0 +1,7 @@
++package io.papermc.paper.configuration;
++
++public class GlobalConfiguration {
++    public class PacketLimiter {
++        // Reaper - This is just a dummy class to prevent ViaVersion from enabling its packet limiter.
++    }
++}
+diff --git a/src/main/java/io/papermc/paper/util/IntervalledCounter.java b/src/main/java/io/papermc/paper/util/IntervalledCounter.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..b9728232925a07c0af4c3b816e9ebd7b6a7ec485
+--- /dev/null
++++ b/src/main/java/io/papermc/paper/util/IntervalledCounter.java
+@@ -0,0 +1,115 @@
++package io.papermc.paper.util;
++
++public final class IntervalledCounter {
++
++    protected long[] times;
++    protected long[] counts;
++    protected final long interval;
++    protected long minTime;
++    protected long sum;
++    protected int head; // inclusive
++    protected int tail; // exclusive
++
++    public IntervalledCounter(final long interval) {
++        this.times = new long[8];
++        this.counts = new long[8];
++        this.interval = interval;
++    }
++
++    public void updateCurrentTime() {
++        this.updateCurrentTime(System.nanoTime());
++    }
++
++    public void updateCurrentTime(final long currentTime) {
++        long sum = this.sum;
++        int head = this.head;
++        final int tail = this.tail;
++        final long minTime = currentTime - this.interval;
++
++        final int arrayLen = this.times.length;
++
++        // guard against overflow by using subtraction
++        while (head != tail && this.times[head] - minTime < 0) {
++            sum -= this.counts[head];
++            // there are two ways we can do this:
++            // 1. free the count when adding
++            // 2. free it now
++            // option #2
++            this.counts[head] = 0;
++            if (++head >= arrayLen) {
++                head = 0;
++            }
++        }
++
++        this.sum = sum;
++        this.head = head;
++        this.minTime = minTime;
++    }
++
++    public void addTime(final long currTime) {
++        this.addTime(currTime, 1L);
++    }
++
++    public void addTime(final long currTime, final long count) {
++        // guard against overflow by using subtraction
++        if (currTime - this.minTime < 0) {
++            return;
++        }
++        int nextTail = (this.tail + 1) % this.times.length;
++        if (nextTail == this.head) {
++            this.resize();
++            nextTail = (this.tail + 1) % this.times.length;
++        }
++
++        this.times[this.tail] = currTime;
++        this.counts[this.tail] += count;
++        this.sum += count;
++        this.tail = nextTail;
++    }
++
++    public void updateAndAdd(final int count) {
++        final long currTime = System.nanoTime();
++        this.updateCurrentTime(currTime);
++        this.addTime(currTime, count);
++    }
++
++    public void updateAndAdd(final int count, final long currTime) {
++        this.updateCurrentTime(currTime);
++        this.addTime(currTime, count);
++    }
++
++    private void resize() {
++        final long[] oldElements = this.times;
++        final long[] oldCounts = this.counts;
++        final long[] newElements = new long[this.times.length * 2];
++        final long[] newCounts = new long[this.times.length * 2];
++        this.times = newElements;
++        this.counts = newCounts;
++
++        final int head = this.head;
++        final int tail = this.tail;
++        final int size = tail >= head ? (tail - head) : (tail + (oldElements.length - head));
++        this.head = 0;
++        this.tail = size;
++
++        if (tail >= head) {
++            System.arraycopy(oldElements, head, newElements, 0, size);
++            System.arraycopy(oldCounts, head, newCounts, 0, size);
++        } else {
++            System.arraycopy(oldElements, head, newElements, 0, oldElements.length - head);
++            System.arraycopy(oldElements, 0, newElements, oldElements.length - head, tail);
++
++            System.arraycopy(oldCounts, head, newCounts, 0, oldCounts.length - head);
++            System.arraycopy(oldCounts, 0, newCounts, oldCounts.length - head, tail);
++        }
++    }
++
++    // returns in units per second
++    public double getRate() {
++        return this.size() / (this.interval * 1.0e-9);
++    }
++
++    public long size() {
++        return this.sum;
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/java/net/minecraft/server/NetworkManager.java b/src/main/java/net/minecraft/server/NetworkManager.java
+index 4467c9edce2425a91c7f4428b879e3645423b2c4..434c74fb21ce2417ca655c80c5530a8e3925b6b3 100644
+--- a/src/main/java/net/minecraft/server/NetworkManager.java
++++ b/src/main/java/net/minecraft/server/NetworkManager.java
+@@ -1,5 +1,6 @@
+ package net.minecraft.server;
+ 
++import com.github.ruviolence.reaper.ReaperConfig;
+ import com.google.common.collect.Queues;
+ import com.google.common.util.concurrent.ThreadFactoryBuilder;
+ import io.netty.channel.Channel;
+@@ -117,6 +118,25 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet<?>> {
+         }
+     }
+     // Reaper end - allow controlled flushing
++    // Paper start - packet limiter
++    protected final Object PACKET_LIMIT_LOCK = new Object();
++    protected final @Nullable io.papermc.paper.util.IntervalledCounter allPacketCounts = com.github.ruviolence.reaper.ReaperConfig.packetLimiterAllPackets.isEnabled() ? new io.papermc.paper.util.IntervalledCounter(
++            (long)(com.github.ruviolence.reaper.ReaperConfig.packetLimiterAllPackets.interval * 1.0e9)
++    ) : null;
++    protected final java.util.Map<Class<? extends net.minecraft.server.Packet<?>>, io.papermc.paper.util.IntervalledCounter> packetSpecificLimits = new java.util.HashMap<>();
++
++    private boolean stopReadingPackets;
++    private void killForPacketSpam() {
++        ChatComponentText kickReason = new ChatComponentText(ReaperConfig.packetLimiterKickMessage);
++        this.sendPacket(new PacketPlayOutKickDisconnect(kickReason), new GenericFutureListener() {
++            public void operationComplete(Future future) throws Exception {
++                close(kickReason);
++            }
++        });
++        this.stopReading();
++        this.stopReadingPackets = true;
++    }
++    // Paper end - packet limiter
+ 
+     public NetworkManager(EnumProtocolDirection enumprotocoldirection) {
+         this.h = enumprotocoldirection;
+@@ -174,6 +194,45 @@ public class NetworkManager extends SimpleChannelInboundHandler<Packet<?>> {
+ 
+     protected void a(ChannelHandlerContext channelhandlercontext, Packet<?> packet) throws Exception {
+         if (this.channel.isOpen()) {
++            // Paper start - packet limiter
++            if (this.stopReadingPackets) {
++                return;
++            }
++            if (this.allPacketCounts != null ||
++                    com.github.ruviolence.reaper.ReaperConfig.packetLimiterOverrides.containsKey(packet.getClass())) {
++                long time = System.nanoTime();
++                synchronized (PACKET_LIMIT_LOCK) {
++                    if (this.allPacketCounts != null) {
++                        this.allPacketCounts.updateAndAdd(1, time);
++                        if (this.allPacketCounts.getRate() >= com.github.ruviolence.reaper.ReaperConfig.packetLimiterAllPackets.maxPacketRate) {
++                            this.killForPacketSpam();
++                            return;
++                        }
++                    }
++
++                    for (Class<?> check = packet.getClass(); check != Object.class; check = check.getSuperclass()) {
++                        com.github.ruviolence.reaper.ReaperConfig.PacketLimit packetSpecificLimit =
++                            com.github.ruviolence.reaper.ReaperConfig.packetLimiterOverrides.get(check);
++                        if (packetSpecificLimit == null || !packetSpecificLimit.isEnabled()) {
++                            continue;
++                        }
++                        io.papermc.paper.util.IntervalledCounter counter = this.packetSpecificLimits.computeIfAbsent((Class)check, (clazz) -> {
++                            return new io.papermc.paper.util.IntervalledCounter((long)(packetSpecificLimit.interval * 1.0e9));
++                        });
++                        counter.updateAndAdd(1, time);
++                        if (counter.getRate() >= packetSpecificLimit.maxPacketRate) {
++                            switch (packetSpecificLimit.action) {
++                                case DROP:
++                                    return;
++                                case KICK:
++                                    this.killForPacketSpam();
++                                    return;
++                            }
++                        }
++                    }
++                }
++            }
++            // Paper end - packet limiter
+             try {
+                 ((Packet) packet).a(this.m); // CraftBukkit - decompile error
+             } catch (CancelledPacketHandleException cancelledpackethandleexception) {

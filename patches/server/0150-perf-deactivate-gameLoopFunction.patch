@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Thu, 27 Apr 2023 04:15:54 +0800
+Subject: [PATCH] perf: deactivate gameLoopFunction
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 7e6d4ea01c76a9424ded4936be804a0b331764db..9c375c9abbc4fae07699d0555bd7676993b3f6b9 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1022,9 +1022,11 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+         this.v.tick();
+         MinecraftTimings.playerListTimer.stopTiming(); // Spigot
+         // this.methodProfiler.c("commandFunctions"); // Reaper - Remove MethodProfiler
++        if (false) { // Reaper - Deactivate gameLoopFunction
+         MinecraftTimings.commandFunctionsTimer.startTiming(); // Spigot
+         this.aL().e();
+         MinecraftTimings.commandFunctionsTimer.stopTiming(); // Spigot
++        }
+         // this.methodProfiler.c("tickables"); // Reaper - Remove MethodProfiler
+ 
+         MinecraftTimings.tickablesTimer.startTiming(); // Spigot

@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Sat, 28 May 2022 14:21:29 +0500
+Subject: [PATCH] fix: entityliving double dying
+
+Fixes some dupes
+
+diff --git a/src/main/java/net/minecraft/server/EntityLiving.java b/src/main/java/net/minecraft/server/EntityLiving.java
+index 3b504c23702725240dfc1aa304e29d239c3ed1a2..f715215a17d4ed9c495e8eea1455eeec7155f32e 100644
+--- a/src/main/java/net/minecraft/server/EntityLiving.java
++++ b/src/main/java/net/minecraft/server/EntityLiving.java
+@@ -1125,6 +1125,7 @@ public abstract class EntityLiving extends Entity {
+     }
+ 
+     public void die(DamageSource damagesource) {
++        if (this.dead) return; // Reaper
+         if (!this.aU) {
+             Entity entity = damagesource.getEntity();
+             EntityLiving entityliving = this.ci();
