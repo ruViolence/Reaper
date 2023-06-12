@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ruViolence <78062896+ruViolence@users.noreply.github.com>
+Date: Tue, 13 Jun 2023 07:42:59 +0800
+Subject: [PATCH] fix: suppress setVelocity crash
+
+
+diff --git a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+index b567f78570980d4b949f1ad2fc86cb0b770ee7dd..21f63abff8206f303e0d1f6b5acbed900fbcf05d 100644
+--- a/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
++++ b/src/main/java/com/github/ruviolence/reaper/ReaperConfig.java
+@@ -305,6 +305,11 @@ public class ReaperConfig {
+         asyncPlayerList = getBoolean("async-player-list", true);
+     }
+ 
++    public static boolean suppressSetVelocityCrash;
++    private static void suppressSetVelocityCrash() {
++        suppressSetVelocityCrash = getBoolean("suppress-setvelocity-crash", true);
++    }
++
+     // Paper start - packet limiter
+     public static String packetLimiterKickMessage;
+     public static PacketLimit packetLimiterAllPackets;
+diff --git a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+index 47edc0494d5de14c6979cdf9aeafbf2bc35183f6..da22af31f4ed0609b27154b2d999c5ad3292f525 100644
+--- a/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
++++ b/src/main/java/org/bukkit/craftbukkit/entity/CraftEntity.java
+@@ -246,6 +246,25 @@ public abstract class CraftEntity implements org.bukkit.entity.Entity {
+ 
+     public void setVelocity(Vector velocity) {
+         Preconditions.checkArgument(velocity != null, "velocity");
++        // Reaper start - Suppress the crash
++        if (com.github.ruviolence.reaper.ReaperConfig.suppressSetVelocityCrash) {
++            if (!org.bukkit.util.NumberConversions.isFinite(velocity.getX())) {
++                org.bukkit.Bukkit.getServer().getLogger().warning("velocity x not finite: " + velocity.getX());
++                entity.motX = 0;
++                entity.velocityChanged = true;
++            }
++            if (!org.bukkit.util.NumberConversions.isFinite(velocity.getY())) {
++                org.bukkit.Bukkit.getServer().getLogger().warning("velocity y not finite: " + velocity.getY());
++                entity.motY = 0;
++                entity.velocityChanged = true;
++            }
++            if (!org.bukkit.util.NumberConversions.isFinite(velocity.getZ())) {
++                org.bukkit.Bukkit.getServer().getLogger().warning("velocity z not finite: " + velocity.getZ());
++                entity.motZ = 0;
++                entity.velocityChanged = true;
++            }
++        } else
++        // Reaper end
+         velocity.checkFinite();
+ 
+         // Paper start - Warn server owners when plugins try to set super high velocities
