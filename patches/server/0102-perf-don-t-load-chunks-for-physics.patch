@@ -5,7 +5,7 @@ Subject: [PATCH] perf: don't load chunks for physics
 
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 29eb8c5ed591670021c9d246a4516796a5adc2e9..7f63290cd7b6c649da9114a957bb6aa7493f966d 100644
+index a776493411892503cb655ad6713203b93346eb2b..d62058ac42c64d155aeaab888757b8b6e90182c0 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -677,7 +677,10 @@ public abstract class World implements IBlockAccess {

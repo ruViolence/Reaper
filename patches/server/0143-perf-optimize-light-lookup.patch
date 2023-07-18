@@ -6,7 +6,7 @@ Subject: [PATCH] perf: optimize light lookup
 Do not search for the same chunk twice
 
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index ccfec654fd5cd7c1216009c4471f132d067b97e6..29ecc844303965f2fb57454e0c7a189e6389b459 100644
+index f3ec17a36e26893f3b0499af2c533355d32a8f92..c03bd45b52010ef4dde7250bae52fd4d7d8978be 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -881,6 +881,12 @@ public abstract class World implements IBlockAccess {
@@ -47,7 +47,7 @@ index ccfec654fd5cd7c1216009c4471f132d067b97e6..29ecc844303965f2fb57454e0c7a189e
  
                  chunk.a(enumskyblock, blockposition, i);
                  this.m(blockposition);
-@@ -2581,6 +2593,12 @@ public abstract class World implements IBlockAccess {
+@@ -2579,6 +2591,12 @@ public abstract class World implements IBlockAccess {
      public boolean c(EnumSkyBlock enumskyblock, BlockPosition blockposition) {
          // CraftBukkit start - Use neighbor cache instead of looking up
          Chunk chunk = this.getChunkIfLoaded(blockposition.getX() >> 4, blockposition.getZ() >> 4);
@@ -60,7 +60,7 @@ index ccfec654fd5cd7c1216009c4471f132d067b97e6..29ecc844303965f2fb57454e0c7a189e
          if (chunk == null || !chunk.areNeighborsLoaded(1) /*!this.areChunksLoaded(blockposition, 17, false)*/) {
              // CraftBukkit end
              return false;
-@@ -2589,7 +2607,7 @@ public abstract class World implements IBlockAccess {
+@@ -2587,7 +2605,7 @@ public abstract class World implements IBlockAccess {
              int j = 0;
  
              // this.methodProfiler.a("getBrightness"); // Reaper - Remove MethodProfiler
@@ -69,7 +69,7 @@ index ccfec654fd5cd7c1216009c4471f132d067b97e6..29ecc844303965f2fb57454e0c7a189e
              int l = this.a(blockposition, enumskyblock);
              int i1 = blockposition.getX();
              int j1 = blockposition.getY();
-@@ -2620,9 +2638,12 @@ public abstract class World implements IBlockAccess {
+@@ -2618,9 +2636,12 @@ public abstract class World implements IBlockAccess {
                      int l3 = l1 >> 18 & 15;
                      blockposition1.c(i2, j2, k2); // Reaper - Optimize BlockPosition
  
@@ -84,7 +84,7 @@ index ccfec654fd5cd7c1216009c4471f132d067b97e6..29ecc844303965f2fb57454e0c7a189e
                          if (l3 > 0) {
                              i3 = MathHelper.a(i2 - i1);
                              j3 = MathHelper.a(j2 - j1);
-@@ -2665,11 +2686,14 @@ public abstract class World implements IBlockAccess {
+@@ -2663,11 +2684,14 @@ public abstract class World implements IBlockAccess {
                  j2 = (l1 >> 6 & 63) - 32 + j1;
                  k2 = (l1 >> 12 & 63) - 32 + k1;
                  blockposition2.c(i2, j2, k2); // Reaper - Optimize BlockPosition

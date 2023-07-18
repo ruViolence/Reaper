@@ -5,7 +5,7 @@ Subject: [PATCH] feat: add new "setTypeIdAndData" method to the Block class
 
 
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 8133d9f5232d4cca6e80b1768bcc49d6dc6ae8b4..9a4cba104bf58cc9cd780c6ac3f63a5898eebbd0 100644
+index 00a5b667942f08797e9894e3da6fc3b130092cc7..fee7b566b303dc005c79b16475c1ca88bd8509af 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -500,8 +500,12 @@ public class Chunk {
@@ -54,7 +54,7 @@ index 8133d9f5232d4cca6e80b1768bcc49d6dc6ae8b4..9a4cba104bf58cc9cd780c6ac3f63a58
                      block.onPlace(this.world, blockposition, iblockdata);
                  }
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 41d437b97011f78f595feab76aac4398c6e53531..29eb8c5ed591670021c9d246a4516796a5adc2e9 100644
+index e9e99cd35c4db099ae1286645e42e3a3be40185e..a776493411892503cb655ad6713203b93346eb2b 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -363,7 +363,10 @@ public abstract class World implements IBlockAccess {

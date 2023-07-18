@@ -56,7 +56,7 @@ index d293ee89253e73a9ace7a63964424263530e363c..65395526751f59846afc0b88475dd1fe
 +    }
  }
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 87e48475f33a3ad21f0bdc6cf983b6f2411b19a0..8133d9f5232d4cca6e80b1768bcc49d6dc6ae8b4 100644
+index 4b7b02b7796dc0107868cd5dc5f32869a494cf64..00a5b667942f08797e9894e3da6fc3b130092cc7 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -70,7 +70,8 @@ public class Chunk {
@@ -97,7 +97,7 @@ index 87e48475f33a3ad21f0bdc6cf983b6f2411b19a0..8133d9f5232d4cca6e80b1768bcc49d6
                  }
  
                  TileEntity tileentity;
-@@ -1565,14 +1566,39 @@ public class Chunk {
+@@ -1559,14 +1560,39 @@ public class Chunk {
  
      // Paper start
      public void runOrQueueLightUpdate(Runnable runnable) {
@@ -506,7 +506,7 @@ index 0000000000000000000000000000000000000000..6471bdfb81cd9439982343d9c1bf86e9
 +    }
 +}
 diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
-index 9469f1bc9d87473b55d3d770c4b3b6a93d571478..41d437b97011f78f595feab76aac4398c6e53531 100644
+index e3552e023eee5a9ecd9918a81631031468d0be19..e9e99cd35c4db099ae1286645e42e3a3be40185e 100644
 --- a/src/main/java/net/minecraft/server/World.java
 +++ b/src/main/java/net/minecraft/server/World.java
 @@ -414,7 +414,8 @@ public abstract class World implements IBlockAccess {

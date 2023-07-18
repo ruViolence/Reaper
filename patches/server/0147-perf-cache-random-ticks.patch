@@ -5,7 +5,7 @@ Subject: [PATCH] perf: cache random ticks
 
 
 diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
-index 879cc95e715f4ecf79f1d43c0618637a4a624f08..acb41ec363e71b8cda7f523226a06d2fc568a4a6 100644
+index b1b24f5074e866a4615f5d900165be7965ae0a63..077e94ef41f7c023533d6ee6ce57a7cbce75e97f 100644
 --- a/src/main/java/net/minecraft/server/Chunk.java
 +++ b/src/main/java/net/minecraft/server/Chunk.java
 @@ -122,6 +122,25 @@ public class Chunk {
@@ -46,7 +46,7 @@ index 879cc95e715f4ecf79f1d43c0618637a4a624f08..acb41ec363e71b8cda7f523226a06d2f
          this.bukkitChunk = new org.bukkit.craftbukkit.CraftChunk(this);
          this.chunkKey = ChunkCoordIntPair.a(this.locX, this.locZ);
 diff --git a/src/main/java/net/minecraft/server/WorldServer.java b/src/main/java/net/minecraft/server/WorldServer.java
-index c9c9fcff9eba61d2f943ddb625a0b0b60be17e04..e4797d60fde461031d15486dbb656376e73583a5 100644
+index 0da618dec4afc13cf313d5b4193ca0db930040df..d0022fa497688aa10071d8a81c5fb672824490c9 100644
 --- a/src/main/java/net/minecraft/server/WorldServer.java
 +++ b/src/main/java/net/minecraft/server/WorldServer.java
 @@ -509,7 +509,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
@@ -55,15 +55,15 @@ index c9c9fcff9eba61d2f943ddb625a0b0b60be17e04..e4797d60fde461031d15486dbb656376
                  // Paper - Disable thunder
 -                if (!this.paperConfig.disableThunder && flag && flag1 && this.random.nextInt(100000) == 0) {
 +                if (!this.paperConfig.disableThunder && flag && flag1 && chunk.shouldDoLightning(this.random)) { // Reaper - Cache random ticks
-                     timings.chunkTicksThunder.startTiming(); // Reaper
                      this.l = this.l * 3 + 1013904223;
                      l = this.l >> 2;
-@@ -533,7 +533,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
+                     blockposition = this.a(new BlockPosition(j + (l & 15), 0, k + (l >> 8 & 15)));
+@@ -531,7 +531,7 @@ public class WorldServer extends World implements IAsyncTaskHandler {
                  }
  
                  // this.methodProfiler.c("iceandsnow"); // Reaper - Remove MethodProfiler
 -                if (!this.paperConfig.disableIceAndSnow && this.random.nextInt(16) == 0) { // Paper - Disable ice and snow
 +                if (!this.paperConfig.disableIceAndSnow && chunk.shouldDoIceAndSnow(this.random)) { // Paper - Disable ice and snow // Reaper - Cache random ticks
-                     timings.chunkTicksIceAndSnow.startTiming(); // Reaper
                      this.l = this.l * 3 + 1013904223;
                      l = this.l >> 2;
+                     blockposition = this.p(new BlockPosition(j + (l & 15), 0, k + (l >> 8 & 15)));
