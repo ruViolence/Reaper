@@ -5,14 +5,14 @@ Subject: [PATCH] fix: packet click crash
 
 
 diff --git a/src/main/java/net/minecraft/server/PlayerConnection.java b/src/main/java/net/minecraft/server/PlayerConnection.java
-index 329eb0dec15845e8f8f2df2afadd5df473929631..7aeb27be54a53ef63d12e05351b8b28ef4467d9d 100644
+index 329eb0dec15845e8f8f2df2afadd5df473929631..d4f6677dc68a67a7d7b580c8298c2332dff91ff4 100644
 --- a/src/main/java/net/minecraft/server/PlayerConnection.java
 +++ b/src/main/java/net/minecraft/server/PlayerConnection.java
-@@ -1889,6 +1889,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
-                         } else if (packetplayinwindowclick.c() == 1) {
-                             click = ClickType.RIGHT;
-                         }
-+                        if (click == ClickType.UNKNOWN) return; // Reaper - Fix click crash
-                         if (packetplayinwindowclick.c() == 0 || packetplayinwindowclick.c() == 1) {
-                             action = InventoryAction.NOTHING; // Don't want to repeat ourselves
-                             if (packetplayinwindowclick.b() == -999) {
+@@ -1872,6 +1872,7 @@ public class PlayerConnection implements PacketListenerPlayIn, ITickable {
+                 if (packetplayinwindowclick.b() < -1 && packetplayinwindowclick.b() != -999) {
+                     return;
+                 }
++                if (this.player.activeContainer.slots.size() <= packetplayinwindowclick.b()) return; // Reaper - Fix click crash
+ 
+                 InventoryView inventory = this.player.activeContainer.getBukkitView();
+                 SlotType type = CraftInventoryView.getSlotType(inventory, packetplayinwindowclick.b());
