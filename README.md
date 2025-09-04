@@ -1,3 +1,6 @@
+> [!WARNING]  
+> Minecraft version 1.12.2 is dead, outdated, and irrelevant. I’m no longer maintaining this project because I’ve moved on to a newer versions, and I recommend you do the same.
+
 # Reaper [![Dev Build](https://github.com/ruViolence/Reaper/actions/workflows/dev-build.yml/badge.svg)](https://github.com/ruViolence/Reaper/actions/workflows/dev-build.yml)
 
 Another Paper 1.12.2 fork with some performance enhancements, bug fixes, and improvements.
